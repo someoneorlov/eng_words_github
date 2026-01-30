@@ -1,0 +1,94 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Project specific (do not push data, logs, archive)
+data/
+logs/
+reports/
+docs/archive/
+
+data/processed/
+*.parquet
+*.csv
+!tests/fixtures/*.csv
+anki_exports/
+known_words.csv
+*.epub
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Google credentials (NEVER commit!)
+*.json
+!tests/fixtures/*.json
+.config/
+google-credentials.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/*.log
+*.log
+
+# Backups (large, keep locally)
+backups/
+
+# LLM cache (large, keep locally)
+data/synset_cards/llm_cache/
+
+# Temporary test data
+data/card_gen_test/
+data/quality_analysis/
+data/synset_aggregation_test/
+
+# Reports (temporary)
+reports/
+
+# Temporary docs
+QUICK_TEST_VALIDATION.md
+
+# Archive folders (keep in git but ignore internal files)
+# src/eng_words/_archive/
+# scripts/_archive/
+# tests/_archive/
+

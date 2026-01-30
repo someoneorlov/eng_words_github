@@ -1,0 +1,42 @@
+---
+description: Git-First Workflow for AI-assisted edits
+globs:
+  - "**/*"
+alwaysApply: false
+---
+
+**When making repository edits:**
+
+1) **Scope**
+   - Single-purpose change; avoid mixed concerns or opportunistic refactors.
+
+2) **Branch**
+   - `feat/<area>-<desc>` or `fix/<area>-<desc>`
+
+3) **Edit**
+   - Implement only what was agreed in the code workflow.
+   - Keep the diff minimal and self-contained.
+
+4) **Self-review (Cursor diff)**
+   - Verify imports, types, call sites, resource lifecycles, config paths.
+   - Confirm expectations against **actual repo files** (not just the patch).
+
+5) **Tests**
+   - Run the tiered plan from the code workflow; paste output.
+
+6) **Commit (Conventional Commits)**
+   - `feat(api): add schema-based validation to /claims`
+   - `fix(duration): guard None in survival calc`
+   - `refactor(cdf): extract compute_crosstab_with_stats()`
+
+7) **PR**
+   - Open **Draft PR** if any assumptions remain.
+   - Checklist:
+     - [ ] Scope is limited / reversible
+     - [ ] Tests updated/added
+     - [ ] Logging/docs/error handling addressed
+     - [ ] Backward compatibility considered
+   - Request review; iterate with small commits.
+
+8) **Rollback**
+   - Revert the specific commit/PR if issues arise; no hotfixes on `main`.

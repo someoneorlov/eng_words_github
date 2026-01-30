@@ -1,0 +1,6 @@
+lemma,status,item_type,tags,created_at,last_seen_in_book,examples_count,notes
+run,known,word,A2 basic_verbs,2024-01-01,,5,
+give up,learning,phrasal_verb,B1 phrasal,2024-01-15,,3,hard to remember
+the,ignore,word,stopword,2024-01-01,,,
+cat,known,word,A1 animals,2024-01-01,,10,
+

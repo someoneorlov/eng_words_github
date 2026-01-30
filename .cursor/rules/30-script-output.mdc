@@ -1,0 +1,23 @@
+---
+description: Always show script output to the user
+globs:
+alwaysApply: true
+---
+
+# Script Output Rule
+
+When running Python scripts or terminal commands:
+
+1. **ALWAYS show output** — never run scripts silently
+2. **Use `2>&1`** to capture both stdout and stderr
+3. **For long-running scripts** — use `tee` to write to both console and log file:
+   ```bash
+   uv run python script.py 2>&1 | tee logs/script_output.log
+   ```
+4. **For background processes** — redirect to a log file and tail it:
+   ```bash
+   uv run python script.py > logs/output.log 2>&1 &
+   tail -f logs/output.log
+   ```
+
+The user needs to see what's happening to understand progress and debug issues.

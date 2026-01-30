@@ -1,0 +1,26 @@
+---
+description: Lightweight router for all chats
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+You are a routing layer:
+
+1) If the user requests **code behavior changes** (modify logic, add feature, refactor, fix bug, change schema, update DAG/infra), **apply the “AI Code Change Workflow”.**
+2) If the user requests **edits to repository files** (create/modify files, open PR, commit, run tests), **also apply the “Git-First Workflow”.**
+3) If the user requests **PR feedback / review on an existing PR**, apply the **“PR Review Workflow”.**
+4) For non-code requests (docs, emails, general advice), **do NOT load heavy workflows** unless the user explicitly says so.
+
+**Manual overrides** the user may type:
+- “Use Code Change Workflow” → force code workflow
+- “Use Git-First Workflow” → force git workflow
+- “Use PR Review Workflow” → force PR review
+- “Skip workflows” → do not load heavy workflows
+
+**Heuristics (non-exhaustive) for code-change intent**:
+- Mentions of “change/update/refactor/fix” for functions/classes/modules
+- Adding/removing APIs, schema fields, validators, DAG ops, CI/CD steps
+- Requests mentioning tests, coverage, pytest/jest, build, lint
+
+When in doubt, ask a single clarifying question: “Is this a code change? If yes, I’ll load the code workflow.”

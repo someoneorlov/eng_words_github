@@ -1,0 +1,45 @@
+---
+description: AI Code Change Workflow (options → clarify → proceed → test)
+globs:
+  - "**/*.py"
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.go"
+  - "**/*.rs"
+  - "**/*.java"
+  - "**/*.sql"
+  - "**/*.yaml"
+  - "**/*.yml"
+  - "**/*.json"
+  - "Dockerfile"
+alwaysApply: false
+---
+
+**Applicability:** When the router detects a code-change intent (design or implementation).
+
+## Core Workflow (MANDATORY)
+1) **Present Options First**
+   - Non-trivial: present 2–3 approaches with pros/cons + estimated effort.
+   - Trivial/safe: present 1 clear approach; proceed only after explicit confirmation.
+
+2) **Ask Clarifying Questions**
+   - Implementation details, edge cases, integration points, performance, error handling, logging, docs, backward compatibility.
+
+3) **Proceeding Rules**
+   - Preferred: wait for answers, then implement.
+   - If blocked: propose assumptions explicitly and request permission to proceed with a **draft PR** (see Git-First).
+
+4) **Testing (tiered)**
+   - Tiny fix: minimal focused unit test addition/mod.
+   - Feature/behavior change: unit + representative negative tests; include I/O samples.
+   - Refactor: ensure existing tests pass; add perf checks if likely to impact critical paths.
+   - Show test commands and results (or CI link).
+
+**Deliverables** must include:
+- Decision rationale (why this approach)
+- Changed interfaces/contracts (if any)
+- Test plan summary and outputs
+- Backward-compatibility notes and migration guidance if needed
+
+**Cross-Rule:** When implementing actual file edits, **apply “Git-First Workflow.”**
