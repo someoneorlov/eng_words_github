@@ -85,3 +85,8 @@ reportOperatorIssue = false
 reportGeneralTypeIssues = false
 reportOptionalMemberAccess = false
 
+[dependency-groups]
+dev = [
+    "vulture>=2.14",
+]
+
