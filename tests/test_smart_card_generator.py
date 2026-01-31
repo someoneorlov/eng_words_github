@@ -3,9 +3,8 @@
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
 
 from eng_words.llm.base import LLMResponse
 
@@ -221,15 +220,17 @@ class TestSmartCardGenerator:
 
             # Mock LLM response with new JSON schema
             llm_response = LLMResponse(
-                content=json.dumps({
-                    "valid_indices": [1, 2, 3],
-                    "invalid_indices": [],
-                    "quality_scores": {"1": 5, "2": 4, "3": 5},
-                    "selected_indices": [1, 2],
-                    "generated_examples": ["She runs every morning."],
-                    "simple_definition": "to move fast using legs",
-                    "translation_ru": "run",
-                }),
+                content=json.dumps(
+                    {
+                        "valid_indices": [1, 2, 3],
+                        "invalid_indices": [],
+                        "quality_scores": {"1": 5, "2": 4, "3": 5},
+                        "selected_indices": [1, 2],
+                        "generated_examples": ["She runs every morning."],
+                        "simple_definition": "to move fast using legs",
+                        "translation_ru": "run",
+                    }
+                ),
                 model="test-model",
                 input_tokens=100,
                 output_tokens=50,
@@ -272,15 +273,17 @@ class TestSmartCardGenerator:
             mock_provider.temperature = 0.0
 
             llm_response = LLMResponse(
-                content=json.dumps({
-                    "valid_indices": [1],
-                    "invalid_indices": [],
-                    "quality_scores": {"1": 5},
-                    "selected_indices": [1],
-                    "generated_examples": ["Test example."],
-                    "simple_definition": "test",
-                    "translation_ru": "test",
-                }),
+                content=json.dumps(
+                    {
+                        "valid_indices": [1],
+                        "invalid_indices": [],
+                        "quality_scores": {"1": 5},
+                        "selected_indices": [1],
+                        "generated_examples": ["Test example."],
+                        "simple_definition": "test",
+                        "translation_ru": "test",
+                    }
+                ),
                 model="test-model",
                 input_tokens=100,
                 output_tokens=50,
@@ -326,7 +329,9 @@ class TestSmartCardGenerator:
             total_calls = mock_provider.complete.call_count
             # If cache works, second call shouldn't increase call count much
             # (may increase by 1-2 due to internal retry logic, but not by full retry count)
-            assert total_calls <= first_call_count + 2, f"Cache may not be working: {total_calls} calls vs {first_call_count} initial"
+            assert (
+                total_calls <= first_call_count + 2
+            ), f"Cache may not be working: {total_calls} calls vs {first_call_count} initial"
 
     def test_generate_card_handles_invalid_json(self):
         """Test that generate_card handles invalid JSON gracefully."""
@@ -349,18 +354,19 @@ class TestSmartCardGenerator:
 
             # Second call (retry via raw provider) returns valid JSON
             good_response = LLMResponse(
-                content=json.dumps({
-                    "valid_indices": [1],
-                    "invalid_indices": [],
-                    "quality_scores": {"1": 5},
-                    "selected_indices": [1],
-                    "generated_examples": ["Test example."],
-                    "selected_indices": [1],
-                    "excluded_indices": [],
-                    "simple_definition": "test",
-                    "translation_ru": "test",
-                    "generated_example": "Test.",
-                }),
+                content=json.dumps(
+                    {
+                        "valid_indices": [1],
+                        "invalid_indices": [],
+                        "quality_scores": {"1": 5},
+                        "selected_indices": [1],
+                        "excluded_indices": [],
+                        "generated_examples": ["Test example."],
+                        "simple_definition": "test",
+                        "translation_ru": "test",
+                        "generated_example": "Test.",
+                    }
+                ),
                 model="test-model",
                 input_tokens=100,
                 output_tokens=50,
@@ -370,7 +376,9 @@ class TestSmartCardGenerator:
             # Need 2 responses: one for cached provider, one for raw provider retry
             mock_provider.complete.side_effect = [bad_response, good_response]
 
-            cache = ResponseCache(cache_dir=Path(tmpdir), enabled=False)  # Disable cache for retry test
+            cache = ResponseCache(
+                cache_dir=Path(tmpdir), enabled=False
+            )  # Disable cache for retry test
             generator = SmartCardGenerator(
                 provider=mock_provider,
                 cache=cache,
@@ -401,13 +409,15 @@ class TestSmartCardGenerator:
             mock_provider.temperature = 0.0
 
             llm_response = LLMResponse(
-                content=json.dumps({
-                    "selected_indices": [1],
-                    "excluded_indices": [],
-                    "simple_definition": "test",
-                    "translation_ru": "test",
-                    "generated_example": "Test.",
-                }),
+                content=json.dumps(
+                    {
+                        "selected_indices": [1],
+                        "excluded_indices": [],
+                        "simple_definition": "test",
+                        "translation_ru": "test",
+                        "generated_example": "Test.",
+                    }
+                ),
                 model="test-model",
                 input_tokens=100,
                 output_tokens=50,
@@ -456,13 +466,15 @@ class TestSmartCardGenerator:
             mock_provider.temperature = 0.0
 
             llm_response = LLMResponse(
-                content=json.dumps({
-                    "selected_indices": [1],
-                    "excluded_indices": [],
-                    "simple_definition": "test",
-                    "translation_ru": "test",
-                    "generated_example": "Test.",
-                }),
+                content=json.dumps(
+                    {
+                        "selected_indices": [1],
+                        "excluded_indices": [],
+                        "simple_definition": "test",
+                        "translation_ru": "test",
+                        "generated_example": "Test.",
+                    }
+                ),
                 model="test-model",
                 input_tokens=100,
                 output_tokens=50,
@@ -495,21 +507,23 @@ class TestSmartCardGenerator:
 
     def test_generate_card_with_synset_group(self):
         """Test generating a card with synset_group metadata."""
-        from eng_words.llm.smart_card_generator import SmartCardGenerator
         from eng_words.llm.response_cache import ResponseCache
+        from eng_words.llm.smart_card_generator import SmartCardGenerator
 
         mock_provider = MagicMock()
         mock_provider.model = "test"
         mock_provider.temperature = 0.0
 
         llm_response = LLMResponse(
-            content=json.dumps({
-                "selected_indices": [1],
-                "excluded_indices": [],
-                "simple_definition": "to move fast",
-                "translation_ru": "run",
-                "generated_example": "She runs."
-            }),
+            content=json.dumps(
+                {
+                    "selected_indices": [1],
+                    "excluded_indices": [],
+                    "simple_definition": "to move fast",
+                    "translation_ru": "run",
+                    "generated_example": "She runs.",
+                }
+            ),
             model="test",
             input_tokens=100,
             output_tokens=50,
@@ -593,15 +607,17 @@ class TestSmartCardGenerator:
 
             # Mock response with NO selected_indices
             mock_response = LLMResponse(
-                content=json.dumps({
-                    "valid_indices": [],
-                    "invalid_indices": [1, 2],
-                    "quality_scores": {},
-                    "selected_indices": [],  # No examples selected
-                    "generated_examples": ["This is a test."],
-                    "simple_definition": "test",
-                    "translation_ru": "test",
-                }),
+                content=json.dumps(
+                    {
+                        "valid_indices": [],
+                        "invalid_indices": [1, 2],
+                        "quality_scores": {},
+                        "selected_indices": [],  # No examples selected
+                        "generated_examples": ["This is a test."],
+                        "simple_definition": "test",
+                        "translation_ru": "test",
+                    }
+                ),
                 model="test-model",
                 input_tokens=100,
                 output_tokens=50,
@@ -628,8 +644,8 @@ class TestSmartCardGenerator:
             # Should return None because no selected_examples (card is skipped)
             assert card is None
 
-    def test_generate_batch(self):
-        """Test generate_batch generates multiple cards."""
+    def test_generate_batch_with_quality_scores(self):
+        """Test generate_batch generates multiple cards with quality scores."""
         from eng_words.llm.response_cache import ResponseCache
         from eng_words.llm.smart_card_generator import SmartCardGenerator
 
@@ -639,15 +655,17 @@ class TestSmartCardGenerator:
             mock_provider.temperature = 0.0
 
             mock_response = LLMResponse(
-                content=json.dumps({
-                    "valid_indices": [1],
-                    "invalid_indices": [],
-                    "quality_scores": {"1": 5},
-                    "selected_indices": [1],
-                    "generated_examples": ["This is a test."],
-                    "simple_definition": "test",
-                    "translation_ru": "test",
-                }),
+                content=json.dumps(
+                    {
+                        "valid_indices": [1],
+                        "invalid_indices": [],
+                        "quality_scores": {"1": 5},
+                        "selected_indices": [1],
+                        "generated_examples": ["This is a test."],
+                        "simple_definition": "test",
+                        "translation_ru": "test",
+                    }
+                ),
                 model="test-model",
                 input_tokens=100,
                 output_tokens=50,
@@ -676,8 +694,8 @@ class TestSmartCardGenerator:
             cards = generator.generate_batch(items, progress=False)
             assert len(cards) == 1
 
-    def test_generator_stats(self):
-        """Test that stats include basic counters."""
+    def test_generator_stats_empty(self):
+        """Test that stats include basic counters before generating cards."""
         from eng_words.llm.response_cache import ResponseCache
         from eng_words.llm.smart_card_generator import SmartCardGenerator
 
@@ -711,7 +729,7 @@ class TestSmartCardGenerator:
 
             # Mock LLM response
             mock_provider.complete.return_value = LLMResponse(
-                content='The wind blew strongly through the trees.',
+                content="The wind blew strongly through the trees.",
                 model="test-model",
                 cost_usd=0.0001,
                 input_tokens=50,
@@ -810,9 +828,12 @@ class TestMarkExamplesByLength:
         examples = [
             (1, "Short sentence."),  # 2 words
             (2, "This is a medium length sentence with more words."),  # 10 words
-            (3, "This is a very long sentence that contains many words and should be marked as too long because it exceeds the maximum word count limit."),  # 20 words, but let's make it longer
+            (
+                3,
+                "This is a very long sentence that contains many words and should be marked as too long because it exceeds the maximum word count limit.",
+            ),  # 20 words, but let's make it longer
         ]
-        
+
         # Make example 3 actually >50 words
         long_sentence = " ".join(["word"] * 55)
         examples[2] = (3, long_sentence)
@@ -899,7 +920,7 @@ class TestCheckSpoilers:
         mock_provider = MagicMock()
         mock_provider.model = "test-model"
         mock_provider.complete_json = None  # Force use of complete()
-        
+
         # Mock LLM response
         mock_provider.complete.return_value = LLMResponse(
             content=json.dumps({"has_spoiler": [False, True, False]}),
@@ -910,7 +931,7 @@ class TestCheckSpoilers:
         )
 
         cache = ResponseCache(cache_dir=Path(tmp_path), enabled=False)
-        
+
         examples = [
             (1, "He walked to the store."),  # No spoiler
             (2, "The hero died in the final battle."),  # Spoiler
@@ -942,10 +963,10 @@ class TestCheckSpoilers:
         mock_provider = MagicMock()
         mock_provider.model = "test-model"
         mock_provider.complete_json = None
-        
+
         # Create 60 examples (will be split into 2 batches: 50 + 10)
         examples = [(i, f"Sentence {i}.") for i in range(1, 61)]
-        
+
         # Mock responses for 2 batches
         mock_provider.complete.side_effect = [
             LLMResponse(
@@ -1012,7 +1033,7 @@ class TestCheckSpoilers:
         mock_provider = MagicMock()
         mock_provider.model = "test-model"
         mock_provider.complete_json = None
-        
+
         mock_provider.complete.return_value = LLMResponse(
             content=json.dumps({"has_spoiler": [False]}),
             model="test-model",
@@ -1022,7 +1043,7 @@ class TestCheckSpoilers:
         )
 
         cache = ResponseCache(cache_dir=Path(tmp_path), enabled=True)
-        
+
         examples = [(1, "He walked to the store.")]
 
         # First call
@@ -1032,10 +1053,10 @@ class TestCheckSpoilers:
             cache=cache,
             book_name="test_book",
         )
-        
+
         # Reset call count
         mock_provider.complete.reset_mock()
-        
+
         # Second call with same examples (should use cache)
         flags2 = check_spoilers(
             examples=examples,
@@ -1063,7 +1084,7 @@ class TestSelectExamplesForGeneration:
             (3, "Short sentence 3."),
             (4, "Short sentence 4."),
         ]
-        
+
         length_flags = {1: True, 2: True, 3: True, 4: True}  # All appropriate length
         spoiler_flags = {1: False, 2: False, 3: False, 4: False}  # No spoilers
 
@@ -1092,7 +1113,7 @@ class TestSelectExamplesForGeneration:
             (3, " ".join(["word"] * 100)),  # Too long
             (4, "Spoiler sentence."),  # Has spoiler
         ]
-        
+
         length_flags = {1: True, 2: True, 3: False, 4: True}
         spoiler_flags = {1: False, 2: False, 3: False, 4: True}  # 4 has spoiler
 
@@ -1118,7 +1139,7 @@ class TestSelectExamplesForGeneration:
             (2, " ".join(["word"] * 100)),  # Too long
             (3, "Spoiler sentence."),  # Has spoiler
         ]
-        
+
         length_flags = {1: True, 2: False, 3: True}
         spoiler_flags = {1: False, 2: False, 3: True}  # 3 has spoiler
 
@@ -1142,7 +1163,7 @@ class TestSelectExamplesForGeneration:
             (2, "Spoiler sentence."),  # Has spoiler
             (3, " ".join(["word"] * 100)),  # Too long
         ]
-        
+
         length_flags = {1: False, 2: True, 3: False}
         spoiler_flags = {1: False, 2: True, 3: False}  # 2 has spoiler
 
@@ -1204,7 +1225,7 @@ class TestSelectExamplesForGeneration:
             (4, "Spoiler."),  # Invalid: spoiler=True
             (5, "Valid 3."),  # Valid: length=True, spoiler=False
         ]
-        
+
         length_flags = {1: True, 2: True, 3: False, 4: True, 5: True}
         spoiler_flags = {1: False, 2: False, 3: False, 4: True, 5: False}
 
@@ -1236,7 +1257,7 @@ class TestSelectExamplesForGeneration:
             (3, "Different sentence."),  # Unique
             (4, "Another unique sentence."),  # Unique
         ]
-        
+
         length_flags = {1: True, 2: True, 3: True, 4: True}
         spoiler_flags = {1: False, 2: False, 3: False, 4: False}
 
@@ -1251,5 +1272,6 @@ class TestSelectExamplesForGeneration:
         selected_texts = [ex.lower().strip() for _, ex in result["selected_from_book"]]
         assert selected_texts.count("same sentence.") == 1  # Only one copy
         assert len(set(selected_texts)) == len(selected_texts)  # All unique
-        assert len(result["selected_from_book"]) == 2  # 2 unique examples selected (logic: 3+ valid → take 2)
-
+        assert (
+            len(result["selected_from_book"]) == 2
+        )  # 2 unique examples selected (logic: 3+ valid → take 2)

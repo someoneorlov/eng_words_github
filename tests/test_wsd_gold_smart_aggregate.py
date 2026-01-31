@@ -2,10 +2,9 @@
 
 import pytest
 
-from eng_words.wsd_gold.models import LLMUsage, ModelOutput
+from eng_words.wsd_gold.models import GoldLabel, LLMUsage, ModelOutput
 from eng_words.wsd_gold.smart_aggregate import (
     SmartAggregationResult,
-    SmartAggregationStats,
     get_smart_aggregation_stats,
     needs_referee,
     smart_aggregate,
@@ -114,10 +113,8 @@ class TestNeedsReferee:
         assert needs_referee(a, g) is True
 
 
-def make_label(synset_id: str = "bank.n.01") -> "GoldLabel":
+def make_label(synset_id: str = "bank.n.01") -> GoldLabel:
     """Helper to create test GoldLabel."""
-    from eng_words.wsd_gold.models import GoldLabel
-
     return GoldLabel(
         synset_id=synset_id,
         confidence=0.9,
@@ -168,4 +165,3 @@ class TestSmartAggregationStats:
 
         assert stats.total == 0
         assert stats.referee_rate == 0.0
-

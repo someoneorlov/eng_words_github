@@ -1,6 +1,5 @@
 """Tests for LLM-based Word Sense Disambiguation."""
 
-import json
 from unittest.mock import MagicMock
 
 import pytest
@@ -306,6 +305,7 @@ class TestRedistributeEmptyCards:
     def mock_cache(self):
         """Create a mock cache that returns LLMResponse for get_or_compute."""
         from eng_words.llm.response_cache import ResponseCache
+
         cache = MagicMock(spec=ResponseCache)
         cache.enabled = True
         cache.generate_key.return_value = "test_key"
@@ -405,9 +405,7 @@ class TestRedistributeEmptyCards:
         result = redistribute_empty_cards(sample_cards, mock_provider, mock_cache)
 
         # Find accompany.v.02 card
-        accompany_card = next(
-            (c for c in result if c.primary_synset == "accompany.v.02"), None
-        )
+        accompany_card = next((c for c in result if c.primary_synset == "accompany.v.02"), None)
         assert accompany_card is not None
         assert "She accompanied him to the store." in accompany_card.selected_examples
 
@@ -485,7 +483,6 @@ class TestRedistributeEmptyCards:
         result = redistribute_empty_cards(cards, mock_provider, mock_cache)
 
         # Card should remain empty (or be removed)
-        empty_cards = [c for c in result if not c.selected_examples]
         # Either removed or kept as empty
         assert len(result) <= 1
 
@@ -516,4 +513,3 @@ class TestRedistributeEmptyCards:
         assert len(result) == 1
         assert result[0].selected_examples == ["Good morning!", "It was good."]
         mock_provider.complete.assert_not_called()  # No LLM call needed
-
