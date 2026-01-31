@@ -13,4 +13,3 @@ __all__ = [
     "fix_invalid_cards",
     "validate_examples_for_synset_group",
 ]
-

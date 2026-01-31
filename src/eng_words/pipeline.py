@@ -442,9 +442,7 @@ def generate_smart_cards(
         wn_definition = row.get("wn_definition", "")
 
         # Get sentence IDs for this lemma
-        lemma_tokens = tokens_df[
-            (tokens_df[LEMMA] == lemma)
-        ]
+        lemma_tokens = tokens_df[(tokens_df[LEMMA] == lemma)]
 
         if lemma_tokens.empty:
             continue
@@ -460,13 +458,15 @@ def generate_smart_cards(
         if not examples:
             continue
 
-        items.append({
-            "lemma": lemma,
-            "pos": pos,
-            "supersense": supersense,
-            "wn_definition": wn_definition,
-            "examples": examples,
-        })
+        items.append(
+            {
+                "lemma": lemma,
+                "pos": pos,
+                "supersense": supersense,
+                "wn_definition": wn_definition,
+                "examples": examples,
+            }
+        )
 
     if not items:
         print("⚠️  No items to generate cards for")
@@ -495,7 +495,7 @@ def generate_smart_cards(
 
     # Print stats
     stats = generator.stats()
-    print(f"\n✅ Smart Cards generated:")
+    print("\n✅ Smart Cards generated:")
     print(f"   Total: {stats['total_cards']}")
     print(f"   Successful: {stats['successful']}")
     print(f"   Failed: {stats['failed']}")

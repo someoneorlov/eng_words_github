@@ -5,7 +5,7 @@ Stage 2: CardGenerator - create flashcards with clean examples
 
 Usage:
     from eng_words.pipeline_v2 import WordFamilyPipelineV2
-    
+
     pipeline = WordFamilyPipelineV2(provider, cache)
     result = pipeline.process_lemma(lemma, examples, sentence_ids)
 """

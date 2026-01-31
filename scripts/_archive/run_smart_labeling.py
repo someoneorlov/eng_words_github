@@ -16,13 +16,12 @@ Usage:
 
 import json
 import logging
-import os
 from pathlib import Path
 
 import typer
 from dotenv import load_dotenv
 
-from eng_words.wsd_gold.models import GoldExample, ModelOutput
+from eng_words.wsd_gold.models import GoldExample
 from eng_words.wsd_gold.smart_aggregate import (
     SmartAggregationResult,
     get_smart_aggregation_stats,
@@ -91,9 +90,7 @@ def save_result(path: Path, example_id: str, result: SmartAggregationResult) -> 
         "used_referee": result.used_referee,
         "agreement_ratio": result.label.agreement_ratio,
         "flags": result.label.flags,
-        "primary_outputs": {
-            k: v.to_dict() for k, v in result.primary_outputs.items()
-        },
+        "primary_outputs": {k: v.to_dict() for k, v in result.primary_outputs.items()},
     }
 
     if result.referee_output:
@@ -276,4 +273,3 @@ def main(
 
 if __name__ == "__main__":
     app()
-

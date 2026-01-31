@@ -156,7 +156,7 @@ class OpenAIGoldProvider(GoldLabelProvider):
                 last_error = str(e)
                 # Exponential backoff for rate limits
                 if "rate" in last_error.lower() or "429" in last_error:
-                    time.sleep(2 ** attempt)
+                    time.sleep(2**attempt)
                 elif attempt < self.max_retries:
                     time.sleep(1)
 

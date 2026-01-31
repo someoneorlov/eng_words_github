@@ -25,9 +25,6 @@ load_dotenv()
 
 # Import centralized pricing
 from eng_words.constants.llm_pricing import (
-    OPENAI_PRICING,
-    ANTHROPIC_PRICING,
-    GEMINI_PRICING,
     estimate_cost,
 )
 
@@ -106,9 +103,7 @@ class ModelResult:
 
 def build_prompt(sample: dict) -> str:
     """Build prompt for a sample."""
-    contexts_numbered = "\n".join(
-        f'{i}. "{ctx}"' for i, ctx in enumerate(sample["contexts"], 1)
-    )
+    contexts_numbered = "\n".join(f'{i}. "{ctx}"' for i, ctx in enumerate(sample["contexts"], 1))
 
     return PROMPT_TEMPLATE.format(
         lemma=sample["lemma"],
@@ -127,28 +122,28 @@ def call_openai(prompt: str, model: str) -> tuple[dict, int, int]:
     client = OpenAI()
 
     start = time.time()
-    
+
     # Only original gpt-5/gpt-5-mini/gpt-5-nano don't support temperature=0
     # GPT-5.1 and GPT-5.2 support temperature=0
     is_original_gpt5 = model in ("gpt-5", "gpt-5-mini", "gpt-5-nano")
-    
+
     kwargs = {
         "model": model,
         "messages": [{"role": "user", "content": prompt}],
         "response_format": {"type": "json_object"},
     }
-    
+
     # GPT-5+ models use max_completion_tokens
     # GPT-5-mini needs more tokens due to internal "thinking"
     if model.startswith("gpt-5"):
         kwargs["max_completion_tokens"] = 1024
     else:
         kwargs["max_tokens"] = 512
-    
+
     # Only original GPT-5 doesn't support temperature=0
     if not is_original_gpt5:
         kwargs["temperature"] = 0
-    
+
     response = client.chat.completions.create(**kwargs)
     latency_ms = int((time.time() - start) * 1000)
 
@@ -196,22 +191,22 @@ def call_gemini(prompt: str, model: str) -> tuple[dict, int, int]:
     api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("GOOGLE_API_KEY or GEMINI_API_KEY not set")
-    
+
     client = genai.Client(api_key=api_key)
 
     start = time.time()
-    
+
     # Configure thinking level for gemini-3-flash models
     config_kwargs = {
         "temperature": 0,
         "max_output_tokens": 512,
         "response_mime_type": "application/json",
     }
-    
+
     # Add thinking level for flash models to reduce token usage
     if "gemini-3-flash" in model:
         config_kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
-    
+
     response = client.models.generate_content(
         model=model,
         contents=prompt,
@@ -312,13 +307,13 @@ def compare_models(
         # Check API key
         provider = model_config["provider"]
         if provider == "openai" and not os.environ.get("OPENAI_API_KEY"):
-            print(f"  ❌ OPENAI_API_KEY not set, skipping")
+            print("  ❌ OPENAI_API_KEY not set, skipping")
             continue
         elif provider == "anthropic" and not os.environ.get("ANTHROPIC_API_KEY"):
-            print(f"  ❌ ANTHROPIC_API_KEY not set, skipping")
+            print("  ❌ ANTHROPIC_API_KEY not set, skipping")
             continue
         elif provider == "gemini" and not os.environ.get("GOOGLE_API_KEY"):
-            print(f"  ❌ GOOGLE_API_KEY not set, skipping")
+            print("  ❌ GOOGLE_API_KEY not set, skipping")
             continue
 
         model_results = []
@@ -469,4 +464,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

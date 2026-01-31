@@ -134,13 +134,15 @@ def main():
         if not examples:
             continue
 
-        items.append({
-            "lemma": lemma,
-            "pos": pos,
-            "supersense": supersense,
-            "wn_definition": wn_definition,
-            "examples": examples,
-        })
+        items.append(
+            {
+                "lemma": lemma,
+                "pos": pos,
+                "supersense": supersense,
+                "wn_definition": wn_definition,
+                "examples": examples,
+            }
+        )
 
     logger.info(f"  {len(items)} items prepared")
 
@@ -186,19 +188,19 @@ def main():
     print("\n" + "=" * 70)
     print("RESULTS")
     print("=" * 70)
-    print(f"\n## Generation Stats")
+    print("\n## Generation Stats")
     print(f"   Total items: {len(items)}")
     print(f"   Successful: {stats['successful']}")
     print(f"   Failed: {stats['failed']}")
     print(f"   Success rate: {stats['successful']/len(items)*100:.1f}%")
 
-    print(f"\n## Cost & Performance")
+    print("\n## Cost & Performance")
     print(f"   Total cost: ${stats['total_cost']:.4f}")
     print(f"   Cost per card: ${stats['total_cost']/max(stats['successful'],1):.6f}")
     print(f"   Total time: {elapsed/60:.1f} minutes")
     print(f"   Cards/minute: {stats['successful']/elapsed*60:.1f}")
 
-    print(f"\n## Cache Stats")
+    print("\n## Cache Stats")
     print(f"   Hits: {cache_stats['hits']}")
     print(f"   Misses: {cache_stats['misses']}")
     print(f"   Hit rate: {cache_stats['hit_rate']*100:.1f}%")
@@ -232,7 +234,7 @@ def main():
     with open(summary_path, "w") as f:
         json.dump(summary, f, indent=2)
 
-    print(f"\n## Output Files")
+    print("\n## Output Files")
     print(f"   Cards JSON: {json_path}")
     print(f"   Anki CSV: {anki_path}")
     print(f"   Stats: {summary_path}")
@@ -242,4 +244,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

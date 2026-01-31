@@ -6,7 +6,7 @@ Uses LLM to intelligently group similar synsets for language learning.
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import pandas as pd
 from tqdm import tqdm
@@ -50,8 +50,7 @@ def build_aggregation_prompt(lemma: str, synsets: list[dict]) -> str:
     """
     synsets_numbered = "\n".join(
         [
-            f"{i+1}. {s['synset_id']} (occurs {s['freq']}x)\n"
-            f"   Definition: {s['definition']}"
+            f"{i+1}. {s['synset_id']} (occurs {s['freq']}x)\n" f"   Definition: {s['definition']}"
             for i, s in enumerate(synsets)
         ]
     )
@@ -184,7 +183,7 @@ def _repair_truncated_json(text: str) -> str | None:
         missing_braces = "}" * (open_braces - text.count("}"))
 
         if '"total_cards"' not in text:
-            text = text.rstrip().rstrip(",") + f'\n  ],\n  "total_cards": 0\n}}'
+            text = text.rstrip().rstrip(",") + '\n  ],\n  "total_cards": 0\n}'
         else:
             text = text + missing_brackets + missing_braces
 
@@ -254,13 +253,17 @@ class LLMAggregator:
 
         # Single synset - no aggregation needed
         if len(synsets) <= 1:
-            groups = [
-                SynsetGroup(
-                    synset_ids=[synsets[0]["synset_id"]] if synsets else [],
-                    primary_synset=synsets[0]["synset_id"] if synsets else "",
-                    reason="Single synset",
-                )
-            ] if synsets else []
+            groups = (
+                [
+                    SynsetGroup(
+                        synset_ids=[synsets[0]["synset_id"]] if synsets else [],
+                        primary_synset=synsets[0]["synset_id"] if synsets else "",
+                        reason="Single synset",
+                    )
+                ]
+                if synsets
+                else []
+            )
 
             self._stats["total_groups"] += len(groups)
 
@@ -280,9 +283,7 @@ class LLMAggregator:
         max_output = max(2048, estimated_tokens)
 
         # Check cache
-        cache_key = self.cache.generate_key(
-            self.provider.model, prompt, self.provider.temperature
-        )
+        cache_key = self.cache.generate_key(self.provider.model, prompt, self.provider.temperature)
         cached = self.cache.get(cache_key)
 
         if cached:
@@ -340,9 +341,7 @@ class LLMAggregator:
                         continue
 
                 synset_ids = [
-                    synsets[idx - 1]["synset_id"]
-                    for idx in indices
-                    if 0 < idx <= len(synsets)
+                    synsets[idx - 1]["synset_id"] for idx in indices if 0 < idx <= len(synsets)
                 ]
 
                 # Handle primary_synset
@@ -378,15 +377,11 @@ class LLMAggregator:
             llm_cost=response.cost_usd,
         )
 
-    def _call_llm_with_retry(
-        self, prompt: str, max_output_tokens: int
-    ) -> LLMResponse | None:
+    def _call_llm_with_retry(self, prompt: str, max_output_tokens: int) -> LLMResponse | None:
         """Call LLM with retry logic."""
         for attempt in range(self.max_retries):
             try:
-                response = self.provider.complete(
-                    prompt, max_output_tokens=max_output_tokens
-                )
+                response = self.provider.complete(prompt, max_output_tokens=max_output_tokens)
                 return response
             except Exception as e:
                 logger.warning(f"LLM call failed (attempt {attempt + 1}): {e}")
@@ -471,17 +466,19 @@ class LLMAggregator:
                         all_sentence_ids.extend(sentence_ids)
                     total_freq += synset_data.get("freq", 0)
 
-                cards.append({
-                    "lemma": lemma,
-                    "synset_group": group.synset_ids,
-                    "primary_synset": group.primary_synset,
-                    "pos": primary_data.get("pos", ""),
-                    "definition": primary_data.get("definition", ""),
-                    "supersense": primary_data.get("supersense", ""),
-                    "freq": total_freq,
-                    "sentence_ids": all_sentence_ids,
-                    "group_reason": group.reason,
-                })
+                cards.append(
+                    {
+                        "lemma": lemma,
+                        "synset_group": group.synset_ids,
+                        "primary_synset": group.primary_synset,
+                        "pos": primary_data.get("pos", ""),
+                        "definition": primary_data.get("definition", ""),
+                        "supersense": primary_data.get("supersense", ""),
+                        "freq": total_freq,
+                        "sentence_ids": all_sentence_ids,
+                        "group_reason": group.reason,
+                    }
+                )
 
         return pd.DataFrame(cards)
 
@@ -497,4 +494,3 @@ class LLMAggregator:
                 f"{(1 - self._stats['total_groups'] / max(self._stats['total_synsets'], 1)) * 100:.1f}%"
             ),
         }
-

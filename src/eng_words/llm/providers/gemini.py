@@ -43,8 +43,10 @@ class GeminiProvider(LLMProvider):
         project: str | None = None,
         location: str | None = None,
     ):
-        use_vertex = vertexai if vertexai is not None else (
-            os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("true", "1", "yes")
+        use_vertex = (
+            vertexai
+            if vertexai is not None
+            else (os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("true", "1", "yes"))
         )
 
         self.model = model

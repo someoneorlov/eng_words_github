@@ -1,7 +1,7 @@
 """Tests for synset_validator module."""
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -25,7 +25,7 @@ class MockLLMProvider(LLMProvider):
         if self.call_count < len(self.responses):
             response_data = self.responses[self.call_count]
             self.call_count += 1
-            
+
             # Handle both LLMResponse and dict
             if isinstance(response_data, LLMResponse):
                 return response_data
@@ -68,13 +68,14 @@ def mock_cache():
     cache = MagicMock(spec=ResponseCache)
     cache.get.return_value = None
     cache.set.return_value = None
-    
+
     # Mock generate_key to return a hash-like string
     def mock_generate_key(model, prompt, temperature):
         import hashlib
+
         content = f"{model}|{prompt}|{temperature}"
         return hashlib.sha256(content.encode()).hexdigest()
-    
+
     cache.generate_key.side_effect = mock_generate_key
     return cache
 

@@ -376,4 +376,3 @@ def apply_construction_policy(
         }
 
     return {"skip": False}
-

@@ -7,10 +7,10 @@ Runs WSD evaluation on Gold Dataset and saves results for comparison.
 Usage:
     # Run benchmark with a tag
     uv run python scripts/benchmark_wsd.py --tag "baseline"
-    
+
     # Compare two benchmarks
     uv run python scripts/benchmark_wsd.py --compare baseline construction_v1
-    
+
     # Run with limited examples (for testing)
     uv run python scripts/benchmark_wsd.py --tag "test" --limit 100
 """
@@ -43,18 +43,18 @@ def run_benchmark(
 ) -> dict[str, Any]:
     """
     Run WSD evaluation and return metrics.
-    
+
     Args:
         gold_path: Path to gold JSONL file
         limit: Limit examples (0 = all)
         show_progress: Show progress bar
-        
+
     Returns:
         Dictionary with metrics and detailed results
     """
     backend = WordNetSenseBackend()
     results = evaluate_wsd_on_gold(gold_path, backend, limit=limit, show_progress=show_progress)
-    
+
     return results
 
 
@@ -84,26 +84,26 @@ def compare_metrics(
     new_tag: str,
 ) -> str:
     """Format comparison between two benchmarks."""
-    
+
     def delta_str(old_val: float, new_val: float, is_pct: bool = True) -> str:
         diff = new_val - old_val
         sign = "+" if diff >= 0 else ""
         if is_pct:
             return f"{sign}{diff:.1%}" if abs(diff) >= 0.001 else "="
         return f"{sign}{diff}" if diff != 0 else "="
-    
+
     # Handle both 'accuracy' and 'synset_accuracy' keys
     old_synset = old_metrics.get("synset_accuracy", old_metrics.get("accuracy", 0))
     new_synset = new_metrics.get("synset_accuracy", new_metrics.get("accuracy", 0))
     old_ss = old_metrics.get("supersense_accuracy", 0)
     new_ss = new_metrics.get("supersense_accuracy", 0)
-    
+
     # Format percentages as strings for proper alignment
     old_synset_s = f"{old_synset:.1%}"
     new_synset_s = f"{new_synset:.1%}"
     old_ss_s = f"{old_ss:.1%}"
     new_ss_s = f"{new_ss:.1%}"
-    
+
     lines = [
         "=" * 70,
         f"📊 COMPARISON: {old_tag} → {new_tag}",
@@ -129,49 +129,53 @@ def find_changed_examples(
 ) -> tuple[list[dict], list[dict]]:
     """
     Find examples that changed between benchmarks.
-    
+
     Returns:
         (improved, regressed) - lists of example dicts
     """
     # Build lookup by example_id
     old_by_id = {r["example_id"]: r for r in old_results}
     new_by_id = {r["example_id"]: r for r in new_results}
-    
+
     improved = []
     regressed = []
-    
+
     for example_id in old_by_id:
         if example_id not in new_by_id:
             continue
-            
+
         old_r = old_by_id[example_id]
         new_r = new_by_id[example_id]
-        
+
         # Check if correctness changed
         old_correct = old_r.get("is_correct", False)
         new_correct = new_r.get("is_correct", False)
-        
+
         if not old_correct and new_correct:
-            improved.append({
-                "example_id": example_id,
-                "lemma": new_r.get("lemma", ""),
-                "pos": new_r.get("pos", ""),
-                "old_predicted": old_r.get("predicted", ""),
-                "new_predicted": new_r.get("predicted", ""),
-                "gold": new_r.get("gold", ""),
-                "old_error_type": old_r.get("error_type", ""),
-            })
+            improved.append(
+                {
+                    "example_id": example_id,
+                    "lemma": new_r.get("lemma", ""),
+                    "pos": new_r.get("pos", ""),
+                    "old_predicted": old_r.get("predicted", ""),
+                    "new_predicted": new_r.get("predicted", ""),
+                    "gold": new_r.get("gold", ""),
+                    "old_error_type": old_r.get("error_type", ""),
+                }
+            )
         elif old_correct and not new_correct:
-            regressed.append({
-                "example_id": example_id,
-                "lemma": new_r.get("lemma", ""),
-                "pos": new_r.get("pos", ""),
-                "old_predicted": old_r.get("predicted", ""),
-                "new_predicted": new_r.get("predicted", ""),
-                "gold": new_r.get("gold", ""),
-                "new_error_type": new_r.get("error_type", ""),
-            })
-    
+            regressed.append(
+                {
+                    "example_id": example_id,
+                    "lemma": new_r.get("lemma", ""),
+                    "pos": new_r.get("pos", ""),
+                    "old_predicted": old_r.get("predicted", ""),
+                    "new_predicted": new_r.get("predicted", ""),
+                    "gold": new_r.get("gold", ""),
+                    "new_error_type": new_r.get("error_type", ""),
+                }
+            )
+
     return improved, regressed
 
 
@@ -182,23 +186,27 @@ def format_changed_examples(
 ) -> str:
     """Format changed examples for display."""
     lines = []
-    
+
     if improved:
         lines.append(f"✅ IMPROVED ({len(improved)} total, showing {min(limit, len(improved))}):")
         for ex in improved[:limit]:
-            lines.append(f"   {ex['lemma']:<12} {ex['pos']:<5} {ex['old_error_type']:<15} → correct")
+            lines.append(
+                f"   {ex['lemma']:<12} {ex['pos']:<5} {ex['old_error_type']:<15} → correct"
+            )
     else:
         lines.append("✅ IMPROVED: none")
-    
+
     lines.append("")
-    
+
     if regressed:
-        lines.append(f"❌ REGRESSED ({len(regressed)} total, showing {min(limit, len(regressed))}):")
+        lines.append(
+            f"❌ REGRESSED ({len(regressed)} total, showing {min(limit, len(regressed))}):"
+        )
         for ex in regressed[:limit]:
             lines.append(f"   {ex['lemma']:<12} {ex['pos']:<5} correct → {ex['new_error_type']}")
     else:
         lines.append("❌ REGRESSED: none")
-    
+
     return "\n".join(lines)
 
 
@@ -210,14 +218,14 @@ def save_benchmark(
 ) -> Path:
     """
     Save benchmark results to JSON file.
-    
+
     Returns:
         Path to saved file
     """
     reports_dir.mkdir(parents=True, exist_ok=True)
-    
+
     timestamp = datetime.now(timezone.utc).isoformat()
-    
+
     data = {
         "tag": tag,
         "timestamp": timestamp,
@@ -231,22 +239,22 @@ def save_benchmark(
         },
         "results": results,
     }
-    
+
     # Save with tag name
     file_path = reports_dir / f"benchmark_{tag}.json"
     with open(file_path, "w") as f:
         json.dump(data, f, indent=2)
-    
+
     return file_path
 
 
 def load_benchmark(tag: str, reports_dir: Path) -> dict[str, Any] | None:
     """Load benchmark results by tag."""
     file_path = reports_dir / f"benchmark_{tag}.json"
-    
+
     if not file_path.exists():
         return None
-    
+
     with open(file_path) as f:
         return json.load(f)
 
@@ -279,13 +287,13 @@ def run(
     """
     logger.info(f"Running benchmark with tag: {tag}")
     logger.info(f"Gold dataset: {gold_path}")
-    
+
     # Run evaluation
     results = run_benchmark(gold_path, limit=limit)
-    
+
     # Display metrics
     print(format_metrics(results["metrics"]))
-    
+
     # Save results
     saved_path = save_benchmark(
         tag=tag,
@@ -294,18 +302,20 @@ def run(
         reports_dir=reports_dir,
     )
     logger.info(f"Saved benchmark to: {saved_path}")
-    
+
     # Compare if requested
     if compare_to:
         old_data = load_benchmark(compare_to, reports_dir)
         if old_data:
-            print(compare_metrics(
-                old_data["metrics"],
-                results["metrics"],
-                compare_to,
-                tag,
-            ))
-            
+            print(
+                compare_metrics(
+                    old_data["metrics"],
+                    results["metrics"],
+                    compare_to,
+                    tag,
+                )
+            )
+
             improved, regressed = find_changed_examples(
                 old_data["results"],
                 results["results"],
@@ -337,22 +347,24 @@ def compare(
     """
     old_data = load_benchmark(old_tag, reports_dir)
     new_data = load_benchmark(new_tag, reports_dir)
-    
+
     if not old_data:
         typer.echo(f"Error: Could not find benchmark with tag: {old_tag}")
         raise typer.Exit(1)
-    
+
     if not new_data:
         typer.echo(f"Error: Could not find benchmark with tag: {new_tag}")
         raise typer.Exit(1)
-    
-    print(compare_metrics(
-        old_data["metrics"],
-        new_data["metrics"],
-        old_tag,
-        new_tag,
-    ))
-    
+
+    print(
+        compare_metrics(
+            old_data["metrics"],
+            new_data["metrics"],
+            old_tag,
+            new_tag,
+        )
+    )
+
     improved, regressed = find_changed_examples(
         old_data["results"],
         new_data["results"],
@@ -375,29 +387,28 @@ def list_benchmarks(
     if not reports_dir.exists():
         typer.echo("No benchmarks found.")
         return
-    
+
     files = sorted(reports_dir.glob("benchmark_*.json"))
-    
+
     if not files:
         typer.echo("No benchmarks found.")
         return
-    
+
     typer.echo(f"{'Tag':<25} {'Synset Acc':<12} {'SS Acc':<12} {'Timestamp'}")
     typer.echo("-" * 70)
-    
+
     for f in files:
         with open(f) as fp:
             data = json.load(fp)
         tag = data.get("tag", f.stem)
         metrics = data.get("metrics", {})
         timestamp = data.get("timestamp", "")[:10]
-        
+
         synset_acc = f"{metrics.get('synset_accuracy', 0):.1%}"
         ss_acc = f"{metrics.get('supersense_accuracy', 0):.1%}"
-        
+
         typer.echo(f"{tag:<25} {synset_acc:<12} {ss_acc:<12} {timestamp}")
 
 
 if __name__ == "__main__":
     app()
-

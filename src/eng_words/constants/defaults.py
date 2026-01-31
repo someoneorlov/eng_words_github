@@ -39,23 +39,25 @@ MSG_NO_EXAMPLE = "No example yet."
 # Dialect/tokenization error lemmas to filter out
 # These are common tokenization errors from non-standard English (dialects, slang)
 # e.g., "ain't" → "ai" + "n't", "de" (dialect "the"), etc.
-DIALECT_LEMMAS_FILTER = frozenset({
-    "ai",    # ain't → ai (tokenization error)
-    "de",    # dialect "the"
-    "dis",   # dialect "this"
-    "dat",   # dialect "that"
-    "dey",   # dialect "they"
-    "dem",   # dialect "them"
-    "wid",   # dialect "with"
-    "wuz",   # dialect "was"
-    "kin",   # dialect "can" (also valid word, but rare in this context)
-    "fer",   # dialect "for"
-    "yer",   # dialect "your"
-    "ta",    # dialect "to"
-    "ter",   # dialect "to"
-    "git",   # dialect "get"
-    "goin",  # dialect "going"
-    "doin",  # dialect "doing"
-    "nothin",  # dialect "nothing"
-    "somethin",  # dialect "something"
-})
+DIALECT_LEMMAS_FILTER = frozenset(
+    {
+        "ai",  # ain't → ai (tokenization error)
+        "de",  # dialect "the"
+        "dis",  # dialect "this"
+        "dat",  # dialect "that"
+        "dey",  # dialect "they"
+        "dem",  # dialect "them"
+        "wid",  # dialect "with"
+        "wuz",  # dialect "was"
+        "kin",  # dialect "can" (also valid word, but rare in this context)
+        "fer",  # dialect "for"
+        "yer",  # dialect "your"
+        "ta",  # dialect "to"
+        "ter",  # dialect "to"
+        "git",  # dialect "get"
+        "goin",  # dialect "going"
+        "doin",  # dialect "doing"
+        "nothin",  # dialect "nothing"
+        "somethin",  # dialect "something"
+    }
+)

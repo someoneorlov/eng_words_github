@@ -7,7 +7,6 @@ generate translations for new cards.
 
 from __future__ import annotations
 
-import json
 import logging
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any
@@ -92,7 +91,7 @@ def _parse_wsd_response(
         synset_id if valid, None otherwise
     """
     # Clean response
-    cleaned = response.strip().strip('"\'')
+    cleaned = response.strip().strip("\"'")
 
     # Check for NONE
     if cleaned.upper() == "NONE":
@@ -178,7 +177,16 @@ def _get_candidate_synsets_for_lemma(lemma: str, pos: str) -> list[dict[str, Any
     """
     from eng_words.wsd.wordnet_utils import get_synsets_with_definitions
 
-    pos_map = {"noun": "n", "verb": "v", "adj": "a", "adv": "r", "n": "n", "v": "v", "a": "a", "r": "r"}
+    pos_map = {
+        "noun": "n",
+        "verb": "v",
+        "adj": "a",
+        "adv": "r",
+        "n": "n",
+        "v": "v",
+        "a": "a",
+        "r": "r",
+    }
     wn_pos = pos_map.get(pos, pos)
 
     # get_synsets_with_definitions returns list of tuples: (synset_id, definition)
@@ -348,10 +356,9 @@ def _generate_translation(
 
     try:
         response: LLMResponse = provider.complete(prompt, max_output_tokens=50)
-        translation = response.content.strip().strip('"\'')
+        translation = response.content.strip().strip("\"'")
         logger.debug(f"Translation for '{lemma}': {translation}")
         return translation
     except Exception as e:
         logger.warning(f"Failed to generate translation for '{lemma}': {e}")
         return ""
-

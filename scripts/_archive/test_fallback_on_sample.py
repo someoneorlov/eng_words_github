@@ -15,7 +15,6 @@ Usage:
 import argparse
 import json
 import logging
-import random
 import time
 from dataclasses import asdict
 from pathlib import Path
@@ -23,7 +22,6 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 
-from eng_words.anki_export import export_to_anki_csv
 from eng_words.llm.base import get_provider
 from eng_words.llm.response_cache import ResponseCache
 from eng_words.llm.smart_card_generator import SmartCard, SmartCardGenerator
@@ -32,9 +30,7 @@ from eng_words.validation.example_validator import fix_invalid_cards, validate_c
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
 
 # Paths
@@ -51,9 +47,7 @@ def card_to_serializable(card: SmartCard) -> dict:
     # Convert any numpy arrays/types to standard Python types
     for key, value in d.items():
         if isinstance(value, (list, tuple)):
-            d[key] = [
-                item.item() if hasattr(item, "item") else item for item in value
-            ]
+            d[key] = [item.item() if hasattr(item, "item") else item for item in value]
         elif hasattr(value, "item"):
             d[key] = value.item()
     return d
@@ -110,17 +104,19 @@ def main():
 
     # Step 4: Prepare data for generation
     logger.info("\n## Step 4: Prepare data for generation")
-    
+
     # Convert DataFrame to list of dicts with required fields
     items = []
     for _, row in sample_df.iterrows():
         # Convert sentence_ids to examples
         sentence_ids = row.get("sentence_ids", [])
         if isinstance(sentence_ids, (list, tuple, pd.Series)):
-            examples = [sentences_lookup.get(sid, "") for sid in sentence_ids if sid in sentences_lookup]
+            examples = [
+                sentences_lookup.get(sid, "") for sid in sentence_ids if sid in sentences_lookup
+            ]
         else:
             examples = []
-        
+
         # Prepare item dict
         item = {
             "lemma": row["lemma"],
@@ -132,7 +128,7 @@ def main():
             "primary_synset": row.get("primary_synset", ""),
         }
         items.append(item)
-    
+
     logger.info(f"  Prepared {len(items)} items with examples")
     avg_examples = sum(len(item["examples"]) for item in items) / len(items) if items else 0
     logger.info(f"  Average examples per card: {avg_examples:.1f}")
@@ -164,10 +160,18 @@ def main():
     ]
 
     logger.info(f"  Total cards: {len(generated_cards):,}")
-    logger.info(f"  With selected_examples: {len(cards_with_examples):,} ({len(cards_with_examples)/max(len(generated_cards),1)*100:.1f}%)")
-    logger.info(f"  Without selected_examples: {len(cards_without_examples):,} ({len(cards_without_examples)/max(len(generated_cards),1)*100:.1f}%)")
-    logger.info(f"  With generated_example: {len(cards_with_generated_example):,} ({len(cards_with_generated_example)/max(len(generated_cards),1)*100:.1f}%)")
-    logger.info(f"  With fallback-generated example: {len(cards_with_fallback_generated):,} ({len(cards_with_fallback_generated)/max(len(generated_cards),1)*100:.1f}%)")
+    logger.info(
+        f"  With selected_examples: {len(cards_with_examples):,} ({len(cards_with_examples)/max(len(generated_cards),1)*100:.1f}%)"
+    )
+    logger.info(
+        f"  Without selected_examples: {len(cards_without_examples):,} ({len(cards_without_examples)/max(len(generated_cards),1)*100:.1f}%)"
+    )
+    logger.info(
+        f"  With generated_example: {len(cards_with_generated_example):,} ({len(cards_with_generated_example)/max(len(generated_cards),1)*100:.1f}%)"
+    )
+    logger.info(
+        f"  With fallback-generated example: {len(cards_with_fallback_generated):,} ({len(cards_with_fallback_generated)/max(len(generated_cards),1)*100:.1f}%)"
+    )
 
     # Step 7: Validate all cards
     logger.info("\n## Step 6: Validate all cards")
@@ -201,7 +205,9 @@ def main():
                 ensure_ascii=False,
                 indent=2,
             )
-        logger.info(f"  Saved {min(20, len(cards_with_fallback_generated))} fallback cards for manual review: {fallback_path}")
+        logger.info(
+            f"  Saved {min(20, len(cards_with_fallback_generated))} fallback cards for manual review: {fallback_path}"
+        )
 
     # Export to Anki CSV (skip for now - requires DataFrame conversion)
     # anki_output_path = OUTPUT_DIR / "test_fallback_sample.csv"
@@ -228,7 +234,9 @@ def main():
     # Summary
     logger.info("\n📊 SUMMARY:")
     logger.info(f"  Total cards tested: {len(generated_cards):,}")
-    logger.info(f"  Cards with fallback-generated examples: {len(cards_with_fallback_generated):,} ({len(cards_with_fallback_generated)/max(len(generated_cards),1)*100:.1f}%)")
+    logger.info(
+        f"  Cards with fallback-generated examples: {len(cards_with_fallback_generated):,} ({len(cards_with_fallback_generated)/max(len(generated_cards),1)*100:.1f}%)"
+    )
     logger.info(f"  Valid cards: {num_valid:,} ({num_valid/max(len(final_cards),1)*100:.1f}%)")
     logger.info(f"  Invalid cards: {num_invalid} ({num_invalid/max(len(final_cards),1)*100:.1f}%)")
     logger.info(f"  LLM Cost: ${stats['total_cost']:.4f}")
@@ -236,4 +244,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

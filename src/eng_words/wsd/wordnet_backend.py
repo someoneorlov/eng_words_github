@@ -22,13 +22,13 @@ from eng_words.wsd.base import (
     validate_tokens_df,
 )
 from eng_words.wsd.candidate_selector import compute_combined_score, get_context_boost
-from eng_words.wsd.phrasal_verbs import detect_all_constructions
 from eng_words.wsd.embeddings import (
     compute_cosine_similarity,
     get_batch_embeddings,
     get_definition_cache,
     get_sentence_embedding,
 )
+from eng_words.wsd.phrasal_verbs import detect_all_constructions
 from eng_words.wsd.wordnet_utils import (
     get_definition,
     get_synsets,
@@ -214,9 +214,7 @@ class WordNetSenseBackend(SenseBackend):
 
             emb_score = embedding_scores[synset_id]
             context_boost = get_context_boost(synset, sentence)
-            combined_score = compute_combined_score(
-                synset, emb_score, sentence, context_boost
-            )
+            combined_score = compute_combined_score(synset, emb_score, sentence, context_boost)
 
             if combined_score > best_score:
                 best_score = combined_score

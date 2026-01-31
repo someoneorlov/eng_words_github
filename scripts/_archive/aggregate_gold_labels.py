@@ -20,11 +20,10 @@ from pathlib import Path
 import typer
 from dotenv import load_dotenv
 
-from eng_words.wsd_gold.models import GoldExample, GoldLabel, LLMUsage, ModelOutput
+from eng_words.wsd_gold.models import GoldExample, LLMUsage, ModelOutput
 from eng_words.wsd_gold.smart_aggregate import (
     SmartAggregationResult,
     get_smart_aggregation_stats,
-    needs_referee,
     smart_aggregate,
 )
 
@@ -60,13 +59,13 @@ def load_labels(path: Path) -> dict[str, ModelOutput]:
     labels = {}
     if not path.exists():
         return labels
-    
+
     with open(path) as f:
         for line in f:
             data = json.loads(line)
             example_id = data["example_id"]
             output_data = data["output"]
-            
+
             # Reconstruct ModelOutput
             usage = LLMUsage(
                 input_tokens=output_data.get("usage", {}).get("input_tokens", 0),
@@ -74,7 +73,7 @@ def load_labels(path: Path) -> dict[str, ModelOutput]:
                 cached_tokens=output_data.get("usage", {}).get("cached_tokens", 0),
                 cost_usd=output_data.get("usage", {}).get("cost_usd", 0),
             )
-            
+
             output = ModelOutput(
                 chosen_synset_id=output_data.get("chosen_synset_id", ""),
                 confidence=output_data.get("confidence", 0),
@@ -83,14 +82,14 @@ def load_labels(path: Path) -> dict[str, ModelOutput]:
                 usage=usage,
             )
             labels[example_id] = output
-    
+
     return labels
 
 
 def save_openai_label(path: Path, example_id: str, output: ModelOutput) -> None:
     """Save OpenAI referee label."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     with open(path, "a") as f:
         data = {"example_id": example_id, "output": output.to_dict()}
         f.write(json.dumps(data) + "\n")
@@ -115,33 +114,33 @@ def main(
     anthropic_labels = load_labels(ANTHROPIC_PATH)
     gemini_labels = load_labels(GEMINI_PATH)
     openai_labels = load_labels(OPENAI_PATH)
-    
+
     logger.info(f"Examples: {len(examples)}")
     logger.info(f"Anthropic labels: {len(anthropic_labels)}")
     logger.info(f"Gemini labels: {len(gemini_labels)}")
     logger.info(f"OpenAI referee labels: {len(openai_labels)}")
-    
+
     # Find disagreements
     agreements = 0
     disagreements = []
     missing = 0
-    
+
     for example_id in examples:
         a_label = anthropic_labels.get(example_id)
         g_label = gemini_labels.get(example_id)
-        
+
         if not a_label or not g_label:
             missing += 1
             continue
-        
+
         if a_label.chosen_synset_id == g_label.chosen_synset_id:
             agreements += 1
         else:
             disagreements.append(example_id)
-    
+
     total = agreements + len(disagreements)
     agree_pct = 100 * agreements / total if total > 0 else 0
-    
+
     print("\n" + "=" * 60)
     print("📊 АНАЛИЗ РАЗМЕТКИ")
     print("=" * 60)
@@ -150,10 +149,10 @@ def main(
     print(f"  Согласие: {agreements} ({agree_pct:.1f}%)")
     print(f"  Разногласия: {len(disagreements)} ({100-agree_pct:.1f}%)")
     print(f"  Недостающие: {missing}")
-    
+
     if dry_run:
         print("\n[DRY RUN] OpenAI referee не вызывается")
-        
+
         # Show some disagreement examples
         print("\n📝 Примеры разногласий (первые 10):")
         for i, ex_id in enumerate(disagreements[:10]):
@@ -164,53 +163,53 @@ def main(
             print(f"      Anthropic: {a.chosen_synset_id or 'none'}")
             print(f"      Gemini: {g.chosen_synset_id or 'none'}")
         return
-    
+
     # Call OpenAI for disagreements that don't have referee yet
     to_referee = [ex_id for ex_id in disagreements if ex_id not in openai_labels]
-    
+
     if to_referee:
         logger.info(f"Calling OpenAI referee for {len(to_referee)} disagreements...")
-        
+
         from eng_words.wsd_gold.providers import OpenAIGoldProvider
-        
+
         openai_provider = OpenAIGoldProvider(model=openai_model)
-        
+
         for i, example_id in enumerate(to_referee, 1):
             ex = examples[example_id]
-            
+
             try:
                 result = openai_provider.label_one(ex)
                 if result:
                     save_openai_label(OPENAI_PATH, example_id, result)
                     openai_labels[example_id] = result
-                    
+
                     if i % 10 == 0:
                         logger.info(f"OpenAI referee: {i}/{len(to_referee)}")
             except Exception as e:
                 logger.error(f"Error for {example_id}: {e}")
-    
+
     # Aggregate all labels
     logger.info("Aggregating final labels...")
-    
+
     results: list[SmartAggregationResult] = []
     final_labels = {}
-    
+
     for example_id in examples:
         a_label = anthropic_labels.get(example_id)
         g_label = gemini_labels.get(example_id)
-        
+
         if not a_label or not g_label:
             continue
-        
+
         o_label = openai_labels.get(example_id) if example_id in disagreements else None
-        
+
         result = smart_aggregate(a_label, g_label, o_label)
         results.append(result)
         final_labels[example_id] = result.label
-    
+
     # Save final labels
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    
+
     with open(OUTPUT_PATH, "w") as f:
         for example_id, label in final_labels.items():
             data = {
@@ -222,15 +221,17 @@ def main(
                 "needs_referee": label.needs_referee,
             }
             f.write(json.dumps(data) + "\n")
-    
+
     # Print stats
     stats = get_smart_aggregation_stats(results)
-    
+
     print("\n" + "=" * 60)
     print("✅ АГРЕГАЦИЯ ЗАВЕРШЕНА")
     print("=" * 60)
     print(f"  Всего примеров: {stats.total}")
-    print(f"  Полное согласие (2/2): {stats.full_agreement} ({100*stats.full_agreement/stats.total:.1f}%)")
+    print(
+        f"  Полное согласие (2/2): {stats.full_agreement} ({100*stats.full_agreement/stats.total:.1f}%)"
+    )
     print(f"  Majority vote (2/3): {stats.majority_vote}")
     print(f"  Anthropic fallback: {stats.anthropic_fallback}")
     print(f"  Referee вызовов: {stats.referee_calls}")
@@ -239,4 +240,3 @@ def main(
 
 if __name__ == "__main__":
     app()
-

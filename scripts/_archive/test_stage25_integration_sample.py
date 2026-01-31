@@ -28,5 +28,5 @@ if __name__ == "__main__":
     print("  - Правильность передачи generate_count")
     print("  - Статистику фильтрации")
     print()
-    
+
     run_card_generation(limit=50)

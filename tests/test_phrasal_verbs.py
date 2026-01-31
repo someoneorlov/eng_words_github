@@ -6,7 +6,6 @@ Tests cover:
 - detect_all_constructions integration
 """
 
-import pytest
 
 
 class TestPhrasalVerbsDictionary:
@@ -200,4 +199,6 @@ class TestDetectAllConstructions:
 
         assert len(matches) >= 1
         # Should have proper construction_id format
-        assert matches[0].construction_id.startswith("PHRASAL_") or "_" in matches[0].construction_id
+        assert (
+            matches[0].construction_id.startswith("PHRASAL_") or "_" in matches[0].construction_id
+        )

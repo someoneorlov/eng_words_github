@@ -1,13 +1,7 @@
 """Tests for integration of Stage 2.5 filtering in run_synset_card_generation.py"""
 
-import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-import pytest
 
-from eng_words.llm.base import LLMResponse
-from eng_words.llm.smart_card_generator import SmartCard
 
 
 class TestStage25Integration:

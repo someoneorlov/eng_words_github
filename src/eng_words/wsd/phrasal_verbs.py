@@ -362,4 +362,3 @@ def get_phrasal_verb_info(lemma: str, particle: str) -> dict[str, Any] | None:
         "particle": particle,
         "meanings": PHRASAL_VERBS[lemma][particle],
     }
-

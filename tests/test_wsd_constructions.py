@@ -306,4 +306,3 @@ class TestConstructionIntegration:
         assert result is not None
         assert result.get("skip") is False
         assert "construction_id" in result
-

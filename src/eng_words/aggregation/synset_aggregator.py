@@ -83,7 +83,15 @@ def aggregate_by_synset(
     """
     if sense_tokens_df.empty:
         return pd.DataFrame(
-            columns=["lemma", "synset_id", "pos", "definition", "supersense", "freq", "sentence_ids"]
+            columns=[
+                "lemma",
+                "synset_id",
+                "pos",
+                "definition",
+                "supersense",
+                "freq",
+                "sentence_ids",
+            ]
         )
 
     # Filter out rows with missing synset_id
@@ -99,7 +107,15 @@ def aggregate_by_synset(
 
     if df.empty:
         return pd.DataFrame(
-            columns=["lemma", "synset_id", "pos", "definition", "supersense", "freq", "sentence_ids"]
+            columns=[
+                "lemma",
+                "synset_id",
+                "pos",
+                "definition",
+                "supersense",
+                "freq",
+                "sentence_ids",
+            ]
         )
 
     # Aggregate by (lemma, synset_id)
@@ -117,12 +133,20 @@ def aggregate_by_synset(
 
     if aggregated.empty:
         return pd.DataFrame(
-            columns=["lemma", "synset_id", "pos", "definition", "supersense", "freq", "sentence_ids"]
+            columns=[
+                "lemma",
+                "synset_id",
+                "pos",
+                "definition",
+                "supersense",
+                "freq",
+                "sentence_ids",
+            ]
         )
 
     # Add synset info (definition, pos, supersense)
     synset_info_cache = {}
-    
+
     def get_cached_info(synset_id):
         if synset_id not in synset_info_cache:
             synset_info_cache[synset_id] = get_synset_info(synset_id)
@@ -132,15 +156,17 @@ def aggregate_by_synset(
     for _, row in aggregated.iterrows():
         info = get_cached_info(row["synset_id"])
         if info:
-            synset_data.append({
-                "lemma": row["lemma"],
-                "synset_id": row["synset_id"],
-                "pos": info["pos"],
-                "definition": info["definition"],
-                "supersense": info["supersense"],
-                "freq": row["freq"],
-                "sentence_ids": row["sentence_ids"],
-            })
+            synset_data.append(
+                {
+                    "lemma": row["lemma"],
+                    "synset_id": row["synset_id"],
+                    "pos": info["pos"],
+                    "definition": info["definition"],
+                    "supersense": info["supersense"],
+                    "freq": row["freq"],
+                    "sentence_ids": row["sentence_ids"],
+                }
+            )
 
     result = pd.DataFrame(synset_data)
 
@@ -153,4 +179,3 @@ def aggregate_by_synset(
     )
 
     return result
-

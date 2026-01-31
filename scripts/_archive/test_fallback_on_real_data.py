@@ -6,7 +6,6 @@ Compares card generation with and without fallback enabled.
 
 import json
 import logging
-import os
 import time
 from pathlib import Path
 
@@ -61,24 +60,26 @@ def load_items(sentences_df: pd.DataFrame, limit: int | None = None) -> list[dic
     for _, row in df.iterrows():
         # Get examples from sentence_ids
         sentence_ids = row["sentence_ids"]
-        examples = sentences_df[
-            sentences_df["sentence_id"].isin(sentence_ids)
-        ]["sentence"].tolist()[:10]
+        examples = sentences_df[sentences_df["sentence_id"].isin(sentence_ids)][
+            "sentence"
+        ].tolist()[:10]
 
         # Convert numpy arrays to lists
         synset_group = row.get("synset_group", [])
         if hasattr(synset_group, "tolist"):
             synset_group = synset_group.tolist()
 
-        items.append({
-            "lemma": row["lemma"],
-            "pos": row["pos"],
-            "supersense": row["supersense"],
-            "wn_definition": row["definition"],
-            "examples": examples,
-            "synset_group": synset_group,
-            "primary_synset": row.get("primary_synset", ""),
-        })
+        items.append(
+            {
+                "lemma": row["lemma"],
+                "pos": row["pos"],
+                "supersense": row["supersense"],
+                "wn_definition": row["definition"],
+                "examples": examples,
+                "synset_group": synset_group,
+                "primary_synset": row.get("primary_synset", ""),
+            }
+        )
 
     return items
 
@@ -126,10 +127,14 @@ def run_test(
     stats["cards_with_fallback"] = cards_with_fallback
     stats["no_example_rate"] = cards_without_examples / len(cards) * 100 if cards else 0
 
-    logger.info(f"\nResults:")
+    logger.info("\nResults:")
     logger.info(f"  Total cards: {len(cards)}")
-    logger.info(f"  With examples: {cards_with_examples} ({cards_with_examples/len(cards)*100:.1f}%)")
-    logger.info(f"  Without examples: {cards_without_examples} ({cards_without_examples/len(cards)*100:.1f}%)")
+    logger.info(
+        f"  With examples: {cards_with_examples} ({cards_with_examples/len(cards)*100:.1f}%)"
+    )
+    logger.info(
+        f"  Without examples: {cards_without_examples} ({cards_without_examples/len(cards)*100:.1f}%)"
+    )
     if enable_fallback:
         logger.info(f"  Fallback used: {cards_with_fallback}")
         logger.info(f"  Fallback attempts: {stats['fallback_attempts']}")
@@ -196,7 +201,9 @@ def main():
     save_results(cards_no_fb, stats_no_fb, "no_fallback")
 
     # Test WITH fallback (using same cached responses + new fallback calls)
-    cards_with_fb, stats_with_fb = run_test(items, enable_fallback=True, cache_suffix="with_fallback")
+    cards_with_fb, stats_with_fb = run_test(
+        items, enable_fallback=True, cache_suffix="with_fallback"
+    )
     save_results(cards_with_fb, stats_with_fb, "with_fallback")
 
     # Compare results
@@ -205,11 +212,19 @@ def main():
     logger.info(f"{'='*60}")
     logger.info(f"{'Metric':<30} {'No Fallback':>15} {'With Fallback':>15}")
     logger.info("-" * 60)
-    logger.info(f"{'Cards without examples':<30} {stats_no_fb['cards_without_examples']:>15} {stats_with_fb['cards_without_examples']:>15}")
-    logger.info(f"{'No-example rate':<30} {stats_no_fb['no_example_rate']:>14.1f}% {stats_with_fb['no_example_rate']:>14.1f}%")
+    logger.info(
+        f"{'Cards without examples':<30} {stats_no_fb['cards_without_examples']:>15} {stats_with_fb['cards_without_examples']:>15}"
+    )
+    logger.info(
+        f"{'No-example rate':<30} {stats_no_fb['no_example_rate']:>14.1f}% {stats_with_fb['no_example_rate']:>14.1f}%"
+    )
     logger.info(f"{'Fallback used':<30} {'-':>15} {stats_with_fb['cards_with_fallback']:>15}")
-    logger.info(f"{'Total cost':<30} ${stats_no_fb['total_cost']:>14.4f} ${stats_with_fb['total_cost']:>14.4f}")
-    logger.info(f"{'Additional cost':<30} {'-':>15} ${stats_with_fb['total_cost'] - stats_no_fb['total_cost']:>14.4f}")
+    logger.info(
+        f"{'Total cost':<30} ${stats_no_fb['total_cost']:>14.4f} ${stats_with_fb['total_cost']:>14.4f}"
+    )
+    logger.info(
+        f"{'Additional cost':<30} {'-':>15} ${stats_with_fb['total_cost'] - stats_no_fb['total_cost']:>14.4f}"
+    )
 
     # Analyze fallback cards
     analyze_fallback_cards(cards_with_fb)
@@ -220,7 +235,7 @@ def main():
     logger.info("SUCCESS CRITERIA")
     logger.info(f"{'='*60}")
     logger.info(f"  Improvement: {improvement:.1f}% points")
-    logger.info(f"  Target: <5% no-example rate")
+    logger.info("  Target: <5% no-example rate")
     logger.info(f"  Actual: {stats_with_fb['no_example_rate']:.1f}%")
 
     if stats_with_fb["no_example_rate"] < 5:
@@ -233,4 +248,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

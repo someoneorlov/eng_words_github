@@ -25,6 +25,7 @@ from .embeddings import (
     get_embedding_model,
     get_sentence_embedding,
 )
+from .llm_wsd import llm_wsd_sentence, redistribute_empty_cards
 from .wordnet_backend import (
     CONTENT_POS_TAGS,
     DEFAULT_CONFIDENCE_THRESHOLD,
@@ -41,7 +42,6 @@ from .wordnet_utils import (
     map_spacy_pos_to_wordnet,
     synset_to_supersense,
 )
-from .llm_wsd import llm_wsd_sentence, redistribute_empty_cards
 
 __all__ = [
     # Base

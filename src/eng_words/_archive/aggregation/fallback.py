@@ -17,7 +17,7 @@ def get_synsets_by_frequency(lemma: str, pos: str) -> list[str]:
     Get all synsets for a lemma, sorted by frequency (most common first).
 
     WordNet returns synsets in frequency order by default.
-    Note: wn.synsets() returns all synsets containing the lemma, 
+    Note: wn.synsets() returns all synsets containing the lemma,
     but we only want synsets named after this specific lemma.
 
     Args:
@@ -30,12 +30,12 @@ def get_synsets_by_frequency(lemma: str, pos: str) -> list[str]:
     try:
         # Get synsets filtered by POS
         synsets = wn.synsets(lemma, pos=pos)
-        
+
         # Filter to only synsets named after this lemma
         # wn.synsets("run") returns scat.v.01, flee.v.01 etc. - we only want run.v.XX
         lemma_prefix = f"{lemma}.{pos}."
         filtered = [s.name() for s in synsets if s.name().startswith(lemma_prefix)]
-        
+
         return filtered
     except Exception as e:
         logger.warning(f"Error getting synsets for {lemma}.{pos}: {e}")
@@ -84,4 +84,3 @@ def get_fallback_synset(
 
     logger.debug(f"No fallback available for {lemma}.{pos} - all synsets exhausted")
     return None
-

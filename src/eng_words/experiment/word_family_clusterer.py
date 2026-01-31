@@ -9,8 +9,6 @@ This module implements Pipeline B for the experiment:
 import json
 import logging
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
 
 import pandas as pd
 
@@ -282,6 +280,7 @@ IMPORTANT:
 @dataclass
 class ClusterResult:
     """Result of clustering a single lemma."""
+
     lemma: str
     cards: list[dict]
     ignored_indices: list[int]
@@ -295,13 +294,13 @@ class ClusterResult:
 
 class WordFamilyClusterer:
     """Clusters lemma examples into word families using LLM.
-    
+
     Args:
         provider: LLM provider (e.g., GeminiProvider)
         cache: Response cache for avoiding duplicate API calls
         use_wordnet_hints: Whether to include WordNet definitions as hints (Pipeline C)
     """
-    
+
     def __init__(
         self,
         provider: LLMProvider,
@@ -311,14 +310,14 @@ class WordFamilyClusterer:
         self.provider = provider
         self.cache = cache
         self.use_wordnet_hints = use_wordnet_hints
-        
+
         # Statistics
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.total_cost = 0.0
         self.total_api_calls = 0
         self.cache_hits = 0
-    
+
     def cluster_lemma(
         self,
         lemma: str,
@@ -327,27 +326,23 @@ class WordFamilyClusterer:
         wordnet_hints: str | None = None,
     ) -> ClusterResult:
         """Cluster examples for a single lemma into semantic groups.
-        
+
         Args:
             lemma: The lemma to cluster
             examples: List of example sentences containing the lemma
             sentence_ids: Optional list of sentence IDs for tracking
             wordnet_hints: Optional WordNet definitions for Pipeline C
-            
+
         Returns:
             ClusterResult with cards and metadata
         """
         if len(examples) <= MAX_EXAMPLES_PER_BATCH:
             # Single batch - process directly
-            return self._cluster_single_batch(
-                lemma, examples, sentence_ids, wordnet_hints
-            )
-        
+            return self._cluster_single_batch(lemma, examples, sentence_ids, wordnet_hints)
+
         # Multi-pass for frequent lemmas
-        return self._cluster_multi_pass(
-            lemma, examples, sentence_ids, wordnet_hints
-        )
-    
+        return self._cluster_multi_pass(lemma, examples, sentence_ids, wordnet_hints)
+
     def _cluster_single_batch(
         self,
         lemma: str,
@@ -357,10 +352,8 @@ class WordFamilyClusterer:
     ) -> ClusterResult:
         """Process a single batch of examples."""
         # Format examples
-        numbered_examples = "\n".join(
-            f"{i+1}. {ex}" for i, ex in enumerate(examples)
-        )
-        
+        numbered_examples = "\n".join(f"{i+1}. {ex}" for i, ex in enumerate(examples))
+
         # Choose prompt template
         if self.use_wordnet_hints and wordnet_hints:
             prompt = CLUSTER_PROMPT_WITH_HINTS_TEMPLATE.format(
@@ -373,7 +366,7 @@ class WordFamilyClusterer:
                 lemma=lemma,
                 numbered_examples=numbered_examples,
             )
-        
+
         # Check cache
         if self.cache:
             cache_key = self.cache.generate_key(
@@ -382,25 +375,21 @@ class WordFamilyClusterer:
             cached = self.cache.get(cache_key)
             if cached:
                 self.cache_hits += 1
-                return self._parse_response(
-                    lemma, cached, examples, sentence_ids, batches=1
-                )
-        
+                return self._parse_response(lemma, cached, examples, sentence_ids, batches=1)
+
         # Call LLM
         response = self.provider.complete(prompt)
         self.total_api_calls += 1
         self.total_input_tokens += response.input_tokens
         self.total_output_tokens += response.output_tokens
         self.total_cost += response.cost_usd
-        
+
         # Cache response
         if self.cache:
             self.cache.set(cache_key, response)
-        
-        return self._parse_response(
-            lemma, response, examples, sentence_ids, batches=1
-        )
-    
+
+        return self._parse_response(lemma, response, examples, sentence_ids, batches=1)
+
     def _cluster_multi_pass(
         self,
         lemma: str,
@@ -415,40 +404,36 @@ class WordFamilyClusterer:
         total_input = 0
         total_output = 0
         total_cost = 0.0
-        
+
         num_batches = (len(examples) + MAX_EXAMPLES_PER_BATCH - 1) // MAX_EXAMPLES_PER_BATCH
-        
+
         for batch_idx in range(num_batches):
             start = batch_idx * MAX_EXAMPLES_PER_BATCH
             end = min(start + MAX_EXAMPLES_PER_BATCH, len(examples))
-            
+
             batch_examples = examples[start:end]
             batch_ids = sentence_ids[start:end] if sentence_ids else None
-            
-            result = self._cluster_single_batch(
-                lemma, batch_examples, batch_ids, wordnet_hints
-            )
-            
+
+            result = self._cluster_single_batch(lemma, batch_examples, batch_ids, wordnet_hints)
+
             # Adjust indices for batch offset
             for card in result.cards:
-                adjusted_indices = [
-                    idx + start for idx in card.get('selected_example_indices', [])
-                ]
-                card['selected_example_indices'] = adjusted_indices
-            
+                adjusted_indices = [idx + start for idx in card.get("selected_example_indices", [])]
+                card["selected_example_indices"] = adjusted_indices
+
             all_cards.extend(result.cards)
             all_ignored.extend([idx + start for idx in result.ignored_indices])
-            all_ignore_reasons.update({
-                str(int(k) + start): v for k, v in result.ignore_reasons.items()
-            })
-            
+            all_ignore_reasons.update(
+                {str(int(k) + start): v for k, v in result.ignore_reasons.items()}
+            )
+
             total_input += result.input_tokens
             total_output += result.output_tokens
             total_cost += result.cost_usd
-        
+
         # Merge similar cards
         merged_cards = self._merge_similar_cards(all_cards)
-        
+
         return ClusterResult(
             lemma=lemma,
             cards=merged_cards,
@@ -460,7 +445,7 @@ class WordFamilyClusterer:
             output_tokens=total_output,
             cost_usd=total_cost,
         )
-    
+
     def _parse_response(
         self,
         lemma: str,
@@ -472,7 +457,7 @@ class WordFamilyClusterer:
         """Parse LLM response into ClusterResult."""
         try:
             content = response.content.strip()
-            
+
             # Handle markdown code blocks
             if content.startswith("```json"):
                 content = content[7:]
@@ -480,31 +465,27 @@ class WordFamilyClusterer:
                 content = content[3:]
             if content.endswith("```"):
                 content = content[:-3]
-            
+
             data = json.loads(content.strip())
-            
-            cards = data.get('cards', [])
-            ignored = data.get('ignored_indices', [])
-            reasons = data.get('ignore_reasons', {})
-            
+
+            cards = data.get("cards", [])
+            ignored = data.get("ignored_indices", [])
+            reasons = data.get("ignore_reasons", {})
+
             # Add lemma to each card
             for card in cards:
-                card['lemma'] = lemma
-                
+                card["lemma"] = lemma
+
                 # Add actual example texts
-                indices = card.get('selected_example_indices', [])
-                card['examples'] = [
-                    examples[i-1] for i in indices 
-                    if 0 < i <= len(examples)
-                ]
-                
+                indices = card.get("selected_example_indices", [])
+                card["examples"] = [examples[i - 1] for i in indices if 0 < i <= len(examples)]
+
                 # Add sentence IDs if available
                 if sentence_ids:
-                    card['sentence_ids'] = [
-                        sentence_ids[i-1] for i in indices
-                        if 0 < i <= len(sentence_ids)
+                    card["sentence_ids"] = [
+                        sentence_ids[i - 1] for i in indices if 0 < i <= len(sentence_ids)
                     ]
-            
+
             return ClusterResult(
                 lemma=lemma,
                 cards=cards,
@@ -516,97 +497,94 @@ class WordFamilyClusterer:
                 output_tokens=response.output_tokens,
                 cost_usd=response.cost_usd,
             )
-            
+
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Failed to parse response for lemma '{lemma}': {e}")
             logger.debug(f"Response content: {response.content[:500]}")
-            
+
             return ClusterResult(
                 lemma=lemma,
                 cards=[],
                 ignored_indices=[],
-                ignore_reasons={'error': str(e)},
+                ignore_reasons={"error": str(e)},
                 total_examples=len(examples),
                 batches_processed=batches,
                 input_tokens=response.input_tokens,
                 output_tokens=response.output_tokens,
                 cost_usd=response.cost_usd,
             )
-    
+
     def _merge_similar_cards(self, cards: list[dict]) -> list[dict]:
         """Merge cards with similar definitions using embedding similarity."""
         if len(cards) <= 1:
             return cards
-        
+
         try:
-            from sklearn.metrics.pairwise import cosine_similarity
-            from eng_words.wsd.embeddings import get_batch_embeddings
             import numpy as np
-            
+            from sklearn.metrics.pairwise import cosine_similarity
+
+            from eng_words.wsd.embeddings import get_batch_embeddings
+
             # Get embeddings for definitions
-            definitions = [c.get('definition_en', '') for c in cards]
+            definitions = [c.get("definition_en", "") for c in cards]
             embeddings = get_batch_embeddings(definitions)
-            
+
             # Compute similarity matrix
             similarity_matrix = cosine_similarity(embeddings)
-            
+
             merged = []
             used = set()
-            
+
             for i, card in enumerate(cards):
                 if i in used:
                     continue
-                
+
                 # Find similar cards
-                similar_indices = np.where(
-                    similarity_matrix[i] >= SIMILARITY_THRESHOLD
-                )[0]
-                
+                similar_indices = np.where(similarity_matrix[i] >= SIMILARITY_THRESHOLD)[0]
+
                 # Merge examples from similar cards
-                merged_examples = list(card.get('selected_example_indices', []))
-                merged_texts = list(card.get('examples', []))
-                merged_sids = list(card.get('sentence_ids', []))
-                
+                merged_examples = list(card.get("selected_example_indices", []))
+                merged_texts = list(card.get("examples", []))
+                merged_sids = list(card.get("sentence_ids", []))
+
                 for j in similar_indices:
                     if j != i and j not in used:
                         used.add(j)
-                        merged_examples.extend(
-                            cards[j].get('selected_example_indices', [])
-                        )
-                        merged_texts.extend(cards[j].get('examples', []))
-                        merged_sids.extend(cards[j].get('sentence_ids', []))
-                
+                        merged_examples.extend(cards[j].get("selected_example_indices", []))
+                        merged_texts.extend(cards[j].get("examples", []))
+                        merged_sids.extend(cards[j].get("sentence_ids", []))
+
                 # Create merged card (limit to 3 best examples)
                 merged_card = card.copy()
-                merged_card['selected_example_indices'] = list(set(merged_examples))[:3]
-                merged_card['examples'] = merged_texts[:3]
+                merged_card["selected_example_indices"] = list(set(merged_examples))[:3]
+                merged_card["examples"] = merged_texts[:3]
                 if merged_sids:
-                    merged_card['sentence_ids'] = merged_sids[:3]
-                
+                    merged_card["sentence_ids"] = merged_sids[:3]
+
                 merged.append(merged_card)
                 used.add(i)
-            
+
             logger.info(
                 f"Merged {len(cards)} cards into {len(merged)} "
                 f"(threshold={SIMILARITY_THRESHOLD})"
             )
             return merged
-            
+
         except ImportError:
             logger.warning("sklearn not available, skipping merge")
             return cards
         except Exception as e:
             logger.warning(f"Merge failed: {e}, returning original cards")
             return cards
-    
+
     def stats(self) -> dict:
         """Get clustering statistics."""
         return {
-            'total_api_calls': self.total_api_calls,
-            'cache_hits': self.cache_hits,
-            'total_input_tokens': self.total_input_tokens,
-            'total_output_tokens': self.total_output_tokens,
-            'total_cost_usd': self.total_cost,
+            "total_api_calls": self.total_api_calls,
+            "cache_hits": self.cache_hits,
+            "total_input_tokens": self.total_input_tokens,
+            "total_output_tokens": self.total_output_tokens,
+            "total_cost_usd": self.total_cost,
         }
 
 
@@ -615,63 +593,56 @@ def group_examples_by_lemma(
     sentences_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """Group examples by lemma for clustering.
-    
+
     Args:
         tokens_df: DataFrame with tokens (must have 'lemma', 'sentence_id', 'pos')
         sentences_df: DataFrame with sentences (must have 'sentence_id', 'text')
-        
+
     Returns:
         DataFrame with columns: lemma, examples, sentence_ids, pos_variants
     """
     # Filter to content words
     content = tokens_df[
-        (tokens_df['is_alpha'] == True) &
-        (tokens_df['is_stop'] == False) &
-        (tokens_df['pos'].isin(['NOUN', 'VERB', 'ADJ', 'ADV']))
+        (tokens_df["is_alpha"] == True)
+        & (tokens_df["is_stop"] == False)
+        & (tokens_df["pos"].isin(["NOUN", "VERB", "ADJ", "ADV"]))
     ].copy()
-    
+
     # Create sentence lookup
-    sentence_lookup = sentences_df.set_index('sentence_id')['text'].to_dict()
-    
+    sentence_lookup = sentences_df.set_index("sentence_id")["text"].to_dict()
+
     lemma_data = []
-    
-    for lemma in content['lemma'].unique():
-        lemma_tokens = content[content['lemma'] == lemma]
-        sentence_ids = lemma_tokens['sentence_id'].unique().tolist()
-        
-        examples = [
-            sentence_lookup.get(sid, '')
-            for sid in sentence_ids
-            if sid in sentence_lookup
-        ]
-        
+
+    for lemma in content["lemma"].unique():
+        lemma_tokens = content[content["lemma"] == lemma]
+        sentence_ids = lemma_tokens["sentence_id"].unique().tolist()
+
+        examples = [sentence_lookup.get(sid, "") for sid in sentence_ids if sid in sentence_lookup]
+
         # Filter out empty examples
-        valid_pairs = [
-            (sid, ex) for sid, ex in zip(sentence_ids, examples) if ex
-        ]
-        
+        valid_pairs = [(sid, ex) for sid, ex in zip(sentence_ids, examples) if ex]
+
         if valid_pairs:
             sentence_ids, examples = zip(*valid_pairs)
-            
-            lemma_data.append({
-                'lemma': lemma,
-                'examples': list(examples),
-                'sentence_ids': list(sentence_ids),
-                'pos_variants': lemma_tokens['pos'].unique().tolist(),
-                'example_count': len(examples),
-            })
-    
+
+            lemma_data.append(
+                {
+                    "lemma": lemma,
+                    "examples": list(examples),
+                    "sentence_ids": list(sentence_ids),
+                    "pos_variants": lemma_tokens["pos"].unique().tolist(),
+                    "example_count": len(examples),
+                }
+            )
+
     result = pd.DataFrame(lemma_data)
-    
+
     if len(result) > 0:
-        result = result.sort_values('example_count', ascending=False)
-        total_examples = result['example_count'].sum()
+        result = result.sort_values("example_count", ascending=False)
+        total_examples = result["example_count"].sum()
     else:
         total_examples = 0
-    
-    logger.info(
-        f"Grouped {len(result)} lemmas, "
-        f"total examples: {total_examples}"
-    )
-    
+
+    logger.info(f"Grouped {len(result)} lemmas, " f"total examples: {total_examples}")
+
     return result

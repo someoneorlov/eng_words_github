@@ -11,12 +11,26 @@ from eng_words.wsd_gold.aggregate import (
     get_aggregation_stats,
     needs_third_judge,
 )
+from eng_words.wsd_gold.cache import (
+    LLMCache,
+    get_cache_key,
+)
 from eng_words.wsd_gold.collect import (
     assign_buckets,
     build_example_id,
     calculate_char_span,
     extract_examples_from_tokens,
     get_candidates_for_lemma,
+)
+from eng_words.wsd_gold.eval import (
+    classify_example_difficulty,
+    compute_metrics,
+    compute_metrics_by_segment,
+    evaluate_single,
+    evaluate_wsd_on_gold,
+    get_supersense,
+    load_gold_examples,
+    run_wsd_prediction,
 )
 from eng_words.wsd_gold.models import (
     VALID_FLAGS,
@@ -42,20 +56,6 @@ from eng_words.wsd_gold.smart_aggregate import (
     get_smart_aggregation_stats,
     needs_referee,
     smart_aggregate,
-)
-from eng_words.wsd_gold.eval import (
-    classify_example_difficulty,
-    compute_metrics,
-    compute_metrics_by_segment,
-    evaluate_single,
-    evaluate_wsd_on_gold,
-    get_supersense,
-    load_gold_examples,
-    run_wsd_prediction,
-)
-from eng_words.wsd_gold.cache import (
-    LLMCache,
-    get_cache_key,
 )
 
 __all__ = [

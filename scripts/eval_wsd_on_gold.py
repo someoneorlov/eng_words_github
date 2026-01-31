@@ -107,7 +107,9 @@ def main(
 
     print("\n📈 By Difficulty:")
     for diff, diff_metrics in sorted(by_difficulty.items()):
-        print(f"    {diff:8s}: {diff_metrics['accuracy']:5.1%} ({diff_metrics['total']:4d} examples)")
+        print(
+            f"    {diff:8s}: {diff_metrics['accuracy']:5.1%} ({diff_metrics['total']:4d} examples)"
+        )
 
     # Show error examples
     if show_errors:
@@ -155,4 +157,3 @@ def main(
 
 if __name__ == "__main__":
     app()
-

@@ -35,9 +35,7 @@ from eng_words.wsd.llm_wsd import redistribute_empty_cards
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
 
 # Paths
@@ -80,7 +78,7 @@ def run_card_generation(limit: int | None = None):
 
     # Step 4: Prepare items and generate cards
     logger.info("\n## Step 4: Generate cards")
-    
+
     if limit:
         cards_df = cards_df.head(limit)
         logger.info(f"  Limited to {limit} cards")
@@ -88,24 +86,22 @@ def run_card_generation(limit: int | None = None):
     generated_cards = []
     skipped_cards = 0  # Counter for cards skipped due to validation
     start_time = time.time()
-    
+
     # Statistics for Stage 2.5 filtering
     length_stats = {"too_long": 0, "appropriate_length": 0, "too_short": 0}
     spoiler_stats = {"has_spoiler": 0, "no_spoiler": 0}
     selection_stats = defaultdict(int)
-    
+
     # Check for partial results to resume
     partial_path = OUTPUT_DIR / "synset_smart_cards_partial.json"
     final_path = OUTPUT_DIR / "synset_smart_cards_final.json"
     resume_from = 0
     if partial_path.exists():
-        logger.info(f"  Found partial results, loading...")
+        logger.info("  Found partial results, loading...")
         try:
             with open(partial_path, "r", encoding="utf-8") as f:
                 partial_data = json.load(f)
-                generated_cards = [
-                    SmartCard(**c) for c in partial_data
-                ]
+                generated_cards = [SmartCard(**c) for c in partial_data]
                 resume_from = len(generated_cards)
                 logger.info(f"  Resuming from card {resume_from}/{len(cards_df)}")
         except Exception as e:
@@ -114,13 +110,14 @@ def run_card_generation(limit: int | None = None):
         # If no partial but final exists, we can't resume (final has processed cards)
         # But we'll start fresh - cache will handle already generated cards
         logger.info(f"  Final file exists ({final_path}), starting fresh generation")
-        logger.info(f"  Cache will help speed up already generated cards")
+        logger.info("  Cache will help speed up already generated cards")
 
-    from tqdm import tqdm
     import time as time_module
-    from google.genai.errors import ServerError
+
     import numpy as np
-    
+    from google.genai.errors import ServerError
+    from tqdm import tqdm
+
     # Helper functions for serialization
     def make_serializable(obj):
         """Recursively convert numpy arrays to lists."""
@@ -140,7 +137,7 @@ def run_card_generation(limit: int | None = None):
         """Convert SmartCard to JSON-serializable dict."""
         d = asdict(card)
         return make_serializable(d)
-    
+
     def normalize_synset_group(synset_group):
         """Normalize synset_group to a list."""
         if isinstance(synset_group, (np.ndarray, list)):
@@ -163,20 +160,27 @@ def run_card_generation(limit: int | None = None):
                     return [synset_group]
             except (ValueError, TypeError):
                 return [synset_group]
-    
+
     # Save checkpoint every N cards
     CHECKPOINT_INTERVAL = 100
-    
+
     # Convert to list of tuples for easier indexing
     cards_list = list(cards_df.iterrows())
-    
-    for i, (idx, row) in enumerate(tqdm(cards_list[resume_from:], total=len(cards_df)-resume_from, desc="Generating cards", initial=resume_from)):
+
+    for i, (idx, row) in enumerate(
+        tqdm(
+            cards_list[resume_from:],
+            total=len(cards_df) - resume_from,
+            desc="Generating cards",
+            initial=resume_from,
+        )
+    ):
         # Initialize variables for retry block
         selected_examples_text = []
         generate_count = 0
         synset_group = []
         primary_synset = ""
-        
+
         try:
             # Get examples from sentence_ids
             sentence_ids = row.get("sentence_ids", [])
@@ -194,7 +198,7 @@ def run_card_generation(limit: int | None = None):
             # Prepare synset_group info
             synset_group = normalize_synset_group(row.get("synset_group", []))
             primary_synset = row.get("primary_synset", "")
-            
+
             # VALIDATION: Check if examples are valid for synset_group
             validation = validate_examples_for_synset_group(
                 lemma=row["lemma"],
@@ -204,20 +208,22 @@ def run_card_generation(limit: int | None = None):
                 provider=provider,
                 cache=cache,
             )
-            
+
             # Skip if no valid examples
             if not validation["has_valid"]:
-                logger.debug(f"Skipping {row['lemma']} ({primary_synset}) - no valid examples for synset_group")
+                logger.debug(
+                    f"Skipping {row['lemma']} ({primary_synset}) - no valid examples for synset_group"
+                )
                 skipped_cards += 1
                 continue
-            
+
             # Get valid examples as (sentence_id, sentence) tuples
             valid_examples = [
                 (sid, sentences_lookup[sid])
                 for sid in validation["valid_sentence_ids"]
                 if sid in sentences_lookup
             ]
-            
+
             if not valid_examples:
                 # This shouldn't happen if validation worked correctly, but just in case
                 logger.warning(f"No valid examples after validation for {row['lemma']}, skipping")
@@ -227,13 +233,13 @@ def run_card_generation(limit: int | None = None):
             # STEP 2.5: Filter by length and spoilers BEFORE generation
             # 1. Mark examples by length (don't filter, just mark)
             length_flags = mark_examples_by_length(valid_examples, max_words=50, min_words=6)
-            
+
             # Statistics for length
             # length_flags[sid] = True if min_words <= word_count <= max_words, False otherwise
             too_long_count = 0
             too_short_count = 0
             appropriate_count = 0
-            
+
             for sid, ex in valid_examples:
                 word_count = len(ex.split())
                 if word_count < 6:
@@ -242,11 +248,11 @@ def run_card_generation(limit: int | None = None):
                     too_long_count += 1
                 else:
                     appropriate_count += 1
-            
+
             length_stats["too_long"] += too_long_count
             length_stats["too_short"] += too_short_count
             length_stats["appropriate_length"] += appropriate_count
-            
+
             # 2. Check spoilers (mark with flags)
             spoiler_flags = check_spoilers(
                 examples=valid_examples,
@@ -254,12 +260,12 @@ def run_card_generation(limit: int | None = None):
                 cache=cache,
                 book_name=BOOK_NAME,
             )
-            
+
             # Statistics for spoilers
             spoiler_count = sum(1 for v in spoiler_flags.values() if v)
             spoiler_stats["has_spoiler"] += spoiler_count
             spoiler_stats["no_spoiler"] += len(spoiler_flags) - spoiler_count
-            
+
             # 3. Select examples for generation based on flags
             selection = select_examples_for_generation(
                 all_examples=valid_examples,
@@ -267,7 +273,7 @@ def run_card_generation(limit: int | None = None):
                 spoiler_flags=spoiler_flags,
                 target_count=3,
             )
-            
+
             # Statistics for selection
             selected_count = len(selection["selected_from_book"])
             generate_count = selection["generate_count"]
@@ -277,13 +283,15 @@ def run_card_generation(limit: int | None = None):
                 selection_stats[f"{selected_count}+{generate_count}"] += 1
             elif selected_count == 0:
                 selection_stats["0+3"] += 1
-            
+
             # 4. Prepare examples text for generation
             selected_examples_text = [ex for _, ex in selection["selected_from_book"]]
 
             # Track existing synsets (for duplicate detection, not fallback)
-            existing_synsets = {c.primary_synset for c in generated_cards if hasattr(c, 'primary_synset')}
-            
+            existing_synsets = {
+                c.primary_synset for c in generated_cards if hasattr(c, "primary_synset")
+            }
+
             # 5. Generate card with selected examples and generate_count
             card = generator.generate_card(
                 lemma=row["lemma"],
@@ -299,7 +307,7 @@ def run_card_generation(limit: int | None = None):
 
             if card:
                 generated_cards.append(card)
-            
+
             # Save checkpoint periodically
             if len(generated_cards) % CHECKPOINT_INTERVAL == 0:
                 try:
@@ -309,19 +317,21 @@ def run_card_generation(limit: int | None = None):
                     logger.debug(f"  Checkpoint saved: {len(generated_cards)} cards")
                 except Exception as e:
                     logger.warning(f"  Failed to save checkpoint: {e}")
-        
+
         except ServerError as e:
             # Handle 503 and other server errors with retry
             if "503" in str(e) or "UNAVAILABLE" in str(e):
-                logger.warning(f"  Server error (503) at card {i+resume_from}, saving checkpoint and waiting...")
+                logger.warning(
+                    f"  Server error (503) at card {i+resume_from}, saving checkpoint and waiting..."
+                )
                 # Save current progress
                 try:
                     partial_data = [card_to_serializable(c) for c in generated_cards]
                     with open(partial_path, "w", encoding="utf-8") as f:
                         json.dump(partial_data, f, ensure_ascii=False, indent=2)
                     logger.info(f"  Progress saved: {len(generated_cards)} cards")
-                except:
-                    pass
+                except Exception:
+                    pass  # Don't fail if progress save fails
                 # Wait and retry
                 logger.info("  Waiting 30 seconds before retry...")
                 time_module.sleep(30)
@@ -342,7 +352,9 @@ def run_card_generation(limit: int | None = None):
                         generated_cards.append(card)
                 except Exception as retry_e:
                     logger.error(f"  Retry failed for {row['lemma']}: {retry_e}")
-                    logger.info(f"  To resume, run script again - it will continue from card {len(generated_cards)}")
+                    logger.info(
+                        f"  To resume, run script again - it will continue from card {len(generated_cards)}"
+                    )
                     raise
             else:
                 raise
@@ -354,31 +366,35 @@ def run_card_generation(limit: int | None = None):
                 with open(partial_path, "w", encoding="utf-8") as f:
                     json.dump(partial_data, f, ensure_ascii=False, indent=2)
                 logger.info(f"  Progress saved: {len(generated_cards)} cards before error")
-            except:
-                pass
+            except Exception:
+                pass  # Don't fail if progress save fails
             raise
 
     end_time = time.time()
     elapsed = end_time - start_time
-    
+
     # Log validation and filtering statistics
-    logger.info(f"\n## Validation Statistics")
+    logger.info("\n## Validation Statistics")
     logger.info(f"  Total cards processed: {len(cards_df):,}")
-    logger.info(f"  Cards skipped (no valid examples): {skipped_cards:,} ({skipped_cards/max(len(cards_df),1)*100:.1f}%)")
-    logger.info(f"  Cards generated: {len(generated_cards):,} ({len(generated_cards)/max(len(cards_df),1)*100:.1f}%)")
-    
-    logger.info(f"\n## Stage 2.5 Filtering Statistics")
-    logger.info(f"  Length filtering:")
+    logger.info(
+        f"  Cards skipped (no valid examples): {skipped_cards:,} ({skipped_cards/max(len(cards_df),1)*100:.1f}%)"
+    )
+    logger.info(
+        f"  Cards generated: {len(generated_cards):,} ({len(generated_cards)/max(len(cards_df),1)*100:.1f}%)"
+    )
+
+    logger.info("\n## Stage 2.5 Filtering Statistics")
+    logger.info("  Length filtering:")
     logger.info(f"    - Too long (>50 words): {length_stats['too_long']}")
     logger.info(f"    - Too short (<6 words): {length_stats['too_short']}")
     logger.info(f"    - Appropriate length: {length_stats['appropriate_length']}")
-    logger.info(f"  Spoiler filtering:")
+    logger.info("  Spoiler filtering:")
     logger.info(f"    - With spoilers: {spoiler_stats['has_spoiler']}")
     logger.info(f"    - Without spoilers: {spoiler_stats['no_spoiler']}")
-    logger.info(f"  Selection patterns:")
+    logger.info("  Selection patterns:")
     for pattern, count in sorted(selection_stats.items()):
         logger.info(f"    - {pattern}: {count}")
-    
+
     # Final checkpoint
     if partial_path.exists():
         partial_path.unlink()  # Remove partial file after successful completion
@@ -406,7 +422,7 @@ def run_card_generation(limit: int | None = None):
 
     # Step 7: Analyze results
     logger.info("\n## Step 7: Analyze results")
-    
+
     cards_with_examples = [c for c in final_cards if c.selected_examples]
     cards_without_examples = [c for c in final_cards if not c.selected_examples]
     cards_with_translation = [c for c in final_cards if c.translation_ru]
@@ -416,8 +432,12 @@ def run_card_generation(limit: int | None = None):
 
     logger.info(f"  Total final cards:      {len(final_cards):,}")
     logger.info(f"  With selected examples: {len(cards_with_examples):,}")
-    logger.info(f"  Without examples:      {len(cards_without_examples):,} ({len(cards_without_examples)/max(len(final_cards),1)*100:.1f}%)")
-    logger.info(f"  With translation:      {len(cards_with_translation):,} ({len(cards_with_translation)/max(len(final_cards),1)*100:.1f}%)")
+    logger.info(
+        f"  Without examples:      {len(cards_without_examples):,} ({len(cards_without_examples)/max(len(final_cards),1)*100:.1f}%)"
+    )
+    logger.info(
+        f"  With translation:      {len(cards_with_translation):,} ({len(cards_with_translation)/max(len(final_cards),1)*100:.1f}%)"
+    )
     logger.info(f"  LLM Cost:              ${stats['total_cost']:.4f}")
     logger.info(f"  Total time:            {elapsed + wsd_time + val_time:.1f}s")
     logger.info(f"  Cache hits:            {cache_stats.get('hits', 0)}")
@@ -434,7 +454,9 @@ def run_card_generation(limit: int | None = None):
     # Save filtered (with examples only)
     filtered_path = OUTPUT_DIR / "synset_smart_cards_filtered.json"
     with open(filtered_path, "w", encoding="utf-8") as f:
-        json.dump([card_to_serializable(c) for c in cards_with_examples], f, ensure_ascii=False, indent=2)
+        json.dump(
+            [card_to_serializable(c) for c in cards_with_examples], f, ensure_ascii=False, indent=2
+        )
     logger.info(f"  Filtered JSON: {filtered_path}")
 
     # Export to Anki CSV
@@ -450,11 +472,19 @@ def run_card_generation(limit: int | None = None):
     print("SUMMARY")
     print("=" * 70)
     print(f"  Input aggregated cards: {len(cards_df):,}")
-    print(f"  Cards skipped (validation): {skipped_cards:,} ({skipped_cards/max(len(cards_df),1)*100:.1f}%)")
+    print(
+        f"  Cards skipped (validation): {skipped_cards:,} ({skipped_cards/max(len(cards_df),1)*100:.1f}%)"
+    )
     print(f"  Total final cards:      {len(final_cards):,}")
-    print(f"  Cards with examples:    {len(cards_with_examples):,} ({len(cards_with_examples)/max(len(final_cards),1)*100:.1f}%)")
-    print(f"  Cards without examples: {len(cards_without_examples):,} ({len(cards_without_examples)/max(len(final_cards),1)*100:.1f}%)")
-    print(f"  Cards with translation: {len(cards_with_translation):,} ({len(cards_with_translation)/max(len(final_cards),1)*100:.1f}%)")
+    print(
+        f"  Cards with examples:    {len(cards_with_examples):,} ({len(cards_with_examples)/max(len(final_cards),1)*100:.1f}%)"
+    )
+    print(
+        f"  Cards without examples: {len(cards_without_examples):,} ({len(cards_without_examples)/max(len(final_cards),1)*100:.1f}%)"
+    )
+    print(
+        f"  Cards with translation: {len(cards_with_translation):,} ({len(cards_with_translation)/max(len(final_cards),1)*100:.1f}%)"
+    )
     print(f"  Cards removed:          {len(removed_cards):,}")
     print(f"  LLM Cost:               ${stats['total_cost']:.4f}")
     print(f"  Cache hits:             {cache_stats.get('hits', 0)}")
@@ -462,11 +492,13 @@ def run_card_generation(limit: int | None = None):
 
     # Compare with supersense-based approach
     print("\n## Comparison with supersense-based approach:")
-    print(f"  Old approach: ~16% cards without examples (326/2000)")
-    print(f"  New approach: {len(cards_without_examples)/max(len(final_cards),1)*100:.1f}% cards without examples")
-    improvement = 16 - len(cards_without_examples)/max(len(final_cards),1)*100
+    print("  Old approach: ~16% cards without examples (326/2000)")
+    print(
+        f"  New approach: {len(cards_without_examples)/max(len(final_cards),1)*100:.1f}% cards without examples"
+    )
+    improvement = 16 - len(cards_without_examples) / max(len(final_cards), 1) * 100
     print(f"  Improvement:  {improvement:.1f}pp")
-    
+
     if len(cards_without_examples) == 0:
         print("  ✅ SUCCESS: 0% cards without examples!")
 
@@ -475,7 +507,7 @@ def run_card_generation(limit: int | None = None):
 
 if __name__ == "__main__":
     import sys
-    
+
     # Check for limit argument
     limit = None
     if len(sys.argv) > 1:
@@ -484,6 +516,5 @@ if __name__ == "__main__":
             logger.info(f"Running with limit: {limit}")
         except ValueError:
             logger.warning(f"Invalid limit argument: {sys.argv[1]}, running full")
-    
-    run_card_generation(limit=limit)
 
+    run_card_generation(limit=limit)

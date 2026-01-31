@@ -166,8 +166,7 @@ def compute_metrics_by_segment(
         by_segment[segment_value].append(result)
 
     return {
-        segment: compute_metrics(segment_results)
-        for segment, segment_results in by_segment.items()
+        segment: compute_metrics(segment_results) for segment, segment_results in by_segment.items()
     }
 
 
@@ -308,4 +307,3 @@ def evaluate_wsd_on_gold(
         "supersense_confusion": top_confusion,
         "results": results,
     }
-

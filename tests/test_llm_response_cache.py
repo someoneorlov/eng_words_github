@@ -1,10 +1,8 @@
 """Tests for LLM response caching."""
 
-import json
 import tempfile
 from pathlib import Path
 
-import pytest
 
 from eng_words.llm.base import LLMResponse
 
@@ -318,4 +316,3 @@ class TestCachedProvider:
             cached_provider.complete("prompt 2")  # Cached
 
             assert mock_provider.complete.call_count == 2
-

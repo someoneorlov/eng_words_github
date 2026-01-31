@@ -1,13 +1,10 @@
 """Tests for WSD evaluation on gold dataset."""
 
 import json
-import tempfile
 from pathlib import Path
 
-import pytest
 
 from eng_words.wsd_gold.models import Candidate, ExampleMetadata, GoldExample, TargetWord
-
 
 # =============================================================================
 # TEST DATA FIXTURES
@@ -268,4 +265,3 @@ class TestFullEvaluation:
         from eng_words.wsd_gold.eval import evaluate_wsd_on_gold
 
         assert callable(evaluate_wsd_on_gold)
-

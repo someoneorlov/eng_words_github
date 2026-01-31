@@ -6,7 +6,7 @@ from typing import Any
 
 from nltk.corpus import wordnet as wn
 
-from eng_words.llm.base import LLMProvider, LLMResponse
+from eng_words.llm.base import LLMProvider
 from eng_words.llm.response_cache import ResponseCache
 from eng_words.llm.retry import call_llm_with_retry
 
@@ -49,10 +49,10 @@ Return ONLY valid JSON, no explanations."""
 
 def _get_synset_definitions(synset_ids: list[str]) -> dict[str, str]:
     """Get definitions for synsets from WordNet.
-    
+
     Args:
         synset_ids: List of synset IDs
-        
+
     Returns:
         Dictionary mapping synset_id to definition
     """
@@ -76,7 +76,7 @@ def _format_validation_prompt(
     examples: list[tuple[int, str]],
 ) -> str:
     """Format the validation prompt.
-    
+
     Args:
         lemma: Word lemma
         pos: Part of speech
@@ -84,23 +84,17 @@ def _format_validation_prompt(
         primary_synset: Primary synset ID
         synset_definitions: Dictionary of synset_id -> definition
         examples: List of (sentence_id, sentence) tuples
-        
+
     Returns:
         Formatted prompt string
     """
     synset_group_info = ", ".join(synset_group)
     primary_definition = synset_definitions.get(primary_synset, "Unknown")
-    
-    synset_defs_text = "\n".join(
-        f"- {sid}: {defn}"
-        for sid, defn in synset_definitions.items()
-    )
-    
-    examples_numbered = "\n".join(
-        f"{i+1}. \"{ex}\""
-        for i, (_, ex) in enumerate(examples)
-    )
-    
+
+    synset_defs_text = "\n".join(f"- {sid}: {defn}" for sid, defn in synset_definitions.items())
+
+    examples_numbered = "\n".join(f'{i+1}. "{ex}"' for i, (_, ex) in enumerate(examples))
+
     return VALIDATION_PROMPT.format(
         lemma=lemma,
         pos=pos.lower(),
@@ -117,18 +111,18 @@ def _parse_validation_response(
     max_retries: int = 2,
 ) -> dict[str, Any]:
     """Parse LLM response for validation.
-    
+
     Args:
         response_content: Raw response from LLM
         examples: List of (sentence_id, sentence) tuples
         max_retries: Maximum retries for parsing errors
-        
+
     Returns:
         Parsed validation result
     """
     # Try to parse JSON
     content = response_content.strip()
-    
+
     # Remove markdown code blocks if present
     if content.startswith("```json"):
         content = content[7:]
@@ -137,7 +131,7 @@ def _parse_validation_response(
     if content.endswith("```"):
         content = content[:-3]
     content = content.strip()
-    
+
     try:
         result = json.loads(content)
     except json.JSONDecodeError as e:
@@ -152,24 +146,16 @@ def _parse_validation_response(
                 raise ValueError(f"Invalid JSON response: {content[:200]}")
         else:
             raise ValueError(f"Invalid JSON response: {content[:200]}")
-    
+
     # Extract valid and invalid indices
     valid_indices = result.get("valid_indices", [])
     invalid_indices = result.get("invalid_indices", [])
-    
+
     # Convert 1-based indices to sentence_ids
-    valid_sentence_ids = [
-        examples[i - 1][0]
-        for i in valid_indices
-        if 1 <= i <= len(examples)
-    ]
-    
-    invalid_sentence_ids = [
-        examples[i - 1][0]
-        for i in invalid_indices
-        if 1 <= i <= len(examples)
-    ]
-    
+    valid_sentence_ids = [examples[i - 1][0] for i in valid_indices if 1 <= i <= len(examples)]
+
+    invalid_sentence_ids = [examples[i - 1][0] for i in invalid_indices if 1 <= i <= len(examples)]
+
     return {
         "valid_sentence_ids": valid_sentence_ids,
         "invalid_sentence_ids": invalid_sentence_ids,
@@ -203,10 +189,10 @@ def _validate_examples_batch(
             "has_valid": False,
             "validation_details": {},
         }
-    
+
     # Get synset definitions
     synset_definitions = _get_synset_definitions(synset_group)
-    
+
     # Determine POS from primary synset
     try:
         primary_synset_obj = wn.synset(primary_synset)
@@ -215,7 +201,7 @@ def _validate_examples_batch(
         # Fallback: try to extract from synset_id
         pos = primary_synset.split(".")[1] if "." in primary_synset else "n"
         logger.warning(f"Could not get POS for {primary_synset}, using {pos}")
-    
+
     # Format prompt
     prompt = _format_validation_prompt(
         lemma=lemma,
@@ -225,14 +211,14 @@ def _validate_examples_batch(
         synset_definitions=synset_definitions,
         examples=examples,
     )
-    
+
     # Check cache first (before calling retry utility)
     # This allows tests to verify caching behavior
     model_name = getattr(provider, "model", "unknown-model")
     temperature = getattr(provider, "temperature", 0.0)
     cache_key = cache.generate_key(model_name, prompt, temperature)
     cached_response = cache.get(cache_key)
-    
+
     if cached_response:
         logger.debug(f"Cache hit for {lemma} validation")
         try:
@@ -240,7 +226,7 @@ def _validate_examples_batch(
         except Exception as e:
             logger.warning(f"Failed to parse cached response: {e}, retrying")
             # Continue to LLM call
-    
+
     # Use universal retry utility
     try:
         response = call_llm_with_retry(
@@ -254,16 +240,16 @@ def _validate_examples_batch(
                 f"Retry {attempt} for {lemma} validation: {error}"
             ),
         )
-        
+
         # Cache the response manually
         try:
             cache.set(cache_key, response)
         except Exception as e:
             logger.warning(f"Failed to cache response: {e}")
-        
+
         # Parse validation response
         return _parse_validation_response(response.content, examples)
-        
+
     except (ValueError, json.JSONDecodeError, Exception) as e:
         # All retries failed - use conservative approach
         logger.error(f"All retries failed for {lemma} validation: {e}, marking all as invalid")
@@ -286,14 +272,14 @@ def validate_examples_for_synset_group(
     max_examples_per_batch: int = MAX_EXAMPLES_PER_BATCH,
 ) -> dict[str, Any]:
     """Validate examples against synset group.
-    
+
     Checks if example sentences match any of the synsets in the group.
     Uses LLM to determine if the meaning of the word in each sentence
     matches the synset group meanings.
-    
+
     If there are more examples than max_examples_per_batch, processes them in batches
     to avoid JSON parsing errors with very long responses.
-    
+
     Args:
         lemma: Word lemma (e.g., "long")
         synset_group: List of synset IDs in the group (e.g., ["long.r.01", "long.s.01"])
@@ -303,7 +289,7 @@ def validate_examples_for_synset_group(
         cache: Response cache for LLM responses
         max_retries: Maximum retries for parsing errors
         max_examples_per_batch: Maximum examples per batch (default: 50)
-        
+
     Returns:
         Dictionary with:
         - valid_sentence_ids: List of sentence IDs that match synset_group
@@ -320,7 +306,7 @@ def validate_examples_for_synset_group(
             "has_valid": False,
             "validation_details": {},
         }
-    
+
     # If examples fit in one batch, process directly
     if len(examples) <= max_examples_per_batch:
         return _validate_examples_batch(
@@ -332,23 +318,27 @@ def validate_examples_for_synset_group(
             cache=cache,
             max_retries=max_retries,
         )
-    
+
     # Process in batches
-    logger.info(f"Processing {len(examples)} examples for {lemma} in batches of {max_examples_per_batch}")
-    
+    logger.info(
+        f"Processing {len(examples)} examples for {lemma} in batches of {max_examples_per_batch}"
+    )
+
     all_valid_ids = []
     all_invalid_ids = []
     all_validation_details = {}
-    
+
     num_batches = (len(examples) + max_examples_per_batch - 1) // max_examples_per_batch
-    
+
     for batch_idx in range(num_batches):
         start_idx = batch_idx * max_examples_per_batch
         end_idx = min(start_idx + max_examples_per_batch, len(examples))
         batch_examples = examples[start_idx:end_idx]
-        
-        logger.debug(f"Processing batch {batch_idx + 1}/{num_batches} for {lemma} ({len(batch_examples)} examples)")
-        
+
+        logger.debug(
+            f"Processing batch {batch_idx + 1}/{num_batches} for {lemma} ({len(batch_examples)} examples)"
+        )
+
         batch_result = _validate_examples_batch(
             lemma=lemma,
             synset_group=synset_group,
@@ -358,18 +348,18 @@ def validate_examples_for_synset_group(
             cache=cache,
             max_retries=max_retries,
         )
-        
+
         # Aggregate results
         all_valid_ids.extend(batch_result["valid_sentence_ids"])
         all_invalid_ids.extend(batch_result["invalid_sentence_ids"])
-        
+
         # Merge validation_details (adjust indices if needed)
         if batch_result.get("validation_details"):
             for key, value in batch_result["validation_details"].items():
                 # Key is the example index in the batch (1-based)
                 # Convert to global index if needed for tracking
                 all_validation_details[f"batch_{batch_idx + 1}_ex_{key}"] = value
-    
+
     return {
         "valid_sentence_ids": all_valid_ids,
         "invalid_sentence_ids": all_invalid_ids,

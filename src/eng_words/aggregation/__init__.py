@@ -22,4 +22,3 @@ __all__ = [
     "build_aggregation_prompt",
     "parse_aggregation_response",
 ]
-

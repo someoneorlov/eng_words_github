@@ -10,7 +10,7 @@ This module implements cost-efficient aggregation:
 
 from dataclasses import dataclass
 
-from eng_words.wsd_gold.models import GoldExample, GoldLabel, ModelOutput
+from eng_words.wsd_gold.models import GoldLabel, ModelOutput
 
 
 @dataclass
@@ -108,9 +108,7 @@ def smart_aggregate(
     if max_votes >= 2:
         # Majority vote
         winner = [s for s, v in votes.items() if v == max_votes][0]
-        all_flags = list(
-            set(anthropic_output.flags + gemini_output.flags + openai_output.flags)
-        )
+        all_flags = list(set(anthropic_output.flags + gemini_output.flags + openai_output.flags))
 
         label = GoldLabel(
             synset_id=winner,
@@ -226,4 +224,3 @@ def get_smart_aggregation_stats(results: list[SmartAggregationResult]) -> SmartA
         referee_calls=referee_calls,
         referee_rate=referee_calls / total,
     )
-

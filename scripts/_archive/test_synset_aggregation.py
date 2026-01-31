@@ -18,9 +18,7 @@ from eng_words.llm.response_cache import ResponseCache
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
 
 # Paths
@@ -105,7 +103,7 @@ def build_aggregation_prompt(lemma: str, synsets: list[dict]) -> str:
 
 def parse_aggregation_response(response_text: str) -> dict | None:
     """Parse the LLM response to extract aggregation groups.
-    
+
     Handles:
     - Markdown code blocks (```json ... ```)
     - Truncated JSON (attempts repair)
@@ -129,7 +127,7 @@ def parse_aggregation_response(response_text: str) -> dict | None:
             return json.loads(text)
         except json.JSONDecodeError:
             pass
-        
+
         # Try to extract JSON object from text
         start = text.find("{")
         end = text.rfind("}") + 1
@@ -139,14 +137,14 @@ def parse_aggregation_response(response_text: str) -> dict | None:
                 return json.loads(text)
             except json.JSONDecodeError:
                 pass
-        
+
         # Try to repair truncated JSON
         repaired = repair_truncated_json(text)
         if repaired:
             return json.loads(repaired)
-        
+
         return None
-        
+
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse JSON: {e}")
         logger.error(f"Response: {response_text[:500]}...")
@@ -160,17 +158,24 @@ def repair_truncated_json(text: str) -> str | None:
     close_braces = text.count("}")
     open_brackets = text.count("[")
     close_brackets = text.count("]")
-    
+
     # If truncated, try to close it
     if open_braces > close_braces or open_brackets > close_brackets:
         # Remove incomplete last field
         lines = text.rstrip().split("\n")
-        
+
         # Find and remove incomplete lines
         while lines:
             last_line = lines[-1].strip()
             # Check if line is incomplete (no comma or closing bracket)
-            if last_line and not last_line.endswith(",") and not last_line.endswith("}") and not last_line.endswith("]") and not last_line.endswith("{") and not last_line.endswith("["):
+            if (
+                last_line
+                and not last_line.endswith(",")
+                and not last_line.endswith("}")
+                and not last_line.endswith("]")
+                and not last_line.endswith("{")
+                and not last_line.endswith("[")
+            ):
                 lines.pop()
             elif last_line.endswith(","):
                 # Remove trailing comma and close
@@ -178,19 +183,19 @@ def repair_truncated_json(text: str) -> str | None:
                 break
             else:
                 break
-        
+
         text = "\n".join(lines)
-        
+
         # Add missing brackets/braces
         missing_brackets = "]" * (open_brackets - text.count("]"))
         missing_braces = "}" * (open_braces - text.count("}"))
-        
+
         # Add total_cards if missing
         if '"total_cards"' not in text:
-            text = text.rstrip().rstrip(",") + f'\n  ],\n  "total_cards": 0\n}}'
+            text = text.rstrip().rstrip(",") + '\n  ],\n  "total_cards": 0\n}'
         else:
             text = text + missing_brackets + missing_braces
-        
+
         try:
             json.loads(text)
             logger.info("Successfully repaired truncated JSON")
@@ -198,7 +203,7 @@ def repair_truncated_json(text: str) -> str | None:
         except json.JSONDecodeError:
             logger.warning("JSON repair failed")
             return None
-    
+
     return None
 
 
@@ -218,7 +223,7 @@ def test_aggregation_on_lemma(
     # ~70 tokens per synset group, plus overhead
     estimated_tokens = len(synsets) * 80 + 200
     max_output = max(2048, estimated_tokens)  # Minimum 2048, scale with synsets
-    
+
     # Try cache first
     cached_response = cache.get(cache_key)
     if cached_response:
@@ -299,7 +304,9 @@ def run_test(sample_path: Path = SAMPLE_PATH, limit: int | None = None):
             print(f"Cost: ${result.llm_cost:.4f}")
 
             for i, group in enumerate(result.groups[:5]):
-                synset_ids = [synsets[idx - 1]["synset_id"] for idx in group.synsets if idx <= len(synsets)]
+                synset_ids = [
+                    synsets[idx - 1]["synset_id"] for idx in group.synsets if idx <= len(synsets)
+                ]
                 print(f"\n  Group {i+1}: {synset_ids}")
                 print(f"  Reason: {group.reason[:80]}...")
 
@@ -345,4 +352,3 @@ def run_test(sample_path: Path = SAMPLE_PATH, limit: int | None = None):
 
 if __name__ == "__main__":
     run_test()
-

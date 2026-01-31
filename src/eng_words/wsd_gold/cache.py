@@ -222,4 +222,3 @@ class LLMCache:
 
         logger.info(f"Cleared {count} cache files")
         return count
-

@@ -39,35 +39,51 @@ class TestAggregateBysynset:
     @pytest.fixture
     def sample_tokens_df(self):
         """Create a sample tokens DataFrame for testing."""
-        return pd.DataFrame({
-            "lemma": ["dog", "dog", "dog", "cat", "cat", "run", "run", "run", "run"],
-            "synset_id": [
-                "dog.n.01", "dog.n.01", "dog.n.02",  # dog: 2x n.01, 1x n.02
-                "cat.n.01", "cat.n.01",              # cat: 2x n.01
-                "run.v.01", "run.v.01", "run.v.01", "run.v.02",  # run: 3x v.01, 1x v.02
-            ],
-            "sentence_id": [1, 2, 3, 4, 5, 6, 7, 8, 9],
-        })
+        return pd.DataFrame(
+            {
+                "lemma": ["dog", "dog", "dog", "cat", "cat", "run", "run", "run", "run"],
+                "synset_id": [
+                    "dog.n.01",
+                    "dog.n.01",
+                    "dog.n.02",  # dog: 2x n.01, 1x n.02
+                    "cat.n.01",
+                    "cat.n.01",  # cat: 2x n.01
+                    "run.v.01",
+                    "run.v.01",
+                    "run.v.01",
+                    "run.v.02",  # run: 3x v.01, 1x v.02
+                ],
+                "sentence_id": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            }
+        )
 
     def test_basic_aggregation(self, sample_tokens_df):
         """Test basic synset aggregation."""
         result = aggregate_by_synset(sample_tokens_df, min_freq=1)
-        
+
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 5  # dog.n.01, dog.n.02, cat.n.01, run.v.01, run.v.02
-        
+
         # Check columns
-        expected_cols = ["lemma", "synset_id", "pos", "definition", "supersense", "freq", "sentence_ids"]
+        expected_cols = [
+            "lemma",
+            "synset_id",
+            "pos",
+            "definition",
+            "supersense",
+            "freq",
+            "sentence_ids",
+        ]
         for col in expected_cols:
             assert col in result.columns, f"Missing column: {col}"
 
     def test_min_freq_filtering(self, sample_tokens_df):
         """Test that min_freq filtering works."""
         result = aggregate_by_synset(sample_tokens_df, min_freq=2)
-        
+
         # Only synsets with freq >= 2: dog.n.01 (2), cat.n.01 (2), run.v.01 (3)
         assert len(result) == 3
-        
+
         synset_ids = result["synset_id"].tolist()
         assert "dog.n.01" in synset_ids
         assert "cat.n.01" in synset_ids
@@ -78,28 +94,30 @@ class TestAggregateBysynset:
     def test_freq_count_correct(self, sample_tokens_df):
         """Test that frequency counts are correct."""
         result = aggregate_by_synset(sample_tokens_df, min_freq=1)
-        
+
         run_v01 = result[result["synset_id"] == "run.v.01"].iloc[0]
         assert run_v01["freq"] == 3
-        
+
         dog_n01 = result[result["synset_id"] == "dog.n.01"].iloc[0]
         assert dog_n01["freq"] == 2
 
     def test_sentence_ids_collected(self, sample_tokens_df):
         """Test that sentence_ids are collected correctly."""
         result = aggregate_by_synset(sample_tokens_df, min_freq=1)
-        
+
         run_v01 = result[result["synset_id"] == "run.v.01"].iloc[0]
         assert set(run_v01["sentence_ids"]) == {6, 7, 8}
 
     def test_handles_nan_synsets(self):
         """Test that NaN synset_ids are filtered out."""
-        df = pd.DataFrame({
-            "lemma": ["dog", "dog", "cat"],
-            "synset_id": ["dog.n.01", None, "cat.n.01"],
-            "sentence_id": [1, 2, 3],
-        })
-        
+        df = pd.DataFrame(
+            {
+                "lemma": ["dog", "dog", "cat"],
+                "synset_id": ["dog.n.01", None, "cat.n.01"],
+                "sentence_id": [1, 2, 3],
+            }
+        )
+
         result = aggregate_by_synset(df, min_freq=1)
         assert len(result) == 2  # Only valid synsets
 
@@ -107,14 +125,14 @@ class TestAggregateBysynset:
         """Test handling empty DataFrame."""
         df = pd.DataFrame(columns=["lemma", "synset_id", "sentence_id"])
         result = aggregate_by_synset(df, min_freq=1)
-        
+
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
 
     def test_definition_and_pos_populated(self, sample_tokens_df):
         """Test that definition and pos are populated from WordNet."""
         result = aggregate_by_synset(sample_tokens_df, min_freq=1)
-        
+
         dog_row = result[result["synset_id"] == "dog.n.01"].iloc[0]
         assert dog_row["pos"] == "n"
         assert len(dog_row["definition"]) > 0
@@ -135,7 +153,7 @@ class TestSynsetStats:
             freq=10,
             sentence_ids=[1, 2, 3],
         )
-        
+
         assert stats.lemma == "dog"
         assert stats.freq == 10
         assert len(stats.sentence_ids) == 3
@@ -151,10 +169,10 @@ class TestSynsetStats:
             freq=5,
             sentence_ids=[1, 2],
         )
-        
+
         from dataclasses import asdict
+
         d = asdict(stats)
-        
+
         assert d["lemma"] == "dog"
         assert d["freq"] == 5
-

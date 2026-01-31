@@ -1,6 +1,5 @@
 """Tests for Smart Fallback logic."""
 
-import pytest
 
 from eng_words.aggregation.fallback import get_fallback_synset, get_synsets_by_frequency
 
@@ -31,11 +30,11 @@ class TestGetSynsetsByFrequency:
         """Test that only synsets with matching POS are returned."""
         noun_synsets = get_synsets_by_frequency("run", "n")
         verb_synsets = get_synsets_by_frequency("run", "v")
-        
+
         # All noun synsets should have .n.
         for s in noun_synsets:
             assert ".n." in s
-        
+
         # All verb synsets should have .v.
         for s in verb_synsets:
             assert ".v." in s
@@ -75,7 +74,7 @@ class TestGetFallbackSynset:
         # Use first 3 as existing
         existing = set(all_synsets[:3])
         failed = all_synsets[4] if len(all_synsets) > 4 else "run.v.99"
-        
+
         result = get_fallback_synset(
             lemma="run",
             pos="v",
@@ -91,7 +90,7 @@ class TestGetFallbackSynset:
         """Test returns None when all synsets are used."""
         # Get all synsets for a word with few synsets
         synsets = get_synsets_by_frequency("hello", "n")
-        
+
         if synsets:
             # Mark all as existing
             result = get_fallback_synset(
@@ -146,4 +145,3 @@ class TestGetFallbackSynset:
         )
         # Should return add.v.01 (most common)
         assert result == "add.v.01"
-

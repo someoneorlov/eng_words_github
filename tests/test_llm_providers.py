@@ -263,9 +263,7 @@ class TestGeminiProvider:
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.text = "test response"
-        mock_response.usage_metadata = MagicMock(
-            prompt_token_count=10, candidates_token_count=5
-        )
+        mock_response.usage_metadata = MagicMock(prompt_token_count=10, candidates_token_count=5)
         mock_client.models.generate_content.return_value = mock_response
 
         with patch("eng_words.llm.providers.gemini.genai") as mock_genai:
@@ -285,9 +283,7 @@ class TestGeminiProvider:
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.text = '{"result": "test"}'
-        mock_response.usage_metadata = MagicMock(
-            prompt_token_count=10, candidates_token_count=5
-        )
+        mock_response.usage_metadata = MagicMock(prompt_token_count=10, candidates_token_count=5)
         mock_client.models.generate_content.return_value = mock_response
 
         with patch("eng_words.llm.providers.gemini.genai") as mock_genai:
@@ -305,9 +301,7 @@ class TestGeminiProvider:
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.text = "not valid json"
-        mock_response.usage_metadata = MagicMock(
-            prompt_token_count=10, candidates_token_count=5
-        )
+        mock_response.usage_metadata = MagicMock(prompt_token_count=10, candidates_token_count=5)
         mock_client.models.generate_content.return_value = mock_response
 
         with patch("eng_words.llm.providers.gemini.genai") as mock_genai:
@@ -323,9 +317,7 @@ class TestGeminiProvider:
         mock_client = MagicMock()
         mock_response = MagicMock()
         mock_response.text = "test"
-        mock_response.usage_metadata = MagicMock(
-            prompt_token_count=10, candidates_token_count=5
-        )
+        mock_response.usage_metadata = MagicMock(prompt_token_count=10, candidates_token_count=5)
         mock_client.models.generate_content.return_value = mock_response
 
         with patch("eng_words.llm.providers.gemini.genai") as mock_genai:

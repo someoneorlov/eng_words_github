@@ -120,7 +120,7 @@ def main():
         print(f"❌ Error: actual file not found: {actual_path}")
         sys.exit(1)
 
-    print(f"📊 Comparing cards:")
+    print("📊 Comparing cards:")
     print(f"   Expected: {expected_path}")
     print(f"   Actual:   {actual_path}")
     print()

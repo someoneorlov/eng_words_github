@@ -63,7 +63,7 @@ def generate_report(
     lines = []
     lines.append("# WSD Gold Dataset - Pilot Report")
     lines.append(f"\nGenerated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    lines.append(f"\n## Overview")
+    lines.append("\n## Overview")
     lines.append(f"\n- **Total examples**: {len(examples)}")
     lines.append(f"- **Providers tested**: {', '.join(labels_by_provider.keys())}")
 
@@ -143,7 +143,9 @@ def generate_report(
 
         lines.append(f"- **Common examples**: {len(common_ids)}")
         lines.append(f"- **Full agreement**: {agree_count} ({100*agreement_rate:.1f}%)")
-        lines.append(f"- **Disagreement**: {len(disagree_examples)} ({100*(1-agreement_rate):.1f}%)")
+        lines.append(
+            f"- **Disagreement**: {len(disagree_examples)} ({100*(1-agreement_rate):.1f}%)"
+        )
 
         # Show some disagreements
         if disagree_examples:
@@ -168,7 +170,9 @@ def generate_report(
         stats = get_aggregation_stats(gold_labels)
 
         lines.append(f"- **Total labels**: {stats['total']}")
-        lines.append(f"- **Needs referee**: {stats['needs_referee_count']} ({100*stats['needs_referee_ratio']:.1f}%)")
+        lines.append(
+            f"- **Needs referee**: {stats['needs_referee_count']} ({100*stats['needs_referee_ratio']:.1f}%)"
+        )
         lines.append(f"- **Average agreement**: {stats['avg_agreement']:.2f}")
         lines.append(f"- **Average confidence**: {stats['avg_confidence']:.2f}")
 
@@ -183,9 +187,13 @@ def generate_report(
         anthropic_cost = 0.0
 
         if "openai" in labels_by_provider:
-            openai_cost = sum(o.usage.cost_usd for o in labels_by_provider["openai"].values()) * scale
+            openai_cost = (
+                sum(o.usage.cost_usd for o in labels_by_provider["openai"].values()) * scale
+            )
         if "anthropic" in labels_by_provider:
-            anthropic_cost = sum(o.usage.cost_usd for o in labels_by_provider["anthropic"].values()) * scale
+            anthropic_cost = (
+                sum(o.usage.cost_usd for o in labels_by_provider["anthropic"].values()) * scale
+            )
 
         total = openai_cost + anthropic_cost
         lines.append(f"| {size:,} | ${openai_cost:.2f} | ${anthropic_cost:.2f} | ${total:.2f} |")
@@ -197,7 +205,9 @@ def generate_report(
 
     if len(labels_by_provider) >= 2:
         if stats["needs_referee_ratio"] > 0.3:
-            lines.append("- ⚠️ High referee rate - consider adding 3rd model or adjusting thresholds")
+            lines.append(
+                "- ⚠️ High referee rate - consider adding 3rd model or adjusting thresholds"
+            )
         else:
             lines.append("- ✅ Referee rate acceptable")
 
@@ -266,4 +276,3 @@ def main(
 
 if __name__ == "__main__":
     app()
-

@@ -1,8 +1,7 @@
 """Tests for LLM-based synset aggregator."""
 
 from dataclasses import asdict
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
@@ -72,7 +71,7 @@ class TestBuildPrompt:
             {"synset_id": "dog.n.02", "definition": "a person", "freq": 5},
         ]
         prompt = build_aggregation_prompt("dog", synsets)
-        
+
         assert "dog" in prompt
         assert "dog.n.01" in prompt
         assert "dog.n.02" in prompt
@@ -83,7 +82,7 @@ class TestBuildPrompt:
         """Test that prompt contains key instructions."""
         synsets = [{"synset_id": "test.n.01", "definition": "test", "freq": 1}]
         prompt = build_aggregation_prompt("test", synsets)
-        
+
         assert "merge" in prompt.lower() or "merged" in prompt.lower()
         assert "JSON" in prompt
 
@@ -93,7 +92,7 @@ class TestParseResponse:
 
     def test_parse_valid_json(self):
         """Test parsing valid JSON response."""
-        response = '''
+        response = """
         {
           "groups": [
             {"synsets": [1, 2], "primary_synset": 1, "reason": "Similar"},
@@ -101,23 +100,23 @@ class TestParseResponse:
           ],
           "total_cards": 2
         }
-        '''
+        """
         result = parse_aggregation_response(response)
-        
+
         assert result is not None
         assert len(result["groups"]) == 2
         assert result["total_cards"] == 2
 
     def test_parse_with_markdown(self):
         """Test parsing JSON wrapped in markdown."""
-        response = '''```json
+        response = """```json
 {
   "groups": [{"synsets": [1], "primary_synset": 1, "reason": "test"}],
   "total_cards": 1
 }
-```'''
+```"""
         result = parse_aggregation_response(response)
-        
+
         assert result is not None
         assert len(result["groups"]) == 1
 
@@ -125,20 +124,20 @@ class TestParseResponse:
         """Test parsing invalid JSON returns None."""
         response = "This is not valid JSON"
         result = parse_aggregation_response(response)
-        
+
         assert result is None
 
     def test_parse_truncated_json(self):
         """Test parsing truncated JSON attempts repair."""
         # Truncated JSON
-        response = '''
+        response = """
 {
   "groups": [
     {"synsets": [1], "primary_synset": 1, "reason": "test"},
     {"synsets": [2], "primary_synset": 2
-'''
+"""
         result = parse_aggregation_response(response)
-        
+
         # Should either repair or return None gracefully
         # The repair logic is best-effort
         assert result is None or isinstance(result, dict)
@@ -159,22 +158,23 @@ class TestLLMAggregator:
     def mock_cache(self, tmp_path):
         """Create a mock cache."""
         from eng_words.llm.response_cache import ResponseCache
+
         return ResponseCache(cache_dir=tmp_path, enabled=True)
 
     def test_create_aggregator(self, mock_provider, mock_cache):
         """Test creating an LLMAggregator."""
         aggregator = LLMAggregator(provider=mock_provider, cache=mock_cache)
-        
+
         assert aggregator.provider == mock_provider
         assert aggregator.cache == mock_cache
 
     def test_aggregate_single_synset_lemma(self, mock_provider, mock_cache):
         """Test that single-synset lemmas don't call LLM."""
         aggregator = LLMAggregator(provider=mock_provider, cache=mock_cache)
-        
+
         synsets = [{"synset_id": "dog.n.01", "definition": "a pet", "freq": 10}]
         result = aggregator.aggregate_lemma("dog", synsets)
-        
+
         # Should return result without calling LLM
         assert result.lemma == "dog"
         assert result.original_count == 1
@@ -187,13 +187,13 @@ class TestLLMAggregator:
         """Test aggregating multiple synsets."""
         # Mock LLM response
         mock_response = LLMResponse(
-            content='''{
+            content="""{
                 "groups": [
                     {"synsets": [1, 2], "primary_synset": 1, "reason": "Similar meanings"},
                     {"synsets": [3], "primary_synset": 3, "reason": "Different"}
                 ],
                 "total_cards": 2
-            }''',
+            }""",
             model="test-model",
             input_tokens=100,
             output_tokens=50,
@@ -221,10 +221,10 @@ class TestLLMAggregator:
         """Test batch aggregation."""
         # Mock LLM response
         mock_response = LLMResponse(
-            content='''{
+            content="""{
                 "groups": [{"synsets": [1, 2], "primary_synset": 1, "reason": "test"}],
                 "total_cards": 1
-            }''',
+            }""",
             model="test-model",
             input_tokens=100,
             output_tokens=50,
@@ -235,22 +235,24 @@ class TestLLMAggregator:
         aggregator = LLMAggregator(provider=mock_provider, cache=mock_cache)
 
         # Create test DataFrame
-        df = pd.DataFrame({
-            "lemma": ["dog", "dog", "cat"],
-            "synset_id": ["dog.n.01", "dog.n.02", "cat.n.01"],
-            "definition": ["pet", "person", "feline"],
-            "freq": [10, 5, 3],
-        })
+        df = pd.DataFrame(
+            {
+                "lemma": ["dog", "dog", "cat"],
+                "synset_id": ["dog.n.01", "dog.n.02", "cat.n.01"],
+                "definition": ["pet", "person", "feline"],
+                "freq": [10, 5, 3],
+            }
+        )
 
         results = aggregator.aggregate_batch(df, progress=False)
 
         # dog has 2 synsets -> LLM call
         # cat has 1 synset -> no LLM call
         assert len(results) == 2  # One result per unique lemma
-        
+
         dog_result = next(r for r in results if r.lemma == "dog")
         assert dog_result.original_count == 2
-        
+
         cat_result = next(r for r in results if r.lemma == "cat")
         assert cat_result.original_count == 1
         assert cat_result.llm_cost == 0.0  # No LLM call
@@ -258,11 +260,10 @@ class TestLLMAggregator:
     def test_get_stats(self, mock_provider, mock_cache):
         """Test getting aggregation statistics."""
         aggregator = LLMAggregator(provider=mock_provider, cache=mock_cache)
-        
+
         stats = aggregator.get_stats()
-        
+
         assert "total_lemmas" in stats
         assert "total_synsets" in stats
         assert "total_groups" in stats
         assert "total_cost" in stats
-

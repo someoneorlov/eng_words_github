@@ -329,7 +329,9 @@ def print_pricing_table() -> None:
     print("=" * 100)
     print("LLM PRICING REFERENCE (per 1M tokens)")
     print("=" * 100)
-    print(f"{'Provider':<12} {'Model':<30} {'Input':<8} {'Output':<8} {'Cached':<8} {'Batch':<6} {'Notes'}")
+    print(
+        f"{'Provider':<12} {'Model':<30} {'Input':<8} {'Output':<8} {'Cached':<8} {'Batch':<6} {'Notes'}"
+    )
     print("-" * 100)
 
     for provider, pricing_dict in [

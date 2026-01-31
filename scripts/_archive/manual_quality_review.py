@@ -23,30 +23,29 @@ from typing import Any
 from eng_words.llm.smart_card_generator import SmartCard
 from eng_words.validation.example_validator import validate_card_examples
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class QualityReview:
     """Результат проверки одной карточки."""
+
     card_id: int
     lemma: str
     pos: str
     synset_id: str
-    
+
     # Оценки (1-5)
     examples_quality: int  # Соответствие примеров lemma/synset
     definition_quality: int  # Точность и ясность определения
     translation_quality: int  # Точность перевода
     overall_quality: int  # Общее качество карточки
-    
+
     # Проблемы
     issues: list[str]  # Список найденных проблем
     comments: str  # Комментарии проверяющего
-    
+
     # Данные карточки (для контекста)
     examples: list[str]
     definition: str
@@ -76,15 +75,15 @@ def print_card_for_review(card: dict, index: int, total: int) -> None:
     print(f"КАРТОЧКА {index + 1} / {total}")
     print("=" * 80)
     print()
-    
+
     lemma = card.get("lemma", "")
     pos = card.get("pos", "")
     synset_id = card.get("primary_synset", "")
-    
+
     print(f"📝 ЛЕММА: {lemma} ({pos})")
     print(f"🔖 SYNSET: {synset_id}")
     print()
-    
+
     # Примеры
     examples = card.get("selected_examples", [])
     print(f"📚 ПРИМЕРЫ ({len(examples)}):")
@@ -94,11 +93,11 @@ def print_card_for_review(card: dict, index: int, total: int) -> None:
     else:
         print("  ❌ НЕТ ПРИМЕРОВ!")
     print()
-    
+
     # Определение
     definition = card.get("simple_definition", "")
     wn_definition = card.get("wn_definition", "")
-    print(f"📖 ОПРЕДЕЛЕНИЕ:")
+    print("📖 ОПРЕДЕЛЕНИЕ:")
     if definition:
         print(f"  {definition}")
     else:
@@ -106,16 +105,16 @@ def print_card_for_review(card: dict, index: int, total: int) -> None:
     if wn_definition and wn_definition != definition:
         print(f"  (WordNet: {wn_definition})")
     print()
-    
+
     # Перевод
     translation = card.get("translation_ru", "")
-    print(f"🌐 ПЕРЕВОД:")
+    print("🌐 ПЕРЕВОД:")
     if translation:
         print(f"  {translation}")
     else:
         print("  ❌ НЕТ ПЕРЕВОДА!")
     print()
-    
+
     # Валидация
     try:
         smart_card = SmartCard(
@@ -133,8 +132,8 @@ def print_card_for_review(card: dict, index: int, total: int) -> None:
             synset_group=card.get("synset_group", [synset_id]),
         )
         validation = validate_card_examples(smart_card)
-        
-        print(f"✅ ВАЛИДАЦИЯ:")
+
+        print("✅ ВАЛИДАЦИЯ:")
         print(f"  Валидность: {'✅ ДА' if validation.is_valid else '❌ НЕТ'}")
         if validation.found_forms:
             print(f"  Найденные формы: {', '.join(validation.found_forms)}")
@@ -148,12 +147,12 @@ def print_card_for_review(card: dict, index: int, total: int) -> None:
 def collect_review(card: dict, index: int, total: int) -> QualityReview:
     """Собрать оценку карточки от проверяющего."""
     print_card_for_review(card, index, total)
-    
+
     print("=" * 80)
     print("ОЦЕНКА КАЧЕСТВА (1-5, где 5 = отлично):")
     print("=" * 80)
     print()
-    
+
     # Оценки
     try:
         examples_q = int(input("Примеры (1-5): ").strip() or "3")
@@ -163,18 +162,18 @@ def collect_review(card: dict, index: int, total: int) -> QualityReview:
     except (ValueError, KeyboardInterrupt):
         print("\n⚠️  Используются значения по умолчанию (3)")
         examples_q = definition_q = translation_q = overall_q = 3
-    
+
     # Проблемы
     print()
     print("ПРОБЛЕМЫ (введите через запятую или Enter для пропуска):")
     issues_input = input().strip()
     issues = [i.strip() for i in issues_input.split(",") if i.strip()] if issues_input else []
-    
+
     # Комментарии
     print()
     print("КОММЕНТАРИИ (Enter для пропуска):")
     comments = input().strip()
-    
+
     return QualityReview(
         card_id=index + 1,
         lemma=card.get("lemma", ""),
@@ -195,32 +194,34 @@ def collect_review(card: dict, index: int, total: int) -> QualityReview:
 def generate_summary(reviews: list[QualityReview]) -> dict[str, Any]:
     """Сгенерировать сводку проверки."""
     total = len(reviews)
-    
+
     # Средние оценки
     avg_examples = sum(r.examples_quality for r in reviews) / total if total > 0 else 0
     avg_definition = sum(r.definition_quality for r in reviews) / total if total > 0 else 0
     avg_translation = sum(r.translation_quality for r in reviews) / total if total > 0 else 0
     avg_overall = sum(r.overall_quality for r in reviews) / total if total > 0 else 0
-    
+
     # Распределение оценок
     examples_dist = {i: sum(1 for r in reviews if r.examples_quality == i) for i in range(1, 6)}
     definition_dist = {i: sum(1 for r in reviews if r.definition_quality == i) for i in range(1, 6)}
-    translation_dist = {i: sum(1 for r in reviews if r.translation_quality == i) for i in range(1, 6)}
+    translation_dist = {
+        i: sum(1 for r in reviews if r.translation_quality == i) for i in range(1, 6)
+    }
     overall_dist = {i: sum(1 for r in reviews if r.overall_quality == i) for i in range(1, 6)}
-    
+
     # Проблемные карточки (оценка ≤ 2)
     problematic = [r for r in reviews if r.overall_quality <= 2]
-    
+
     # Все проблемы
     all_issues = []
     for r in reviews:
         all_issues.extend(r.issues)
-    
+
     # Уникальные проблемы
     unique_issues = {}
     for issue in all_issues:
         unique_issues[issue] = unique_issues.get(issue, 0) + 1
-    
+
     return {
         "total_reviewed": total,
         "average_scores": {
@@ -269,9 +270,9 @@ def main():
         default=Path("data/comparison/manual_review.json"),
         help="Путь для сохранения результатов",
     )
-    
+
     args = parser.parse_args()
-    
+
     print("=" * 80)
     print("КРИТИЧЕСКАЯ РУЧНАЯ ПРОВЕРКА КАЧЕСТВА КАРТОЧЕК")
     print("=" * 80)
@@ -280,17 +281,17 @@ def main():
     print(f"Будут проверены: {args.n} случайных карточек")
     print(f"Результаты будут сохранены в: {args.output}")
     print()
-    
+
     # Загрузка карточек
     cards = load_cards(args.input)
-    
+
     if len(cards) < args.n:
         print(f"⚠️  В файле только {len(cards)} карточек, будет проверено {len(cards)}")
         args.n = len(cards)
-    
+
     # Выборка
     sampled = sample_cards(cards, args.n, args.seed)
-    
+
     print("\n" + "=" * 80)
     print("НАЧИНАЕМ ПРОВЕРКУ")
     print("=" * 80)
@@ -302,33 +303,33 @@ def main():
     print()
     print("Нажмите Enter для продолжения...")
     input()
-    
+
     # Проверка
     reviews = []
     for i, card in enumerate(sampled):
         try:
             review = collect_review(card, i, len(sampled))
             reviews.append(review)
-            
+
             print()
             print(f"✅ Карточка {i + 1}/{len(sampled)} проверена")
             print()
             print("─" * 80)
             print()
-            
+
         except KeyboardInterrupt:
             print("\n\n⚠️  Проверка прервана пользователем")
             break
-    
+
     # Генерация сводки
     if reviews:
         summary = generate_summary(reviews)
-        
+
         # Сохранение
         args.output.parent.mkdir(parents=True, exist_ok=True)
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(summary, f, ensure_ascii=False, indent=2)
-        
+
         # Вывод сводки
         print("\n" + "=" * 80)
         print("СВОДКА ПРОВЕРКИ")
@@ -342,14 +343,16 @@ def main():
         print(f"  Перевод:       {summary['average_scores']['translation']:.2f}/5")
         print(f"  Общее:         {summary['average_scores']['overall']:.2f}/5")
         print()
-        print(f"Проблемных карточек (≤2): {summary['problematic_cards']} ({summary['problematic_cards_pct']:.1f}%)")
+        print(
+            f"Проблемных карточек (≤2): {summary['problematic_cards']} ({summary['problematic_cards_pct']:.1f}%)"
+        )
         print()
-        
-        if summary['issue_frequency']:
+
+        if summary["issue_frequency"]:
             print("Частые проблемы:")
-            for issue, count in list(summary['issue_frequency'].items())[:10]:
+            for issue, count in list(summary["issue_frequency"].items())[:10]:
                 print(f"  - {issue}: {count} раз(а)")
-        
+
         print()
         print(f"Результаты сохранены в: {args.output}")
         print()
@@ -360,4 +363,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

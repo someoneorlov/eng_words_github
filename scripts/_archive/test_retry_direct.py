@@ -14,7 +14,7 @@ class MockProvider(LLMProvider):
         self.call_count = 0
         self.model = "test"
         self.temperature = 0.0
-    
+
     def complete(self, prompt, **kwargs):
         self.call_count += 1
         print(f"  complete() called (count: {self.call_count})")
@@ -25,14 +25,14 @@ class MockProvider(LLMProvider):
             output_tokens=50,
             cost_usd=0.001,
         )
-    
+
     def complete_json(self, prompt, schema=None, **kwargs):
-        print(f"  complete_json() called")
+        print("  complete_json() called")
         try:
             return json.loads(self.complete(prompt).content)
         except:
             raise
-    
+
     def estimate_cost(self, input_tokens, output_tokens):
         return 0.001
 

@@ -97,7 +97,6 @@ IRREGULAR_FORMS: dict[str, list[str]] = {
     "leaf": ["leaves"],  # Irregular plural
     "knife": ["knives"],  # Irregular plural
     "partake": ["partook", "partaken", "partakes"],
-    "get": ["got", "gotten", "gets"],
     "gentleman": ["gentlemen"],  # Irregular plural
     "free": ["freed", "freeing", "frees"],
     "forget": ["forgot", "forgotten", "forgets"],
@@ -425,9 +424,7 @@ def fix_invalid_cards(
             # Some examples valid, some invalid - keep only valid
             fixed_card = deepcopy(card)
             fixed_card.selected_examples = result.valid_examples
-            fixed_card.excluded_examples = (
-                card.excluded_examples + result.invalid_examples
-            )
+            fixed_card.excluded_examples = card.excluded_examples + result.invalid_examples
             fixed_cards.append(fixed_card)
             stats["fixed_partial"] += 1
             logger.debug(
@@ -439,9 +436,7 @@ def fix_invalid_cards(
             # No valid examples, but has generated_example
             fixed_card = deepcopy(card)
             fixed_card.selected_examples = [card.generated_example]
-            fixed_card.excluded_examples = (
-                card.excluded_examples + result.invalid_examples
-            )
+            fixed_card.excluded_examples = card.excluded_examples + result.invalid_examples
             fixed_cards.append(fixed_card)
             stats["fixed_generated"] += 1
             logger.info(
@@ -455,8 +450,7 @@ def fix_invalid_cards(
             stats["for_review"] += 1
             action = "removed" if remove_unfixable else "marked for review"
             logger.warning(
-                f"Card '{card.lemma}' ({card.primary_synset}): "
-                f"no valid examples, {action}"
+                f"Card '{card.lemma}' ({card.primary_synset}): " f"no valid examples, {action}"
             )
 
     action_str = "removed" if remove_unfixable else "for review"
@@ -468,4 +462,3 @@ def fix_invalid_cards(
     )
 
     return fixed_cards, cards_for_review
-

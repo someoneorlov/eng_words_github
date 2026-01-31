@@ -126,11 +126,7 @@ class GeminiGoldProvider(GoldLabelProvider):
 
                 # Determine max_output_tokens based on model
                 # Thinking models that can't be disabled need higher limit
-                max_tokens = (
-                    THINKING_MAX_TOKENS
-                    if self.model in THINKING_MODELS_ALWAYS_ON
-                    else 512
-                )
+                max_tokens = THINKING_MAX_TOKENS if self.model in THINKING_MODELS_ALWAYS_ON else 512
 
                 # Get thinking config for models that support it
                 thinking_config = THINKING_CONFIGURABLE_MODELS.get(self.model)

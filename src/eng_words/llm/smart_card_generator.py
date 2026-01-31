@@ -10,11 +10,10 @@ Generates high-quality Anki flashcards by:
 import json
 import logging
 from dataclasses import asdict, dataclass, field
-from typing import Any, Callable
+from typing import Any
 
-from nltk.corpus import wordnet as wn
 
-from eng_words.llm.base import LLMProvider, LLMResponse
+from eng_words.llm.base import LLMProvider
 from eng_words.llm.response_cache import ResponseCache
 from eng_words.llm.retry import call_llm_with_retry
 
@@ -109,15 +108,15 @@ def mark_examples_by_length(
     min_words: int = 6,  # Minimum length for a proper context
 ) -> dict[int, bool]:  # sentence_id -> is_appropriate_length
     """Mark examples by length (don't filter, just mark).
-    
+
     Args:
         examples: List of (sentence_id, sentence) tuples
         max_words: Maximum allowed words (default: 50)
         min_words: Minimum allowed words (default: 6)
-        
+
     Returns:
         Dictionary mapping sentence_id to is_appropriate_length (True/False)
-        True = appropriate length (min_words <= length <= max_words), 
+        True = appropriate length (min_words <= length <= max_words),
         False = too short (<min_words) or too long (>max_words)
     """
     length_flags = {}
@@ -153,20 +152,20 @@ def check_spoilers(
     max_examples_per_batch: int = 50,
 ) -> dict[int, bool]:  # sentence_id -> has_spoiler
     """Check examples for spoilers.
-    
+
     Args:
         examples: List of (sentence_id, sentence) tuples
         provider: LLM provider
         cache: Response cache
         book_name: Name of the book
         max_examples_per_batch: Maximum examples per batch (default: 50)
-        
+
     Returns:
         Dictionary mapping sentence_id to has_spoiler (True/False)
     """
     if not examples:
         return {}
-    
+
     # Process in batches if needed
     if len(examples) <= max_examples_per_batch:
         return _check_spoilers_batch(
@@ -175,29 +174,33 @@ def check_spoilers(
             cache=cache,
             book_name=book_name,
         )
-    
+
     # Process in batches
-    logger.info(f"Processing {len(examples)} examples for spoiler check in batches of {max_examples_per_batch}")
-    
+    logger.info(
+        f"Processing {len(examples)} examples for spoiler check in batches of {max_examples_per_batch}"
+    )
+
     all_flags = {}
     num_batches = (len(examples) + max_examples_per_batch - 1) // max_examples_per_batch
-    
+
     for batch_idx in range(num_batches):
         start_idx = batch_idx * max_examples_per_batch
         end_idx = min(start_idx + max_examples_per_batch, len(examples))
         batch_examples = examples[start_idx:end_idx]
-        
-        logger.debug(f"Processing spoiler check batch {batch_idx + 1}/{num_batches} ({len(batch_examples)} examples)")
-        
+
+        logger.debug(
+            f"Processing spoiler check batch {batch_idx + 1}/{num_batches} ({len(batch_examples)} examples)"
+        )
+
         batch_flags = _check_spoilers_batch(
             examples=batch_examples,
             provider=provider,
             cache=cache,
             book_name=book_name,
         )
-        
+
         all_flags.update(batch_flags)
-    
+
     return all_flags
 
 
@@ -208,13 +211,13 @@ def _check_spoilers_batch(
     book_name: str,
 ) -> dict[int, bool]:
     """Check spoilers for a batch of examples.
-    
+
     Args:
         examples: List of (sentence_id, sentence) tuples
         provider: LLM provider
         cache: Response cache
         book_name: Name of the book
-        
+
     Returns:
         Dictionary mapping sentence_id to has_spoiler (True/False)
     """
@@ -222,18 +225,18 @@ def _check_spoilers_batch(
     examples_numbered = "\n".join(
         f"{idx + 1}. {sentence}" for idx, (_, sentence) in enumerate(examples)
     )
-    
+
     prompt = SPOILER_CHECK_PROMPT.format(
         book_name=book_name,
         examples_numbered=examples_numbered,
     )
-    
+
     # Check cache first
     model_name = getattr(provider, "model", "unknown-model")
     temperature = getattr(provider, "temperature", 0.0)
     cache_key = cache.generate_key(model_name, prompt, temperature)
     cached_response = cache.get(cache_key)
-    
+
     if cached_response:
         logger.debug(f"Cache hit for spoiler check ({len(examples)} examples)")
         try:
@@ -241,7 +244,7 @@ def _check_spoilers_batch(
             return _parse_spoiler_response(response_data, examples)
         except Exception as e:
             logger.warning(f"Failed to parse cached spoiler response: {e}, retrying")
-    
+
     # Use universal retry utility
     try:
         response = call_llm_with_retry(
@@ -255,17 +258,17 @@ def _check_spoilers_batch(
                 f"Retry {attempt} for spoiler check: {error}"
             ),
         )
-        
+
         # Cache the response manually
         try:
             cache.set(cache_key, response)
         except Exception as e:
             logger.warning(f"Failed to cache spoiler response: {e}")
-        
+
         # Parse response
         response_data = json.loads(response.content)
         return _parse_spoiler_response(response_data, examples)
-        
+
     except (ValueError, json.JSONDecodeError, Exception) as e:
         # All retries failed - use conservative approach (mark all as spoilers)
         logger.error(f"All retries failed for spoiler check: {e}, marking all as spoilers")
@@ -277,27 +280,27 @@ def _parse_spoiler_response(
     examples: list[tuple[int, str]],
 ) -> dict[int, bool]:
     """Parse spoiler check response from LLM.
-    
+
     Args:
         response_data: JSON response from LLM with "has_spoiler" list
         examples: List of (sentence_id, sentence) tuples
-        
+
     Returns:
         Dictionary mapping sentence_id to has_spoiler (True/False)
     """
     has_spoiler_list = response_data.get("has_spoiler", [])
-    
+
     if len(has_spoiler_list) != len(examples):
         logger.warning(
             f"Spoiler response length mismatch: expected {len(examples)}, got {len(has_spoiler_list)}"
         )
         # Use conservative approach: mark all as spoilers if mismatch
         return {sid: True for sid, _ in examples}
-    
+
     flags = {}
     for idx, (sid, _) in enumerate(examples):
         flags[sid] = bool(has_spoiler_list[idx])
-    
+
     return flags
 
 
@@ -308,20 +311,20 @@ def select_examples_for_generation(
     target_count: int = 3,
 ) -> dict[str, Any]:
     """Select examples for generation based on simple logic and flags.
-    
+
     Logic:
     - Use only examples with is_appropriate_length=True and has_spoiler=False
     - Deduplicate: drop duplicate sentences
     - If 3+ such examples: take 2 from book + generate 1
     - If 1-2 such examples: take all + generate the rest up to 3
     - If none: generate 3
-    
+
     Args:
         all_examples: List of all (sentence_id, sentence) tuples (not filtered)
         length_flags: Dictionary mapping sentence_id to is_appropriate_length (True/False)
         spoiler_flags: Dictionary mapping sentence_id to has_spoiler (True/False)
         target_count: Target number of examples (default: 3)
-        
+
     Returns:
         Dictionary with:
         - selected_from_book: List of (sentence_id, sentence) to use from book
@@ -330,10 +333,11 @@ def select_examples_for_generation(
     """
     # Keep only examples with correct flags
     valid_examples = [
-        (sid, ex) for sid, ex in all_examples
+        (sid, ex)
+        for sid, ex in all_examples
         if length_flags.get(sid, False) and not spoiler_flags.get(sid, True)
     ]
-    
+
     # Deduplicate: drop duplicate sentences (same text, different sentence_id)
     seen_sentences = set()
     deduplicated_examples = []
@@ -343,11 +347,11 @@ def select_examples_for_generation(
         if normalized not in seen_sentences:
             seen_sentences.add(normalized)
             deduplicated_examples.append((sid, ex))
-    
+
     valid_examples = deduplicated_examples
-    
+
     count = len(valid_examples)
-    
+
     if count >= 3:
         # 3+ good examples: take 2 from book + generate 1
         return {
@@ -382,11 +386,11 @@ def select_examples_for_generation(
 
 def validate_example_length(example: str, max_words: int = 50) -> tuple[bool, str]:
     """Validate example length.
-    
+
     Args:
         example: Example sentence.
         max_words: Maximum allowed words (default: 50).
-        
+
     Returns:
         Tuple of (is_valid, reason). reason is empty if valid.
     """
@@ -425,9 +429,7 @@ def format_card_prompt(
     Returns:
         Formatted prompt string.
     """
-    examples_numbered = "\n".join(
-        f"{i+1}. \"{ex}\"" for i, ex in enumerate(examples)
-    )
+    examples_numbered = "\n".join(f'{i+1}. "{ex}"' for i, ex in enumerate(examples))
 
     # Format synset_group_info
     if synset_group and len(synset_group) > 1:
@@ -447,11 +449,11 @@ def format_card_prompt(
         synset_group_info=synset_group_info,
         generate_count=generate_count,
     )
-    
+
     # Add additional instruction if provided (for retry with specific issue)
     if additional_instruction:
         prompt += f"\n\n## CRITICAL: {additional_instruction}"
-    
+
     return prompt
 
 
@@ -646,30 +648,30 @@ class SmartCardGenerator:
 
     def _validate_examples(self, examples: list[str]) -> tuple[list[str], list[str]]:
         """Validate examples for length and spoilers.
-        
+
         Args:
             examples: List of example sentences.
-            
+
         Returns:
             Tuple of (valid_examples, issues). issues is list of issue descriptions.
         """
         valid_examples = []
         issues = []
-        
+
         for ex in examples:
             # Check length
             is_valid, reason = validate_example_length(ex, max_words=50)
             if not is_valid:
                 issues.append(f"Example too long: {reason}")
                 continue
-            
+
             # TODO: Add spoiler detection (can use LLM or keyword-based)
             # For now, we trust LLM's spoiler detection from prompt
-            
+
             valid_examples.append(ex)
-        
+
         return valid_examples, issues
-    
+
     def _try_generate_with_validation(
         self,
         prompt: str,
@@ -683,7 +685,7 @@ class SmartCardGenerator:
         generate_count: int = 0,
     ) -> SmartCard | None:
         """Try to generate a card with retries and validation.
-        
+
         Uses call_llm_with_retry for API error handling.
         Validates examples after generation and retries with improved prompt if needed.
 
@@ -691,7 +693,7 @@ class SmartCardGenerator:
         """
         max_validation_retries = 2  # Additional retries for validation issues
         current_prompt = prompt
-        
+
         for validation_attempt in range(max_validation_retries + 1):
             try:
                 # Use call_llm_with_retry for robust API error handling
@@ -721,17 +723,17 @@ class SmartCardGenerator:
                     synset_group=synset_group,
                     primary_synset=primary_synset,
                 )
-                
+
                 # Validate examples after generation
                 all_examples = card.selected_examples + card.generated_examples
                 valid_examples, issues = self._validate_examples(all_examples)
-                
+
                 # Check if we have validation issues
                 if issues and validation_attempt < max_validation_retries:
                     # Build improved prompt with specific issue
                     issue_text = "; ".join(issues[:3])  # Limit to first 3 issues
                     additional_instruction = ""
-                    
+
                     if "too_long" in issue_text:
                         additional_instruction = (
                             "CRITICAL: Some examples are TOO LONG (>50 words). "
@@ -744,7 +746,7 @@ class SmartCardGenerator:
                             "You MUST mark them as invalid in invalid_indices. "
                             "DO NOT select examples that reveal plot points or story endings."
                         )
-                    
+
                     if additional_instruction:
                         # Retry with improved prompt
                         current_prompt = format_card_prompt(
@@ -763,7 +765,7 @@ class SmartCardGenerator:
                             f"Validation issues for '{lemma}': {issue_text}. Retrying with improved prompt."
                         )
                         continue
-                
+
                 # Card is valid or we've exhausted retries
                 return card
 
@@ -780,7 +782,9 @@ class SmartCardGenerator:
                 if validation_attempt >= max_validation_retries:
                     break
 
-        logger.error(f"Failed to generate card for '{lemma}' after {max_validation_retries + 1} validation attempts")
+        logger.error(
+            f"Failed to generate card for '{lemma}' after {max_validation_retries + 1} validation attempts"
+        )
         return None
 
     def _parse_response(self, content: str) -> dict:
@@ -809,9 +813,9 @@ class SmartCardGenerator:
 
         # Validate required fields (new JSON schema)
         required = ["selected_indices", "simple_definition", "translation_ru"]
-        for field in required:
-            if field not in result:
-                raise ValueError(f"Missing required field: {field}")
+        for field_name in required:
+            if field_name not in result:
+                raise ValueError(f"Missing required field: {field_name}")
 
         # Ensure optional fields have defaults
         if "valid_indices" not in result:
@@ -859,17 +863,9 @@ class SmartCardGenerator:
         selected_indices = llm_result.get("selected_indices", [])
         invalid_indices = llm_result.get("invalid_indices", [])
 
-        selected_examples = [
-            examples[i - 1]
-            for i in selected_indices
-            if 1 <= i <= len(examples)
-        ]
+        selected_examples = [examples[i - 1] for i in selected_indices if 1 <= i <= len(examples)]
 
-        excluded_examples = [
-            examples[i - 1]
-            for i in invalid_indices
-            if 1 <= i <= len(examples)
-        ]
+        excluded_examples = [examples[i - 1] for i in invalid_indices if 1 <= i <= len(examples)]
 
         # Parse quality_scores (convert string keys to int if needed)
         quality_scores = llm_result.get("quality_scores", {})
@@ -1034,4 +1030,3 @@ class SmartCardGenerator:
             "total_cost": self._stats.total_cost,
             "cache_stats": self._cache.stats(),
         }
-

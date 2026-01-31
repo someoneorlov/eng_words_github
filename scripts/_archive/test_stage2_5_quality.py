@@ -40,9 +40,7 @@ from eng_words.validation import validate_examples_for_synset_group
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
 
 # Paths
@@ -97,19 +95,19 @@ def analyze_card_quality(card, selection_info: dict | None = None) -> dict:
         "has_translation": bool(card.translation_ru),
         "skip_reason": card.skip_reason if hasattr(card, "skip_reason") else None,
     }
-    
+
     # Добавляем информацию о выборе примеров
     if selection_info:
         stats["generate_count_requested"] = selection_info.get("generate_count", 0)
         stats["selected_from_book_count"] = len(selection_info.get("selected_from_book", []))
-    
+
     # Анализ длины примеров
     for ex in card.selected_examples:
         stats["selected_examples_lengths"].append(count_words(ex))
-    
+
     for ex in card.generated_examples:
         stats["generated_examples_lengths"].append(count_words(ex))
-    
+
     # Статистика по длине
     if stats["selected_examples_lengths"]:
         stats["selected_examples_avg_length"] = np.mean(stats["selected_examples_lengths"])
@@ -119,14 +117,14 @@ def analyze_card_quality(card, selection_info: dict | None = None) -> dict:
         stats["selected_examples_avg_length"] = 0
         stats["selected_examples_max_length"] = 0
         stats["selected_examples_min_length"] = 0
-    
+
     if stats["generated_examples_lengths"]:
         stats["generated_examples_avg_length"] = np.mean(stats["generated_examples_lengths"])
         stats["generated_examples_max_length"] = np.max(stats["generated_examples_lengths"])
     else:
         stats["generated_examples_avg_length"] = 0
         stats["generated_examples_max_length"] = 0
-    
+
     return stats
 
 
@@ -143,7 +141,7 @@ def main():
     logger.info("\n## Загрузка данных")
     cards_df = pd.read_parquet(AGGREGATED_CARDS_PATH)
     logger.info(f"  Загружено {len(cards_df):,} карточек")
-    
+
     tokens_df = pd.read_parquet(TOKENS_PATH)
     sentences = reconstruct_sentences_from_tokens(tokens_df)
     sentences_df = create_sentences_dataframe(sentences)
@@ -183,25 +181,27 @@ def main():
             wn_definition = row.get("definition", row.get("wn_definition", ""))
             synset_group = normalize_synset_group(row.get("synset_group", []))
             primary_synset = row.get("primary_synset", "")
-            
+
             # Получение примеров
             sentence_ids = row.get("sentence_ids", [])
             if isinstance(sentence_ids, str):
                 sentence_ids = json.loads(sentence_ids)
-            
+
             examples = [
                 (sid, sentences_lookup.get(sid, ""))
                 for sid in sentence_ids
                 if sid in sentences_lookup
             ]
-            
+
             if not examples:
-                skipped_cards.append({
-                    "lemma": lemma,
-                    "pos": pos,
-                    "skip_reason": "no_examples",
-                    "skip_reason_detail": "Нет примеров в sentences_lookup"
-                })
+                skipped_cards.append(
+                    {
+                        "lemma": lemma,
+                        "pos": pos,
+                        "skip_reason": "no_examples",
+                        "skip_reason_detail": "Нет примеров в sentences_lookup",
+                    }
+                )
                 logger.debug(f"  Пропущено '{lemma}': нет примеров")
                 continue
 
@@ -214,7 +214,7 @@ def main():
                 provider=provider,
                 cache=cache,
             )
-            
+
             if not validation_result["has_valid"]:
                 # Сохраняем информацию о пропущенной карточке с деталями валидации
                 skipped_info = {
@@ -225,19 +225,23 @@ def main():
                     "synset_group": synset_group,
                     "primary_synset": primary_synset,
                     "total_examples": len(examples),
-                    "invalid_examples_count": len(validation_result.get("invalid_sentence_ids", [])),
+                    "invalid_examples_count": len(
+                        validation_result.get("invalid_sentence_ids", [])
+                    ),
                     "validation_details": validation_result.get("validation_details", {}),
                 }
                 skipped_cards.append(skipped_info)
-                logger.debug(f"  Пропущено '{lemma}': нет валидных примеров для synset_group (всего примеров: {len(examples)})")
+                logger.debug(
+                    f"  Пропущено '{lemma}': нет валидных примеров для synset_group (всего примеров: {len(examples)})"
+                )
                 continue
-            
+
             valid_examples = [
                 (sid, sentences_lookup[sid])
                 for sid in validation_result["valid_sentence_ids"]
                 if sid in sentences_lookup
             ]
-            
+
             # Шаг 2: Разметка по длине
             length_flags = mark_examples_by_length(valid_examples, max_words=50)
             too_long_count = sum(1 for v in length_flags.values() if not v)
@@ -262,7 +266,7 @@ def main():
                 spoiler_flags=spoiler_flags,
                 target_count=3,
             )
-            
+
             # Статистика выбора
             selected_count = len(selection["selected_from_book"])
             generate_count = selection["generate_count"]
@@ -290,7 +294,7 @@ def main():
                 other_errors += 1
                 logger.warning(f"  Не удалось сгенерировать '{lemma}': card is None")
                 continue
-            
+
             if hasattr(card, "skip_reason") and card.skip_reason:
                 skipped_with_reason += 1
                 logger.info(f"  Пропущено '{lemma}' (skip_reason: {card.skip_reason})")
@@ -301,7 +305,7 @@ def main():
             stats["lemma"] = lemma
             stats["pos"] = pos
             stats["row_index"] = row.name  # Сохраняем индекс для точного восстановления
-            
+
             # Добавляем полную информацию о карточке для ручной проверки
             stats["card_full"] = {
                 "selected_examples": card.selected_examples,
@@ -312,7 +316,7 @@ def main():
                 "synset_group": synset_group,
                 "primary_synset": primary_synset,
             }
-            
+
             all_stats.append(stats)
 
         except json.JSONDecodeError as e:
@@ -321,14 +325,19 @@ def main():
         except Exception as e:
             # Проверяем тип ошибки
             error_str = str(e).lower()
-            if any(keyword in error_str for keyword in ['api', 'timeout', 'rate limit', '503', '429']):
+            if any(
+                keyword in error_str for keyword in ["api", "timeout", "rate limit", "503", "429"]
+            ):
                 api_errors += 1
                 logger.error(f"  API error для '{row.get('lemma', 'unknown')}': {e}")
             else:
                 other_errors += 1
-                logger.error(f"  Неожиданная ошибка при обработке '{row.get('lemma', 'unknown')}': {e}")
+                logger.error(
+                    f"  Неожиданная ошибка при обработке '{row.get('lemma', 'unknown')}': {e}"
+                )
                 logger.error(f"  Тип ошибки: {type(e).__name__}")
                 import traceback
+
                 logger.debug(f"  Traceback: {traceback.format_exc()}")
 
     # Вывод статистики
@@ -336,62 +345,84 @@ def main():
     logger.info("РЕЗУЛЬТАТЫ ТЕСТИРОВАНИЯ")
     logger.info("=" * 70)
 
-    logger.info(f"\n## Общая статистика")
+    logger.info("\n## Общая статистика")
     logger.info(f"  Всего карточек: {len(test_df)}")
-    logger.info(f"  Успешно сгенерировано: {len(all_stats)} ({len(all_stats)/len(test_df)*100:.1f}%)")
-    logger.info(f"  Пропущено (нет валидных примеров для synset_group): {len(skipped_cards)} ({len(skipped_cards)/len(test_df)*100:.1f}%)")
-    logger.info(f"  Пропущено (skip_reason): {skipped_with_reason} ({skipped_with_reason/len(test_df)*100:.1f}%)")
-    
+    logger.info(
+        f"  Успешно сгенерировано: {len(all_stats)} ({len(all_stats)/len(test_df)*100:.1f}%)"
+    )
+    logger.info(
+        f"  Пропущено (нет валидных примеров для synset_group): {len(skipped_cards)} ({len(skipped_cards)/len(test_df)*100:.1f}%)"
+    )
+    logger.info(
+        f"  Пропущено (skip_reason): {skipped_with_reason} ({skipped_with_reason/len(test_df)*100:.1f}%)"
+    )
+
     # Детальная статистика по пропущенным карточкам
     if skipped_cards:
         skip_reasons = defaultdict(int)
         for card in skipped_cards:
             skip_reasons[card.get("skip_reason", "unknown")] += 1
-        logger.info(f"\n## Детализация пропущенных карточек:")
+        logger.info("\n## Детализация пропущенных карточек:")
         for reason, count in sorted(skip_reasons.items(), key=lambda x: x[1], reverse=True):
             logger.info(f"  - {reason}: {count}")
-    
-    logger.info(f"\n## Ошибки генерации:")
-    logger.info(f"  JSON parsing errors: {json_parse_errors} ({json_parse_errors/len(test_df)*100:.1f}%) - ДОЛЖНО БЫТЬ 0%")
+
+    logger.info("\n## Ошибки генерации:")
+    logger.info(
+        f"  JSON parsing errors: {json_parse_errors} ({json_parse_errors/len(test_df)*100:.1f}%) - ДОЛЖНО БЫТЬ 0%"
+    )
     logger.info(f"  API errors: {api_errors} ({api_errors/len(test_df)*100:.1f}%)")
     logger.info(f"  Другие ошибки: {other_errors} ({other_errors/len(test_df)*100:.1f}%)")
-    logger.info(f"  Всего ошибок: {json_parse_errors + api_errors + other_errors} ({(json_parse_errors + api_errors + other_errors)/len(test_df)*100:.1f}%)")
+    logger.info(
+        f"  Всего ошибок: {json_parse_errors + api_errors + other_errors} ({(json_parse_errors + api_errors + other_errors)/len(test_df)*100:.1f}%)"
+    )
 
-    logger.info(f"\n## Статистика разметки по длине")
+    logger.info("\n## Статистика разметки по длине")
     logger.info(f"  Слишком длинные (>50 слов): {length_stats['too_long']}")
     logger.info(f"  Подходящая длина (<=50 слов): {length_stats['appropriate_length']}")
 
-    logger.info(f"\n## Статистика проверки спойлеров")
+    logger.info("\n## Статистика проверки спойлеров")
     logger.info(f"  Со спойлерами: {spoiler_stats['has_spoiler']}")
     logger.info(f"  Без спойлеров: {spoiler_stats['no_spoiler']}")
 
-    logger.info(f"\n## Статистика выбора примеров")
+    logger.info("\n## Статистика выбора примеров")
     for pattern, count in sorted(selection_stats.items()):
         logger.info(f"  {pattern}: {count}")
 
     if all_stats:
         stats_df = pd.DataFrame(all_stats)
-        
-        logger.info(f"\n## Качество карточек")
+
+        logger.info("\n## Качество карточек")
         logger.info(f"  Среднее количество примеров: {stats_df['total_examples_count'].mean():.2f}")
-        logger.info(f"  Среднее количество из книги: {stats_df['selected_examples_count'].mean():.2f}")
-        logger.info(f"  Среднее количество сгенерированных: {stats_df['generated_examples_count'].mean():.2f}")
-        logger.info(f"  Средняя длина примеров из книги: {stats_df['selected_examples_avg_length'].mean():.2f}")
-        logger.info(f"  Средняя длина сгенерированных примеров: {stats_df['generated_examples_avg_length'].mean():.2f}")
+        logger.info(
+            f"  Среднее количество из книги: {stats_df['selected_examples_count'].mean():.2f}"
+        )
+        logger.info(
+            f"  Среднее количество сгенерированных: {stats_df['generated_examples_count'].mean():.2f}"
+        )
+        logger.info(
+            f"  Средняя длина примеров из книги: {stats_df['selected_examples_avg_length'].mean():.2f}"
+        )
+        logger.info(
+            f"  Средняя длина сгенерированных примеров: {stats_df['generated_examples_avg_length'].mean():.2f}"
+        )
         logger.info(f"  Средняя длина определения: {stats_df['definition_length'].mean():.2f}")
-        logger.info(f"  Карточек с переводом: {stats_df['has_translation'].sum()}/{len(stats_df)} ({stats_df['has_translation'].mean()*100:.1f}%)")
-        
+        logger.info(
+            f"  Карточек с переводом: {stats_df['has_translation'].sum()}/{len(stats_df)} ({stats_df['has_translation'].mean()*100:.1f}%)"
+        )
+
         # Сохранение результатов
         output_file = OUTPUT_DIR / "test_results.json"
         stats_df.to_json(output_file, orient="records", indent=2, force_ascii=False)
         logger.info(f"\n  Результаты сохранены в {output_file}")
-    
+
     # Сохранение информации о пропущенных карточках
     if skipped_cards:
         skipped_file = OUTPUT_DIR / "skipped_cards.json"
         with open(skipped_file, "w", encoding="utf-8") as f:
             json.dump(skipped_cards, f, indent=2, ensure_ascii=False)
-        logger.info(f"\n  Информация о пропущенных карточках сохранена в {skipped_file} ({len(skipped_cards)} карточек)")
+        logger.info(
+            f"\n  Информация о пропущенных карточках сохранена в {skipped_file} ({len(skipped_cards)} карточек)"
+        )
 
     logger.info("\n" + "=" * 70)
     logger.info("ТЕСТИРОВАНИЕ ЗАВЕРШЕНО")

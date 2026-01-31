@@ -7,7 +7,6 @@ Tests cover:
 - Scoring combination
 """
 
-import pytest
 
 
 class TestSelectSmartCandidates:
@@ -21,8 +20,9 @@ class TestSelectSmartCandidates:
 
     def test_returns_list(self) -> None:
         """Test that function returns a list of tuples."""
-        from eng_words.wsd.candidate_selector import select_smart_candidates
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import select_smart_candidates
 
         synsets = wn.synsets("run", pos="v")
         scores = {s.name(): 0.5 for s in synsets}
@@ -42,8 +42,9 @@ class TestSelectSmartCandidates:
 
     def test_respects_max_candidates(self) -> None:
         """Test that function respects max_candidates limit."""
-        from eng_words.wsd.candidate_selector import select_smart_candidates
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import select_smart_candidates
 
         synsets = wn.synsets("run", pos="v")
         scores = {s.name(): 0.5 for s in synsets}
@@ -61,8 +62,9 @@ class TestSelectSmartCandidates:
 
     def test_includes_top_by_score(self) -> None:
         """Test that top-scoring synsets are included."""
-        from eng_words.wsd.candidate_selector import select_smart_candidates
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import select_smart_candidates
 
         synsets = wn.synsets("bank", pos="n")
         # Make one synset clearly the best
@@ -83,8 +85,9 @@ class TestSelectSmartCandidates:
 
     def test_includes_diverse_supersenses(self) -> None:
         """Test that synsets from different supersenses are included."""
-        from eng_words.wsd.candidate_selector import select_smart_candidates
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import select_smart_candidates
 
         synsets = wn.synsets("bank", pos="n")
         scores = {s.name(): 0.5 for s in synsets}
@@ -108,8 +111,9 @@ class TestSelectSmartCandidates:
 
     def test_context_keyword_boost(self) -> None:
         """Test that synsets with context keywords get boosted."""
-        from eng_words.wsd.candidate_selector import select_smart_candidates
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import select_smart_candidates
 
         synsets = wn.synsets("bank", pos="n")
         # Give equal scores
@@ -147,8 +151,9 @@ class TestSelectSmartCandidates:
 
     def test_handles_single_synset(self) -> None:
         """Test handling of single synset."""
-        from eng_words.wsd.candidate_selector import select_smart_candidates
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import select_smart_candidates
 
         synsets = wn.synsets("aardvark", pos="n")[:1]
         scores = {synsets[0].name(): 0.7}
@@ -176,8 +181,9 @@ class TestScoreCombination:
 
     def test_embedding_score_weight(self) -> None:
         """Test that embedding score contributes to combined score."""
-        from eng_words.wsd.candidate_selector import compute_combined_score
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import compute_combined_score
 
         synset = wn.synset("bank.n.01")
 
@@ -199,8 +205,9 @@ class TestScoreCombination:
 
     def test_context_boost_effect(self) -> None:
         """Test that context boost increases score."""
-        from eng_words.wsd.candidate_selector import compute_combined_score
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import compute_combined_score
 
         synset = wn.synset("bank.n.01")
 
@@ -232,8 +239,9 @@ class TestContextKeywordMatch:
 
     def test_no_match_returns_zero(self) -> None:
         """Test that no match returns zero boost."""
-        from eng_words.wsd.candidate_selector import get_context_boost
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import get_context_boost
 
         synset = wn.synset("bank.n.01")  # "sloping land beside body of water"
         sentence = "The computer is fast."
@@ -243,8 +251,9 @@ class TestContextKeywordMatch:
 
     def test_match_returns_positive(self) -> None:
         """Test that match returns positive boost."""
-        from eng_words.wsd.candidate_selector import get_context_boost
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import get_context_boost
 
         synset = wn.synset("bank.n.01")  # "sloping land beside body of water"
         sentence = "The water flowed by the sloping land."
@@ -254,8 +263,9 @@ class TestContextKeywordMatch:
 
     def test_more_matches_higher_boost(self) -> None:
         """Test that more matches give higher boost."""
-        from eng_words.wsd.candidate_selector import get_context_boost
         from nltk.corpus import wordnet as wn
+
+        from eng_words.wsd.candidate_selector import get_context_boost
 
         synset = wn.synset("bank.n.01")
 
@@ -264,4 +274,3 @@ class TestContextKeywordMatch:
 
         # More matching words should give higher boost
         assert boost2 >= boost1
-

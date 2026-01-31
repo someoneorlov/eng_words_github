@@ -62,9 +62,7 @@ def get_pos_tag(supersense: str) -> str:
 
 def reconstruct_sentence(tokens_df: pd.DataFrame, sentence_id: int) -> str:
     """Reconstruct sentence text from tokens."""
-    sentence_tokens = tokens_df[tokens_df["sentence_id"] == sentence_id].sort_values(
-        "position"
-    )
+    sentence_tokens = tokens_df[tokens_df["sentence_id"] == sentence_id].sort_values("position")
     parts = []
     for _, row in sentence_tokens.iterrows():
         parts.append(row["surface"])
@@ -83,8 +81,7 @@ def get_contexts_for_lemma_supersense(
     """Get example sentences for a (lemma, supersense) pair."""
     # Find tokens with this lemma and supersense
     matching = sense_tokens_df[
-        (sense_tokens_df["lemma"] == lemma)
-        & (sense_tokens_df["supersense"] == supersense)
+        (sense_tokens_df["lemma"] == lemma) & (sense_tokens_df["supersense"] == supersense)
     ]
 
     # Get unique sentence IDs
@@ -117,9 +114,7 @@ def select_easy_examples(
     )
 
     # Filter: 1-2 synsets, min frequency
-    easy = stats_df[
-        (stats_df["wn_synset_count"] <= 2) & (stats_df["sense_freq"] >= min_freq)
-    ]
+    easy = stats_df[(stats_df["wn_synset_count"] <= 2) & (stats_df["sense_freq"] >= min_freq)]
 
     # Balance by POS
     result = []
@@ -146,9 +141,7 @@ def select_hard_examples(
     )
 
     # Filter: 5+ synsets, min frequency
-    hard = stats_df[
-        (stats_df["wn_synset_count"] >= 5) & (stats_df["sense_freq"] >= min_freq)
-    ]
+    hard = stats_df[(stats_df["wn_synset_count"] >= 5) & (stats_df["sense_freq"] >= min_freq)]
 
     # Balance by POS (verbs are typically harder)
     result = []
@@ -322,4 +315,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -226,4 +226,3 @@ class CachedProvider(LLMProvider):
     def estimate_cost(self, input_tokens: int, output_tokens: int) -> float:
         """Estimate cost (delegated to underlying provider)."""
         return self._provider.estimate_cost(input_tokens, output_tokens)
-

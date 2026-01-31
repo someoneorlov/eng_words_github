@@ -24,9 +24,7 @@ from eng_words.validation.example_validator import validate_card_examples
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
 
 # Paths
@@ -111,7 +109,7 @@ def main():
         # Validate new card
         new_result = validate_card_examples(card)
         if new_result.is_valid:
-            logger.info(f"    ✅ New example is VALID")
+            logger.info("    ✅ New example is VALID")
             fixed_count += 1
         else:
             logger.warning(f"    ⚠️  New example is still INVALID: {new_result.invalid_examples}")
@@ -138,7 +136,9 @@ def main():
 
     logger.info(f"  Total cards: {final_total:,}")
     logger.info(f"  Valid cards: {final_valid:,} ({final_valid/final_total*100:.1f}%)")
-    logger.info(f"  Invalid cards: {final_total - final_valid} ({(final_total - final_valid)/final_total*100:.1f}%)")
+    logger.info(
+        f"  Invalid cards: {final_total - final_valid} ({(final_total - final_valid)/final_total*100:.1f}%)"
+    )
 
     # LLM stats
     stats = generator.stats()
@@ -157,4 +157,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -117,6 +117,7 @@ def filter_dialect_lemmas(
     removed_count = len(df) - len(filtered)
     if removed_count > 0:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.info(f"Filtered out {removed_count} rows with dialect lemmas")
 

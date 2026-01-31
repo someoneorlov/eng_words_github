@@ -1,6 +1,5 @@
 """Tests for LLM response cache."""
 
-import json
 from pathlib import Path
 
 import pytest
@@ -148,7 +147,9 @@ class TestLLMCache:
             text_right="",
             context_window="I went to the bank.",
             candidates=[Candidate(synset_id="bank.n.01", gloss="financial", examples=[])],
-            metadata=ExampleMetadata(wn_sense_count=2, baseline_top1="bank.n.01", baseline_margin=0.5, is_multiword=False),
+            metadata=ExampleMetadata(
+                wn_sense_count=2, baseline_top1="bank.n.01", baseline_margin=0.5, is_multiword=False
+            ),
         )
 
         # Pre-populate cache
@@ -166,4 +167,3 @@ class TestLLMCache:
         assert result is not None
         assert result.chosen_synset_id == "bank.n.01"
         assert call_count[0] == 0  # compute_fn was NOT called
-

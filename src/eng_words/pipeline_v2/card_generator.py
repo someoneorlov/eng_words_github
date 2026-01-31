@@ -109,18 +109,18 @@ OUTPUT (strict JSON array, no markdown):
 
 class CardGenerator:
     """Stage 2: Generate flashcards from extracted meanings.
-    
+
     Optimized approach:
     - Batches meanings (default 5) for efficiency
     - Uses only source_examples (not all) to reduce tokens
     - Retry with smaller batch on parse errors
-    
+
     Args:
         provider: LLM provider for API calls
         cache: Response cache (optional)
         batch_size: Number of meanings per batch (default 5)
     """
-    
+
     def __init__(
         self,
         provider: LLMProvider,
@@ -130,7 +130,7 @@ class CardGenerator:
         self.provider = provider
         self.cache = cache
         self.batch_size = batch_size
-        
+
         # Stats
         self.total_api_calls = 0
         self.cache_hits = 0
@@ -138,7 +138,7 @@ class CardGenerator:
         self.total_output_tokens = 0
         self.total_cost = 0.0
         self.retry_count = 0
-    
+
     def generate(
         self,
         extraction: ExtractionResult,
@@ -146,12 +146,12 @@ class CardGenerator:
         sentence_ids: list[int],
     ) -> GenerationResult:
         """Generate cards for all meanings (batched with retry).
-        
+
         Args:
             extraction: Output from Stage 1
             examples: All example sentences for this lemma
             sentence_ids: Corresponding sentence IDs
-            
+
         Returns:
             GenerationResult with all cards
         """
@@ -162,22 +162,24 @@ class CardGenerator:
                 total_meanings=0,
                 total_cards=0,
             )
-        
+
         cards = []
         total_cost = 0.0
-        
+
         # Process meanings in batches
         meanings = extraction.meanings
         i = 0
         current_batch_size = self.batch_size
-        
+
         while i < len(meanings):
-            batch = meanings[i:i + current_batch_size]
-            
+            batch = meanings[i : i + current_batch_size]
+
             if len(batch) == 1:
                 # Single meaning - use simple prompt
                 result = self._generate_single(
-                    extraction.lemma, batch[0], examples,
+                    extraction.lemma,
+                    batch[0],
+                    examples,
                     extraction.all_sentence_ids,
                 )
                 if result:
@@ -187,7 +189,9 @@ class CardGenerator:
             else:
                 # Multiple meanings - use batched prompt
                 result = self._generate_batch(
-                    extraction.lemma, batch, examples,
+                    extraction.lemma,
+                    batch,
+                    examples,
                     extraction.all_sentence_ids,
                 )
                 if result is not None:
@@ -205,7 +209,7 @@ class CardGenerator:
                     if current_batch_size == MIN_BATCH_SIZE:
                         # Already at minimum, skip this batch
                         i += len(batch)
-        
+
         return GenerationResult(
             lemma=extraction.lemma,
             cards=cards,
@@ -213,7 +217,7 @@ class CardGenerator:
             total_cards=len(cards),
             total_cost_usd=total_cost,
         )
-    
+
     def _generate_single(
         self,
         lemma: str,
@@ -222,12 +226,12 @@ class CardGenerator:
         all_sentence_ids: list[int],
     ) -> FinalCard | None:
         """Generate a single card (for batch=1 or fallback)."""
-        
+
         # Build phrasal info
         phrasal_info = ""
         if meaning.is_phrasal and meaning.phrasal_form:
             phrasal_info = f"PHRASAL VERB: {meaning.phrasal_form}"
-        
+
         # Build source examples only (no all_examples!)
         source_lines = []
         for se in meaning.source_examples:
@@ -236,7 +240,7 @@ class CardGenerator:
                 spoiler_mark = " [SPOILER]" if se.has_spoiler else ""
                 source_lines.append(f"{se.index}. {text}{spoiler_mark}")
         source_examples_str = "\n".join(source_lines) or "No source examples"
-        
+
         prompt = GENERATION_PROMPT_SINGLE.format(
             lemma=lemma,
             phrasal_info=phrasal_info,
@@ -244,7 +248,7 @@ class CardGenerator:
             pos=meaning.part_of_speech,
             source_examples=source_examples_str,
         )
-        
+
         # Check cache
         if self.cache:
             cache_key = self.cache.generate_key(
@@ -253,26 +257,27 @@ class CardGenerator:
             cached = self.cache.get(cache_key)
             if cached:
                 self.cache_hits += 1
-                return self._parse_single_response(
-                    lemma, meaning, cached.content, all_sentence_ids
-                )
-        
+                return self._parse_single_response(lemma, meaning, cached.content, all_sentence_ids)
+
         # Call LLM
         response = self.provider.complete(prompt)
         self.total_api_calls += 1
         self.total_input_tokens += response.input_tokens
         self.total_output_tokens += response.output_tokens
         self.total_cost += response.cost_usd
-        
+
         # Cache response
         if self.cache:
             self.cache.set(cache_key, response)
-        
+
         return self._parse_single_response(
-            lemma, meaning, response.content, all_sentence_ids,
+            lemma,
+            meaning,
+            response.content,
+            all_sentence_ids,
             cost_usd=response.cost_usd,
         )
-    
+
     def _generate_batch(
         self,
         lemma: str,
@@ -281,12 +286,12 @@ class CardGenerator:
         all_sentence_ids: list[int],
     ) -> list[FinalCard] | None:
         """Generate multiple cards in one call."""
-        
+
         # Build meanings list with source examples
         meanings_lines = []
         for m in meanings:
             phrasal_note = f" (PHRASAL: {m.phrasal_form})" if m.is_phrasal else ""
-            
+
             # Source examples for this meaning
             source_lines = []
             for se in m.source_examples:
@@ -295,18 +300,18 @@ class CardGenerator:
                     spoiler_mark = " [SPOILER]" if se.has_spoiler else ""
                     source_lines.append(f"    - {text}{spoiler_mark}")
             sources_str = "\n".join(source_lines) or "    - No examples"
-            
+
             meanings_lines.append(
                 f"{m.meaning_id}. [{m.part_of_speech}]{phrasal_note} {m.definition_en}\n"
                 f"  Source examples:\n{sources_str}"
             )
         meanings_str = "\n\n".join(meanings_lines)
-        
+
         prompt = GENERATION_PROMPT_BATCHED.format(
             lemma=lemma,
             meanings_list=meanings_str,
         )
-        
+
         # Check cache
         if self.cache:
             cache_key = self.cache.generate_key(
@@ -315,26 +320,27 @@ class CardGenerator:
             cached = self.cache.get(cache_key)
             if cached:
                 self.cache_hits += 1
-                return self._parse_batch_response(
-                    lemma, meanings, cached.content, all_sentence_ids
-                )
-        
+                return self._parse_batch_response(lemma, meanings, cached.content, all_sentence_ids)
+
         # Call LLM
         response = self.provider.complete(prompt)
         self.total_api_calls += 1
         self.total_input_tokens += response.input_tokens
         self.total_output_tokens += response.output_tokens
         self.total_cost += response.cost_usd
-        
+
         # Cache response
         if self.cache:
             self.cache.set(cache_key, response)
-        
+
         return self._parse_batch_response(
-            lemma, meanings, response.content, all_sentence_ids,
+            lemma,
+            meanings,
+            response.content,
+            all_sentence_ids,
             cost_usd=response.cost_usd,
         )
-    
+
     def _parse_single_response(
         self,
         lemma: str,
@@ -348,9 +354,11 @@ class CardGenerator:
             data = self._parse_json(content)
             return self._build_card(lemma, meaning, data, all_sentence_ids, cost_usd)
         except (json.JSONDecodeError, KeyError) as e:
-            logger.error(f"Failed to parse response for '{lemma}' meaning {meaning.meaning_id}: {e}")
+            logger.error(
+                f"Failed to parse response for '{lemma}' meaning {meaning.meaning_id}: {e}"
+            )
             return None
-    
+
     def _parse_batch_response(
         self,
         lemma: str,
@@ -363,10 +371,10 @@ class CardGenerator:
         try:
             data = self._parse_json(content)
             meaning_by_id = {m.meaning_id: m for m in meanings}
-            
+
             cards = []
             cost_per_card = cost_usd / max(len(data.get("cards", [])), 1)
-            
+
             for card_data in data.get("cards", []):
                 meaning_id = card_data.get("meaning_id")
                 meaning = meaning_by_id.get(meaning_id)
@@ -376,13 +384,13 @@ class CardGenerator:
                     )
                     if card:
                         cards.append(card)
-            
+
             return cards if cards else None
-            
+
         except (json.JSONDecodeError, KeyError) as e:
             logger.error(f"Failed to parse batch response for '{lemma}': {e}")
             return None
-    
+
     def _parse_json(self, content: str) -> dict:
         """Clean and parse JSON from LLM response."""
         text = content.strip()
@@ -393,7 +401,7 @@ class CardGenerator:
         if text.endswith("```"):
             text = text[:-3]
         return json.loads(text.strip())
-    
+
     def _build_card(
         self,
         lemma: str,
@@ -406,12 +414,14 @@ class CardGenerator:
         # Parse clean examples
         clean_examples = []
         for ex in data.get("clean_examples", []):
-            clean_examples.append(CleanExample(
-                sentence_id=ex.get("sentence_id"),
-                text=ex.get("text", ""),
-                source=ex.get("source", "generated"),
-            ))
-        
+            clean_examples.append(
+                CleanExample(
+                    sentence_id=ex.get("sentence_id"),
+                    text=ex.get("text", ""),
+                    source=ex.get("source", "generated"),
+                )
+            )
+
         # Build card ID and display name
         if meaning.is_phrasal and meaning.phrasal_form:
             card_id = f"{meaning.phrasal_form.replace(' ', '_')}_{meaning.meaning_id}"
@@ -419,13 +429,10 @@ class CardGenerator:
         else:
             card_id = f"{lemma}_{meaning.meaning_id}"
             lemma_display = lemma
-        
+
         # Get source sentence IDs
-        source_sids = [
-            se.sentence_id for se in meaning.source_examples
-            if se.sentence_id >= 0
-        ]
-        
+        source_sids = [se.sentence_id for se in meaning.source_examples if se.sentence_id >= 0]
+
         return FinalCard(
             card_id=card_id,
             lemma=lemma,
@@ -441,7 +448,7 @@ class CardGenerator:
             clean_examples=clean_examples,
             generation_cost_usd=cost_usd,
         )
-    
+
     def stats(self) -> dict[str, Any]:
         """Return generation statistics."""
         return {

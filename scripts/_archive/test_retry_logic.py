@@ -2,7 +2,6 @@
 """Тест логики retry."""
 
 import json
-from unittest.mock import MagicMock
 
 from eng_words.llm.base import LLMProvider, LLMResponse
 from eng_words.llm.retry import call_llm_with_retry
@@ -13,7 +12,7 @@ class MockProvider(LLMProvider):
         self.call_count = 0
         self.model = "test"
         self.temperature = 0.0
-    
+
     def complete(self, prompt, **kwargs):
         self.call_count += 1
         return LLMResponse(
@@ -23,10 +22,10 @@ class MockProvider(LLMProvider):
             output_tokens=50,
             cost_usd=0.001,
         )
-    
+
     def complete_json(self, prompt, schema=None, **kwargs):
         return json.loads(self.complete(prompt).content)
-    
+
     def estimate_cost(self, input_tokens, output_tokens):
         return 0.001
 

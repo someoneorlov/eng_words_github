@@ -89,12 +89,12 @@ OUTPUT (strict JSON, no markdown):
 
 class MeaningExtractor:
     """Stage 1: Extract meanings from examples.
-    
+
     Args:
         provider: LLM provider for API calls
         cache: Response cache (optional)
     """
-    
+
     def __init__(
         self,
         provider: LLMProvider,
@@ -102,14 +102,14 @@ class MeaningExtractor:
     ):
         self.provider = provider
         self.cache = cache
-        
+
         # Stats
         self.total_api_calls = 0
         self.cache_hits = 0
         self.total_input_tokens = 0
         self.total_output_tokens = 0
         self.total_cost = 0.0
-    
+
     def extract(
         self,
         lemma: str,
@@ -117,12 +117,12 @@ class MeaningExtractor:
         sentence_ids: list[int],
     ) -> ExtractionResult:
         """Extract meanings from examples.
-        
+
         Args:
             lemma: The word to analyze
             examples: List of example sentences
             sentence_ids: Corresponding sentence IDs
-            
+
         Returns:
             ExtractionResult with all identified meanings
         """
@@ -132,17 +132,15 @@ class MeaningExtractor:
                 all_sentence_ids=[],
                 meanings=[],
             )
-        
+
         # Build numbered examples
-        numbered = "\n".join(
-            f"{i+1}. {ex}" for i, ex in enumerate(examples)
-        )
-        
+        numbered = "\n".join(f"{i+1}. {ex}" for i, ex in enumerate(examples))
+
         prompt = EXTRACTION_PROMPT.format(
             lemma=lemma,
             numbered_examples=numbered,
         )
-        
+
         # Check cache
         if self.cache:
             cache_key = self.cache.generate_key(
@@ -151,28 +149,29 @@ class MeaningExtractor:
             cached = self.cache.get(cache_key)
             if cached:
                 self.cache_hits += 1
-                return self._parse_response(
-                    lemma, cached.content, examples, sentence_ids
-                )
-        
+                return self._parse_response(lemma, cached.content, examples, sentence_ids)
+
         # Call LLM
         response = self.provider.complete(prompt)
         self.total_api_calls += 1
         self.total_input_tokens += response.input_tokens
         self.total_output_tokens += response.output_tokens
         self.total_cost += response.cost_usd
-        
+
         # Cache response
         if self.cache:
             self.cache.set(cache_key, response)
-        
+
         return self._parse_response(
-            lemma, response.content, examples, sentence_ids,
+            lemma,
+            response.content,
+            examples,
+            sentence_ids,
             input_tokens=response.input_tokens,
             output_tokens=response.output_tokens,
             cost_usd=response.cost_usd,
         )
-    
+
     def _parse_response(
         self,
         lemma: str,
@@ -193,9 +192,9 @@ class MeaningExtractor:
                 text = text[3:]
             if text.endswith("```"):
                 text = text[:-3]
-            
+
             data = json.loads(text.strip())
-            
+
             meanings = []
             for m in data.get("meanings", []):
                 source_examples = []
@@ -203,22 +202,26 @@ class MeaningExtractor:
                     idx = se.get("index", 0)
                     # Convert 1-based index to sentence_id
                     sid = sentence_ids[idx - 1] if 0 < idx <= len(sentence_ids) else -1
-                    source_examples.append(SourceExample(
-                        index=idx,
-                        sentence_id=sid,
-                        has_spoiler=se.get("has_spoiler", False),
-                        spoiler_type=se.get("spoiler_type"),
-                    ))
-                
-                meanings.append(ExtractedMeaning(
-                    meaning_id=m.get("meaning_id", len(meanings) + 1),
-                    definition_en=m.get("definition_en", ""),
-                    part_of_speech=m.get("part_of_speech", "unknown"),
-                    is_phrasal=m.get("is_phrasal", False),
-                    phrasal_form=m.get("phrasal_form"),
-                    source_examples=source_examples,
-                ))
-            
+                    source_examples.append(
+                        SourceExample(
+                            index=idx,
+                            sentence_id=sid,
+                            has_spoiler=se.get("has_spoiler", False),
+                            spoiler_type=se.get("spoiler_type"),
+                        )
+                    )
+
+                meanings.append(
+                    ExtractedMeaning(
+                        meaning_id=m.get("meaning_id", len(meanings) + 1),
+                        definition_en=m.get("definition_en", ""),
+                        part_of_speech=m.get("part_of_speech", "unknown"),
+                        is_phrasal=m.get("is_phrasal", False),
+                        phrasal_form=m.get("phrasal_form"),
+                        source_examples=source_examples,
+                    )
+                )
+
             return ExtractionResult(
                 lemma=lemma,
                 all_sentence_ids=list(sentence_ids),
@@ -227,11 +230,11 @@ class MeaningExtractor:
                 output_tokens=output_tokens,
                 cost_usd=cost_usd,
             )
-            
+
         except (json.JSONDecodeError, KeyError, IndexError) as e:
             logger.error(f"Failed to parse extraction response for '{lemma}': {e}")
             logger.debug(f"Response content: {content[:500]}")
-            
+
             # Return empty result on parse error
             return ExtractionResult(
                 lemma=lemma,
@@ -241,7 +244,7 @@ class MeaningExtractor:
                 output_tokens=output_tokens,
                 cost_usd=cost_usd,
             )
-    
+
     def stats(self) -> dict[str, Any]:
         """Return extraction statistics."""
         return {

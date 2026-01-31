@@ -205,8 +205,7 @@ def main(
             continue
 
         logger.info(
-            f"{prov_name}: Labeling {len(to_label)} examples "
-            f"({len(labeled_ids)} already done)"
+            f"{prov_name}: Labeling {len(to_label)} examples " f"({len(labeled_ids)} already done)"
         )
 
         # Get provider
@@ -254,4 +253,3 @@ def main(
 
 if __name__ == "__main__":
     app()
-

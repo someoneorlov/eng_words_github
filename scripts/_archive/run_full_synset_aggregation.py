@@ -14,7 +14,6 @@ from pathlib import Path
 
 import pandas as pd
 from dotenv import load_dotenv
-from tqdm import tqdm
 
 from eng_words.aggregation.llm_aggregator import LLMAggregator
 from eng_words.aggregation.synset_aggregator import aggregate_by_synset
@@ -23,9 +22,7 @@ from eng_words.llm.response_cache import ResponseCache
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
 
 # Paths
@@ -49,7 +46,9 @@ def run_full_aggregation():
     logger.info(f"  Loaded {len(sense_tokens_df):,} tokens")
 
     synset_stats_df = aggregate_by_synset(sense_tokens_df, min_freq=2, filter_dialect=True)
-    logger.info(f"  Aggregated to {len(synset_stats_df):,} (lemma, synset) pairs (with dialect filter)")
+    logger.info(
+        f"  Aggregated to {len(synset_stats_df):,} (lemma, synset) pairs (with dialect filter)"
+    )
 
     # Save synset stats
     synset_stats_path = OUTPUT_DIR / "synset_stats.parquet"
@@ -124,9 +123,7 @@ def run_full_aggregation():
                     "multi_synset": len(multi_synset_lemmas),
                     "original_synsets": len(synset_stats_df),
                     "final_cards": len(cards_df),
-                    "reduction_pct": round(
-                        (1 - len(cards_df) / len(synset_stats_df)) * 100, 1
-                    ),
+                    "reduction_pct": round((1 - len(cards_df) / len(synset_stats_df)) * 100, 1),
                     "llm_cost": round(sum(r.llm_cost for r in results), 4),
                     "elapsed_seconds": round(elapsed, 1),
                 },
@@ -166,7 +163,9 @@ def run_full_aggregation():
     print(f"  Final cards:       {len(cards_df):,}")
     print(f"  Reduction:         {(1 - len(cards_df) / len(synset_stats_df)) * 100:.1f}%")
     print(f"  LLM Cost:          ${sum(r.llm_cost for r in results):.4f}")
-    print(f"  Time:              {elapsed:.1f}s ({len(multi_synset_lemmas) / elapsed:.1f} lemmas/s)")
+    print(
+        f"  Time:              {elapsed:.1f}s ({len(multi_synset_lemmas) / elapsed:.1f} lemmas/s)"
+    )
     print(f"  Cache hits:        {cache_stats['hits']} ({cache_stats['hit_rate']})")
 
     return cards_df, all_results
@@ -174,4 +173,3 @@ def run_full_aggregation():
 
 if __name__ == "__main__":
     run_full_aggregation()
-

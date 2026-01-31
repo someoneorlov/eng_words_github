@@ -24,7 +24,6 @@ from eng_words.wsd_gold.models import GoldExample
 from eng_words.wsd_gold.sample import (
     calculate_difficulty_features,
     classify_difficulty,
-    stratified_sample,
 )
 
 logging.basicConfig(
@@ -81,9 +80,7 @@ def load_and_reconstruct_sentences(tokens_path: Path) -> tuple[pd.DataFrame, pd.
     tokens_df = pd.read_parquet(tokens_path)
 
     # Filter tokens with valid synset_id
-    tokens_df = tokens_df[
-        tokens_df["synset_id"].notna() & (tokens_df["synset_id"] != "")
-    ].copy()
+    tokens_df = tokens_df[tokens_df["synset_id"].notna() & (tokens_df["synset_id"] != "")].copy()
 
     # Reconstruct sentences
     all_tokens = pd.read_parquet(tokens_path)
@@ -191,7 +188,7 @@ def print_statistics(examples: list[GoldExample]) -> None:
         bucket_counts[bucket] = bucket_counts.get(bucket, 0) + 1
 
     print("\n" + "=" * 50)
-    print(f"📊 PILOT COLLECTION STATISTICS")
+    print("📊 PILOT COLLECTION STATISTICS")
     print("=" * 50)
     print(f"\nTotal examples: {len(examples)}")
 
@@ -299,4 +296,3 @@ def main(
 
 if __name__ == "__main__":
     app()
-

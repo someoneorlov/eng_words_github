@@ -125,10 +125,12 @@ def test_rank_candidates_orders_by_score() -> None:
 
 def test_filter_dialect_lemmas_removes_known_errors() -> None:
     """Test that known dialect/tokenization errors are filtered out."""
-    df = pd.DataFrame({
-        "lemma": ["run", "ai", "walk", "de", "jump", "dis"],
-        "book_freq": [10, 5, 8, 3, 6, 2],
-    })
+    df = pd.DataFrame(
+        {
+            "lemma": ["run", "ai", "walk", "de", "jump", "dis"],
+            "book_freq": [10, 5, 8, 3, 6, 2],
+        }
+    )
 
     filtered = filter_dialect_lemmas(df)
 
@@ -139,9 +141,11 @@ def test_filter_dialect_lemmas_removes_known_errors() -> None:
 
 def test_filter_dialect_lemmas_case_insensitive() -> None:
     """Test that filtering is case insensitive."""
-    df = pd.DataFrame({
-        "lemma": ["AI", "De", "run", "DIS"],
-    })
+    df = pd.DataFrame(
+        {
+            "lemma": ["AI", "De", "run", "DIS"],
+        }
+    )
 
     filtered = filter_dialect_lemmas(df)
 
@@ -159,10 +163,12 @@ def test_filter_dialect_lemmas_empty_df() -> None:
 
 def test_filter_dialect_lemmas_no_dialect() -> None:
     """Test DataFrame with no dialect lemmas stays unchanged."""
-    df = pd.DataFrame({
-        "lemma": ["run", "walk", "jump"],
-        "book_freq": [10, 8, 6],
-    })
+    df = pd.DataFrame(
+        {
+            "lemma": ["run", "walk", "jump"],
+            "book_freq": [10, 8, 6],
+        }
+    )
 
     filtered = filter_dialect_lemmas(df)
 
@@ -172,9 +178,11 @@ def test_filter_dialect_lemmas_no_dialect() -> None:
 
 def test_filter_dialect_lemmas_custom_filter() -> None:
     """Test with custom dialect filter set."""
-    df = pd.DataFrame({
-        "lemma": ["foo", "bar", "baz"],
-    })
+    df = pd.DataFrame(
+        {
+            "lemma": ["foo", "bar", "baz"],
+        }
+    )
 
     custom_filter = frozenset({"foo", "bar"})
     filtered = filter_dialect_lemmas(df, dialect_lemmas=custom_filter)

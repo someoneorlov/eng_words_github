@@ -127,9 +127,7 @@ def get_provider(provider_name: str, model: str | None = None, **kwargs) -> LLMP
     }
 
     if provider_name not in providers:
-        raise ValueError(
-            f"Unknown provider: {provider_name}. Available: {list(providers.keys())}"
-        )
+        raise ValueError(f"Unknown provider: {provider_name}. Available: {list(providers.keys())}")
 
     provider_class = providers[provider_name]
     model = model or DEFAULT_MODELS.get(provider_name)
