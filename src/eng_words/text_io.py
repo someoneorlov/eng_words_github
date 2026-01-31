@@ -6,7 +6,9 @@ import re
 from pathlib import Path
 
 from .constants import ENCODING_UTF8
-from .epub_reader import extract_epub_text
+from .epub_reader import extract_epub_text  # Backward compatibility
+from .readers.epub_reader import EpubReader
+from .readers.text_reader import TextReader
 
 
 class TextLoadError(Exception):
@@ -147,19 +149,33 @@ def preprocess_text(text: str, normalize_newlines: bool = True) -> str:
     return cleaned.rstrip()
 
 
+def _get_reader_for_path(path: Path):
+    """Get the appropriate BookReader for the given file path.
+
+    Args:
+        path: Path to the book file.
+
+    Returns:
+        BookReader instance that supports the file format.
+
+    Raises:
+        TextLoadError: If no reader supports the file format.
+    """
+    readers = [EpubReader(), TextReader()]
+
+    for reader in readers:
+        if reader.supports(path):
+            return reader
+
+    raise TextLoadError(f"Unsupported book format: {path.suffix}")
+
+
 def load_book_text(file_path: Path, *, normalize_newlines: bool = True) -> str:
     """Load and preprocess book text based on file extension.
 
-    Currently supports EPUB files; plain text files fall back to `load_text_from_file`.
+    Uses the BookReader interface to support multiple formats (EPUB, TXT, etc.).
     """
 
-    suffix = file_path.suffix.lower()
-
-    if suffix == ".epub":
-        raw_text = extract_epub_text(file_path)
-    elif suffix in {".txt", ".text"}:
-        raw_text = load_text_from_file(file_path)
-    else:
-        raise TextLoadError(f"Unsupported book format: {suffix}")
-
+    reader = _get_reader_for_path(file_path)
+    raw_text = reader.read(file_path)
     return preprocess_text(raw_text, normalize_newlines=normalize_newlines)

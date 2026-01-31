@@ -20,19 +20,53 @@ from ..constants import (
     LEMMA,
     REQUIRED_KNOWN_WORDS_COLUMNS,
     STATUS,
+    STATUS_KNOWN,
     TAGS,
 )
 
 
 class KnownWordsBackend(ABC):
-    """Abstract base class for known words storage backends."""
+    """Abstract base class for known words storage backends.
+
+    This interface defines the contract for storing and retrieving known words data.
+    All backends must implement the core abstract methods: `load()`, `save()`, and `exists()`.
+
+    **Data Format:**
+        All backends work with DataFrames containing the following required columns:
+        - `lemma` (str): Lowercased word lemma
+        - `status` (str): One of "known", "learning", "ignore"
+        - `item_type` (str): One of "word", "phrasal_verb"
+        - `tags` (str): Optional tags/metadata
+
+    **Core Methods (Required):**
+        - `load()`: Load all known words as a DataFrame
+        - `save(df)`: Save/replace all known words from a DataFrame
+        - `exists()`: Check if backend is accessible
+
+    **Optional Methods (Default Implementations):**
+        The following methods have default implementations that use `load()`/`save()`
+        as fallback. Backends can override these for better performance:
+        - `is_known(lemma, item_type)`: Check if a word is marked as known
+        - `mark_as_learned(lemma, item_type, tags)`: Mark a word as learned
+        - `get_learning_progress()`: Get counts by status
+        - `update_words(updates)`: Incrementally update multiple words
+        - `sync(other_backend)`: Bidirectional sync with another backend
+
+    **Future Backend Support:**
+        This interface is designed to support:
+        - Anki sync (export learned cards, import known words)
+        - Database backends (SQLite, PostgreSQL) with efficient queries
+        - Remote API backends with incremental updates
+    """
 
     @abstractmethod
     def load(self) -> pd.DataFrame:
         """Load known words data.
 
         Returns:
-            DataFrame with known words metadata.
+            DataFrame with known words metadata. Must contain columns:
+            `lemma`, `status`, `item_type`, `tags`. Returns empty DataFrame
+            with correct columns if no data exists.
 
         Raises:
             FileNotFoundError: If the backend source doesn't exist.
@@ -44,8 +78,13 @@ class KnownWordsBackend(ABC):
     def save(self, df: pd.DataFrame) -> None:
         """Save known words data.
 
+        This method replaces all existing data with the provided DataFrame.
+        For incremental updates, use `update_words()` if available, or override
+        this method in your backend implementation.
+
         Args:
-            df: DataFrame with known words metadata to save.
+            df: DataFrame with known words metadata to save. Must contain
+                columns: `lemma`, `status`, `item_type`, `tags`.
 
         Raises:
             ValueError: If the DataFrame format is invalid.
@@ -60,6 +99,170 @@ class KnownWordsBackend(ABC):
             True if the backend is accessible, False otherwise.
         """
         pass
+
+    def is_known(self, lemma: str, item_type: str) -> bool:
+        """Check if a word is marked as known.
+
+        Default implementation loads all data and checks. Backends can override
+        for better performance (e.g., database queries).
+
+        Args:
+            lemma: Word lemma (will be normalized to lowercase).
+            item_type: Item type (e.g., "word", "phrasal_verb").
+
+        Returns:
+            True if the word exists with status "known", False otherwise.
+        """
+        df = self.load()
+        if df.empty:
+            return False
+
+        lemma_normalized = str(lemma).strip().lower()
+        item_type_normalized = str(item_type).strip()
+
+        mask = (df[LEMMA] == lemma_normalized) & (df[ITEM_TYPE] == item_type_normalized)
+        matching = df[mask]
+
+        if matching.empty:
+            return False
+
+        # Return True if any matching entry has status "known"
+        return bool((matching[STATUS] == STATUS_KNOWN).any())
+
+    def mark_as_learned(self, lemma: str, item_type: str, tags: str = "") -> None:
+        """Mark a word as learned (status="known").
+
+        Default implementation loads all data, updates the entry, and saves.
+        Backends can override for better performance (e.g., single-row updates).
+
+        Args:
+            lemma: Word lemma (will be normalized to lowercase).
+            item_type: Item type (e.g., "word", "phrasal_verb").
+            tags: Optional tags/metadata.
+
+        Raises:
+            ValueError: If backend is not accessible.
+        """
+        df = self.load()
+
+        lemma_normalized = str(lemma).strip().lower()
+        item_type_normalized = str(item_type).strip()
+        tags_normalized = str(tags).strip() if tags else ""
+
+        # Create new entry
+        new_entry = pd.DataFrame(
+            {
+                LEMMA: [lemma_normalized],
+                STATUS: [STATUS_KNOWN],
+                ITEM_TYPE: [item_type_normalized],
+                TAGS: [tags_normalized],
+            }
+        )
+
+        # Remove existing entry if present (deduplication happens in _normalize_dataframe)
+        if not df.empty:
+            mask = (df[LEMMA] == lemma_normalized) & (df[ITEM_TYPE] == item_type_normalized)
+            df = df[~mask]
+
+        # Combine and save
+        df = pd.concat([df, new_entry], ignore_index=True)
+        self.save(df)
+
+    def get_learning_progress(self) -> dict[str, int]:
+        """Get learning progress statistics.
+
+        Returns a dictionary with counts of words by status.
+
+        Default implementation loads all data and counts. Backends can override
+        for better performance (e.g., database aggregation).
+
+        Returns:
+            Dictionary with status as keys and counts as values.
+            Example: {"known": 100, "learning": 5, "ignore": 10}
+
+        Raises:
+            ValueError: If backend is not accessible.
+        """
+        df = self.load()
+        if df.empty:
+            return {}
+
+        counts = df[STATUS].value_counts().to_dict()
+        return dict(counts)
+
+    def update_words(self, updates: pd.DataFrame) -> None:
+        """Incrementally update multiple words.
+
+        Merges the provided updates with existing data. Updates override existing
+        entries for the same (lemma, item_type) combination.
+
+        Default implementation loads all data, merges, and saves. Backends can
+        override for better performance (e.g., batch updates).
+
+        Args:
+            updates: DataFrame with updates. Must contain columns:
+                `lemma`, `status`, `item_type`, `tags`. Only rows present
+                will be updated/added.
+
+        Raises:
+            ValueError: If the DataFrame format is invalid or backend is not accessible.
+        """
+        if updates is None or updates.empty:
+            return
+
+        # Validate updates
+        missing = [col for col in REQUIRED_KNOWN_WORDS_COLUMNS if col not in updates.columns]
+        if missing:
+            raise ValueError(f"Updates DataFrame missing columns: {missing}")
+
+        # Normalize updates
+        updates_normalized = self._normalize_dataframe(updates)
+
+        # Load existing data (handle case where backend doesn't exist yet)
+        try:
+            df = self.load()
+        except FileNotFoundError:
+            # Backend doesn't exist yet, just save updates
+            self.save(updates_normalized)
+            return
+
+        if df.empty:
+            # No existing data, just save updates
+            self.save(updates_normalized)
+            return
+
+        # Remove entries that will be updated
+        # Create a set of (lemma, item_type) tuples from updates for efficient lookup
+        update_keys = set(zip(updates_normalized[LEMMA], updates_normalized[ITEM_TYPE]))
+        mask = df.apply(
+            lambda row: (row[LEMMA], row[ITEM_TYPE]) in update_keys,
+            axis=1,
+        )
+        df = df[~mask]
+
+        # Combine and save
+        df = pd.concat([df, updates_normalized], ignore_index=True)
+        self.save(df)
+
+    def sync(self, other_backend: KnownWordsBackend) -> None:
+        """Synchronize data bidirectionally with another backend.
+
+        This is an advanced operation that merges data from both backends,
+        resolving conflicts (typically keeping the most recent entry).
+
+        Default implementation raises NotImplementedError. Backends that support
+        sync (e.g., Anki, remote APIs) should override this method.
+
+        Args:
+            other_backend: Another KnownWordsBackend instance to sync with.
+
+        Raises:
+            NotImplementedError: If sync is not supported by this backend.
+        """
+        raise NotImplementedError(
+            f"Bidirectional sync is not supported by {self.__class__.__name__}. "
+            "Override sync() method to implement sync functionality."
+        )
 
     def _normalize_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         """Normalize and validate known words DataFrame.

@@ -8,11 +8,14 @@ import pytest
 
 from eng_words.constants import (
     ITEM_TYPE,
+    ITEM_TYPE_PHRASAL_VERB,
     ITEM_TYPE_WORD,
     LEMMA,
     REQUIRED_KNOWN_WORDS_COLUMNS,
     STATUS,
+    STATUS_IGNORE,
     STATUS_KNOWN,
+    STATUS_LEARNING,
     TAGS,
 )
 from eng_words.storage import CSVBackend, GoogleSheetsBackend, load_known_words, save_known_words
@@ -252,3 +255,220 @@ def test_google_sheets_backend_creates_worksheet_if_missing() -> None:
 
                 mock_spreadsheet.add_worksheet.assert_called_once()
                 assert worksheet == mock_worksheet
+
+
+def test_is_known(tmp_path: Path) -> None:
+    """Test is_known() optional method."""
+    csv_path = tmp_path / "known_words.csv"
+    df = pd.DataFrame(
+        {
+            LEMMA: ["run", "jump", "walk"],
+            STATUS: [STATUS_KNOWN, STATUS_LEARNING, STATUS_IGNORE],
+            ITEM_TYPE: [ITEM_TYPE_WORD, ITEM_TYPE_WORD, ITEM_TYPE_WORD],
+            TAGS: ["A2", "A1", "A2"],
+        }
+    )
+    df.to_csv(csv_path, index=False)
+
+    backend = CSVBackend(csv_path)
+
+    # Test known word
+    assert backend.is_known("run", ITEM_TYPE_WORD) is True
+    assert backend.is_known("RUN", ITEM_TYPE_WORD) is True  # Case insensitive
+
+    # Test learning word (not known)
+    assert backend.is_known("jump", ITEM_TYPE_WORD) is False
+
+    # Test ignored word (not known)
+    assert backend.is_known("walk", ITEM_TYPE_WORD) is False
+
+    # Test non-existent word
+    assert backend.is_known("nonexistent", ITEM_TYPE_WORD) is False
+
+
+def test_mark_as_learned(tmp_path: Path) -> None:
+    """Test mark_as_learned() optional method."""
+    csv_path = tmp_path / "known_words.csv"
+    df = pd.DataFrame(
+        {
+            LEMMA: ["run", "jump"],
+            STATUS: [STATUS_KNOWN, STATUS_LEARNING],
+            ITEM_TYPE: [ITEM_TYPE_WORD, ITEM_TYPE_WORD],
+            TAGS: ["A2", "A1"],
+        }
+    )
+    df.to_csv(csv_path, index=False)
+
+    backend = CSVBackend(csv_path)
+
+    # Mark existing word as learned (should update status)
+    backend.mark_as_learned("jump", ITEM_TYPE_WORD, tags="A2")
+    loaded = backend.load()
+    assert len(loaded) == 2
+    jump_row = loaded[loaded[LEMMA] == "jump"].iloc[0]
+    assert jump_row[STATUS] == STATUS_KNOWN
+    assert jump_row[TAGS] == "A2"
+
+    # Mark new word as learned
+    backend.mark_as_learned("walk", ITEM_TYPE_WORD, tags="B1")
+    loaded = backend.load()
+    assert len(loaded) == 3
+    walk_row = loaded[loaded[LEMMA] == "walk"].iloc[0]
+    assert walk_row[STATUS] == STATUS_KNOWN
+    assert walk_row[TAGS] == "B1"
+
+
+def test_get_learning_progress(tmp_path: Path) -> None:
+    """Test get_learning_progress() optional method."""
+    csv_path = tmp_path / "known_words.csv"
+    df = pd.DataFrame(
+        {
+            LEMMA: ["run", "jump", "walk", "sit", "stand"],
+            STATUS: [
+                STATUS_KNOWN,
+                STATUS_KNOWN,
+                STATUS_LEARNING,
+                STATUS_IGNORE,
+                STATUS_IGNORE,
+            ],
+            ITEM_TYPE: [ITEM_TYPE_WORD] * 5,
+            TAGS: ["A2", "A1", "A2", "A1", "A2"],
+        }
+    )
+    df.to_csv(csv_path, index=False)
+
+    backend = CSVBackend(csv_path)
+    progress = backend.get_learning_progress()
+
+    assert progress[STATUS_KNOWN] == 2
+    assert progress[STATUS_LEARNING] == 1
+    assert progress[STATUS_IGNORE] == 2
+
+
+def test_get_learning_progress_empty(tmp_path: Path) -> None:
+    """Test get_learning_progress() with empty backend."""
+    csv_path = tmp_path / "empty.csv"
+    csv_path.write_text("")
+
+    backend = CSVBackend(csv_path)
+    progress = backend.get_learning_progress()
+
+    assert progress == {}
+
+
+def test_update_words(tmp_path: Path) -> None:
+    """Test update_words() optional method."""
+    csv_path = tmp_path / "known_words.csv"
+    df = pd.DataFrame(
+        {
+            LEMMA: ["run", "jump", "walk"],
+            STATUS: [STATUS_KNOWN, STATUS_LEARNING, STATUS_IGNORE],
+            ITEM_TYPE: [ITEM_TYPE_WORD, ITEM_TYPE_WORD, ITEM_TYPE_WORD],
+            TAGS: ["A2", "A1", "A2"],
+        }
+    )
+    df.to_csv(csv_path, index=False)
+
+    backend = CSVBackend(csv_path)
+
+    # Update existing word
+    updates = pd.DataFrame(
+        {
+            LEMMA: ["jump"],
+            STATUS: [STATUS_KNOWN],
+            ITEM_TYPE: [ITEM_TYPE_WORD],
+            TAGS: ["A2"],
+        }
+    )
+    backend.update_words(updates)
+
+    loaded = backend.load()
+    assert len(loaded) == 3
+    jump_row = loaded[loaded[LEMMA] == "jump"].iloc[0]
+    assert jump_row[STATUS] == STATUS_KNOWN
+    assert jump_row[TAGS] == "A2"
+
+    # Add new word
+    updates = pd.DataFrame(
+        {
+            LEMMA: ["sit"],
+            STATUS: [STATUS_KNOWN],
+            ITEM_TYPE: [ITEM_TYPE_WORD],
+            TAGS: ["B1"],
+        }
+    )
+    backend.update_words(updates)
+
+    loaded = backend.load()
+    assert len(loaded) == 4
+    sit_row = loaded[loaded[LEMMA] == "sit"].iloc[0]
+    assert sit_row[STATUS] == STATUS_KNOWN
+
+    # Update multiple words
+    updates = pd.DataFrame(
+        {
+            LEMMA: ["run", "walk"],
+            STATUS: [STATUS_KNOWN, STATUS_KNOWN],
+            ITEM_TYPE: [ITEM_TYPE_WORD, ITEM_TYPE_WORD],
+            TAGS: ["A1", "A1"],
+        }
+    )
+    backend.update_words(updates)
+
+    loaded = backend.load()
+    assert len(loaded) == 4
+    walk_row = loaded[loaded[LEMMA] == "walk"].iloc[0]
+    assert walk_row[STATUS] == STATUS_KNOWN
+
+
+def test_update_words_empty_backend(tmp_path: Path) -> None:
+    """Test update_words() with empty backend."""
+    csv_path = tmp_path / "known_words.csv"
+
+    backend = CSVBackend(csv_path)
+    updates = pd.DataFrame(
+        {
+            LEMMA: ["run"],
+            STATUS: [STATUS_KNOWN],
+            ITEM_TYPE: [ITEM_TYPE_WORD],
+            TAGS: ["A2"],
+        }
+    )
+    backend.update_words(updates)
+
+    loaded = backend.load()
+    assert len(loaded) == 1
+    assert loaded.iloc[0][LEMMA] == "run"
+
+
+def test_update_words_empty_updates(tmp_path: Path) -> None:
+    """Test update_words() with empty updates DataFrame."""
+    csv_path = tmp_path / "known_words.csv"
+    df = pd.DataFrame(
+        {
+            LEMMA: ["run"],
+            STATUS: [STATUS_KNOWN],
+            ITEM_TYPE: [ITEM_TYPE_WORD],
+            TAGS: ["A2"],
+        }
+    )
+    df.to_csv(csv_path, index=False)
+
+    backend = CSVBackend(csv_path)
+    backend.update_words(pd.DataFrame())
+
+    # Should not change existing data
+    loaded = backend.load()
+    assert len(loaded) == 1
+
+
+def test_sync_not_implemented(tmp_path: Path) -> None:
+    """Test sync() raises NotImplementedError by default."""
+    csv_path1 = tmp_path / "backend1.csv"
+    csv_path2 = tmp_path / "backend2.csv"
+
+    backend1 = CSVBackend(csv_path1)
+    backend2 = CSVBackend(csv_path2)
+
+    with pytest.raises(NotImplementedError):
+        backend1.sync(backend2)
