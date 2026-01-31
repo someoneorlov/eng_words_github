@@ -110,9 +110,42 @@ This document provides a high-level overview of the English Words pipeline archi
 
 ## Entry Points
 
+### Full Workflow for New Book
+
+```bash
+# Step 1: Tokenize book, calculate stats, annotate with WSD
+uv run python -m eng_words.pipeline \
+  --book-path data/raw/book.epub \
+  --book-name my_book \
+  --enable-wsd
+
+# Step 2: Aggregate by synset (uses LLM for semantic grouping)
+uv run python scripts/run_full_synset_aggregation.py
+
+# Step 3: Generate cards and export to Anki
+uv run python scripts/run_synset_card_generation.py
+```
+
 ### Main Scripts
 
-**Full Card Generation** (`scripts/run_synset_card_generation.py`):
+**Stage 1: Tokenization & WSD** (`python -m eng_words.pipeline`):
+```bash
+uv run python -m eng_words.pipeline --book-path data/raw/book.epub --book-name book --enable-wsd
+```
+- Extracts text from EPUB
+- Tokenizes and calculates frequency stats
+- Annotates with WordNet synsets (WSD)
+- Outputs: `{book}_tokens.parquet`, `{book}_sense_tokens.parquet`
+
+**Stage 2: Synset Aggregation** (`scripts/run_full_synset_aggregation.py`):
+```bash
+uv run python scripts/run_full_synset_aggregation.py
+```
+- Groups tokens by (lemma, synset_id)
+- Uses LLM to cluster related synsets
+- Outputs: `aggregated_cards.parquet`
+
+**Stage 3: Card Generation** (`scripts/run_synset_card_generation.py`):
 ```bash
 uv run python scripts/run_synset_card_generation.py [limit]
 ```
@@ -121,7 +154,7 @@ uv run python scripts/run_synset_card_generation.py [limit]
 - Validates examples
 - Exports to Anki CSV
 
-**Stage 1 Pipeline** (`python -m eng_words.pipeline`):
+**Stage 1 Only** (`python -m eng_words.pipeline`):
 ```bash
 uv run python -m eng_words.pipeline \
   --book-path data/raw/book.epub \
