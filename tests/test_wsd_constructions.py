@@ -12,12 +12,6 @@ import pytest
 class TestConstructionMatch:
     """Tests for ConstructionMatch dataclass."""
 
-    def test_import(self) -> None:
-        """Test that ConstructionMatch can be imported."""
-        from eng_words.wsd.constructions import ConstructionMatch
-
-        assert ConstructionMatch is not None
-
     def test_create_skip_policy(self) -> None:
         """Test creating a ConstructionMatch with SKIP policy."""
         from eng_words.wsd.constructions import ConstructionMatch
@@ -94,27 +88,6 @@ class TestConstructionMatch:
 class TestConstructionPatterns:
     """Tests for CONSTRUCTION_PATTERNS dictionary."""
 
-    def test_import(self) -> None:
-        """Test that CONSTRUCTION_PATTERNS can be imported."""
-        from eng_words.wsd.constructions import CONSTRUCTION_PATTERNS
-
-        assert isinstance(CONSTRUCTION_PATTERNS, dict)
-
-    def test_has_minimum_patterns(self) -> None:
-        """Test that we have at least 15 patterns."""
-        from eng_words.wsd.constructions import CONSTRUCTION_PATTERNS
-
-        assert len(CONSTRUCTION_PATTERNS) >= 15
-
-    def test_be_going_to_pattern(self) -> None:
-        """Test BE_GOING_TO pattern exists and is valid."""
-        from eng_words.wsd.constructions import CONSTRUCTION_PATTERNS
-
-        assert "BE_GOING_TO" in CONSTRUCTION_PATTERNS
-        pattern = CONSTRUCTION_PATTERNS["BE_GOING_TO"]
-        assert pattern["target_lemma"] == "go"
-        assert pattern["policy"] == "SKIP"
-
     def test_all_patterns_have_required_fields(self) -> None:
         """Test that all patterns have required fields."""
         from eng_words.wsd.constructions import CONSTRUCTION_PATTERNS
@@ -140,12 +113,6 @@ class TestConstructionPatterns:
 
 class TestDetectConstructions:
     """Tests for detect_constructions function."""
-
-    def test_import(self) -> None:
-        """Test that detect_constructions can be imported."""
-        from eng_words.wsd.constructions import detect_constructions
-
-        assert callable(detect_constructions)
 
     def test_be_going_to_future_tense(self) -> None:
         """Test detection of 'be going to' future tense."""

@@ -7,12 +7,6 @@ Following TDD: tests are written before implementation.
 class TestTargetWord:
     """Tests for TargetWord dataclass."""
 
-    def test_import_target_word(self):
-        """Can import TargetWord from models."""
-        from eng_words.wsd_gold.models import TargetWord
-
-        assert TargetWord is not None
-
     def test_create_target_word(self):
         """Can create TargetWord with required fields."""
         from eng_words.wsd_gold.models import TargetWord
@@ -65,12 +59,6 @@ class TestTargetWord:
 
 class TestCandidate:
     """Tests for Candidate dataclass."""
-
-    def test_import_candidate(self):
-        """Can import Candidate from models."""
-        from eng_words.wsd_gold.models import Candidate
-
-        assert Candidate is not None
 
     def test_create_candidate(self):
         """Can create Candidate with required fields."""
@@ -130,12 +118,6 @@ class TestCandidate:
 class TestExampleMetadata:
     """Tests for ExampleMetadata dataclass."""
 
-    def test_import_example_metadata(self):
-        """Can import ExampleMetadata from models."""
-        from eng_words.wsd_gold.models import ExampleMetadata
-
-        assert ExampleMetadata is not None
-
     def test_create_example_metadata(self):
         """Can create ExampleMetadata with required fields."""
         from eng_words.wsd_gold.models import ExampleMetadata
@@ -188,12 +170,6 @@ class TestExampleMetadata:
 
 class TestGoldExample:
     """Tests for GoldExample dataclass."""
-
-    def test_import_gold_example(self):
-        """Can import GoldExample from models."""
-        from eng_words.wsd_gold.models import GoldExample
-
-        assert GoldExample is not None
 
     def test_create_gold_example(self):
         """Can create GoldExample with all fields."""
@@ -395,12 +371,6 @@ class TestGoldExample:
 class TestLLMUsage:
     """Tests for LLMUsage dataclass."""
 
-    def test_import_llm_usage(self):
-        """Can import LLMUsage from models."""
-        from eng_words.wsd_gold.models import LLMUsage
-
-        assert LLMUsage is not None
-
     def test_create_llm_usage(self):
         """Can create LLMUsage with all fields."""
         from eng_words.wsd_gold.models import LLMUsage
@@ -452,12 +422,6 @@ class TestLLMUsage:
 
 class TestModelOutput:
     """Tests for ModelOutput dataclass."""
-
-    def test_import_model_output(self):
-        """Can import ModelOutput from models."""
-        from eng_words.wsd_gold.models import ModelOutput
-
-        assert ModelOutput is not None
 
     def test_create_model_output(self):
         """Can create ModelOutput with required fields."""
@@ -611,12 +575,6 @@ class TestModelOutput:
 
 class TestGoldLabel:
     """Tests for GoldLabel dataclass (aggregated label)."""
-
-    def test_import_gold_label(self):
-        """Can import GoldLabel from models."""
-        from eng_words.wsd_gold.models import GoldLabel
-
-        assert GoldLabel is not None
 
     def test_create_gold_label(self):
         """Can create GoldLabel with all fields."""

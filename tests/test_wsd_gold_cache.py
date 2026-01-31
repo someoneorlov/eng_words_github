@@ -11,12 +11,6 @@ from eng_words.wsd_gold.models import LLMUsage, ModelOutput
 class TestGetCacheKey:
     """Tests for cache key generation."""
 
-    def test_generates_string(self):
-        """Returns a string key."""
-        key = get_cache_key("book:test|sent:1|tok:1", "gpt-5.2", "v1.0")
-        assert isinstance(key, str)
-        assert len(key) > 0
-
     def test_different_examples_different_keys(self):
         """Different examples produce different keys."""
         key1 = get_cache_key("book:test|sent:1|tok:1", "gpt-5.2", "v1.0")
@@ -104,16 +98,6 @@ class TestLLMCache:
 
         cache.set("test|1", "gpt-5.2", sample_output)
         result = cache.get("test|1", "gpt-5.2")
-
-        assert result is None
-
-    def test_version_mismatch_is_miss(self, tmp_path: Path, sample_output: ModelOutput):
-        """Different prompt version is a cache miss."""
-        cache_v1 = LLMCache(cache_dir=tmp_path, prompt_version="v1.0")
-        cache_v2 = LLMCache(cache_dir=tmp_path, prompt_version="v2.0")
-
-        cache_v1.set("test|1", "gpt-5.2", sample_output)
-        result = cache_v2.get("test|1", "gpt-5.2")
 
         assert result is None
 

@@ -7,18 +7,6 @@
 class TestStage25Integration:
     """Test that Stage 2.5 filtering is properly integrated."""
 
-    def test_imports_available(self):
-        """Test that required functions can be imported."""
-        from eng_words.llm.smart_card_generator import (
-            check_spoilers,
-            mark_examples_by_length,
-            select_examples_for_generation,
-        )
-
-        assert mark_examples_by_length is not None
-        assert check_spoilers is not None
-        assert select_examples_for_generation is not None
-
     def test_mark_examples_by_length_with_min_words(self):
         """Test that mark_examples_by_length filters out too short examples."""
         from eng_words.llm.smart_card_generator import mark_examples_by_length

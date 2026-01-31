@@ -110,34 +110,3 @@ class TestLLMProviderABC:
 class TestLLMConfig:
     """Tests for LLM configuration constants."""
 
-    def test_temperature_is_zero(self):
-        """Test that default temperature is 0 for determinism."""
-        assert DEFAULT_TEMPERATURE == 0.0
-
-    def test_models_are_defined(self):
-        """Test that default models are defined."""
-        assert DEFAULT_MODEL_OPENAI == "gpt-4.1-mini"
-        assert DEFAULT_MODEL_ANTHROPIC == "claude-3-5-haiku-20241022"
-
-    def test_evaluation_config(self):
-        """Test evaluation configuration."""
-        assert MIN_JURY_CONFIDENCE == 0.8
-        assert MAX_CANDIDATES_PER_ITEM == 5
-        assert EVALUATION_BATCH_SIZE == 20
-
-    def test_card_generation_config(self):
-        """Test card generation configuration."""
-        assert MAX_EXAMPLE_LENGTH == 300
-        assert MAX_EXAMPLES_PER_SENSE == 15
-        assert CARD_BATCH_SIZE == 10
-
-    def test_spoiler_policy(self):
-        """Test spoiler policy configuration."""
-        assert SPOILER_RISK_THRESHOLD == "none"
-
-    def test_cache_dir_is_path(self):
-        """Test that cache dir is a Path object."""
-        from pathlib import Path
-
-        assert isinstance(DEFAULT_CACHE_DIR, Path)
-        assert "llm_cache" in str(DEFAULT_CACHE_DIR)

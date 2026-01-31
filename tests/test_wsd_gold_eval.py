@@ -55,12 +55,6 @@ def make_gold_example(
 class TestLoadGoldExamples:
     """Tests for loading gold examples from JSONL."""
 
-    def test_import_function(self):
-        """Function can be imported."""
-        from eng_words.wsd_gold.eval import load_gold_examples
-
-        assert callable(load_gold_examples)
-
     def test_load_from_file(self, tmp_path: Path):
         """Load examples from JSONL file."""
         from eng_words.wsd_gold.eval import load_gold_examples
@@ -83,12 +77,6 @@ class TestLoadGoldExamples:
 
 class TestEvaluateSingleExample:
     """Tests for evaluating a single WSD prediction."""
-
-    def test_import_function(self):
-        """Function can be imported."""
-        from eng_words.wsd_gold.eval import evaluate_single
-
-        assert callable(evaluate_single)
 
     def test_correct_prediction(self):
         """Correct prediction returns is_correct=True."""
@@ -129,12 +117,6 @@ class TestEvaluateSingleExample:
 
 class TestComputeMetrics:
     """Tests for computing evaluation metrics."""
-
-    def test_import_function(self):
-        """Function can be imported."""
-        from eng_words.wsd_gold.eval import compute_metrics
-
-        assert callable(compute_metrics)
 
     def test_perfect_accuracy(self):
         """100% accuracy with all correct."""
@@ -182,12 +164,6 @@ class TestComputeMetrics:
 class TestComputeMetricsBySegment:
     """Tests for computing metrics broken down by segment."""
 
-    def test_import_function(self):
-        """Function can be imported."""
-        from eng_words.wsd_gold.eval import compute_metrics_by_segment
-
-        assert callable(compute_metrics_by_segment)
-
     def test_by_pos(self):
         """Metrics computed by POS tag."""
         from eng_words.wsd_gold.eval import compute_metrics_by_segment
@@ -226,12 +202,6 @@ class TestComputeMetricsBySegment:
 class TestRunWSDPrediction:
     """Tests for running WSD prediction on examples."""
 
-    def test_import_function(self):
-        """Function can be imported."""
-        from eng_words.wsd_gold.eval import run_wsd_prediction
-
-        assert callable(run_wsd_prediction)
-
     def test_returns_synset_id(self):
         """Returns synset ID from WSD backend."""
         from eng_words.wsd_gold.eval import run_wsd_prediction
@@ -260,8 +230,3 @@ class TestRunWSDPrediction:
 class TestFullEvaluation:
     """Tests for full evaluation pipeline."""
 
-    def test_import_function(self):
-        """Function can be imported."""
-        from eng_words.wsd_gold.eval import evaluate_wsd_on_gold
-
-        assert callable(evaluate_wsd_on_gold)

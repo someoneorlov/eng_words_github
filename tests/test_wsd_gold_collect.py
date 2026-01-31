@@ -9,12 +9,6 @@ import pandas as pd
 class TestExtractExamplesFromTokens:
     """Tests for extract_examples_from_tokens function."""
 
-    def test_import_function(self):
-        """Can import extract_examples_from_tokens."""
-        from eng_words.wsd_gold.collect import extract_examples_from_tokens
-
-        assert extract_examples_from_tokens is not None
-
     def test_returns_list_of_gold_examples(self):
         """Function returns a list of GoldExample objects."""
         from eng_words.wsd_gold.collect import extract_examples_from_tokens
@@ -276,12 +270,6 @@ class TestExtractExamplesFromTokens:
 class TestGetCandidatesForLemma:
     """Tests for get_candidates_for_lemma function."""
 
-    def test_import_function(self):
-        """Can import get_candidates_for_lemma."""
-        from eng_words.wsd_gold.collect import get_candidates_for_lemma
-
-        assert get_candidates_for_lemma is not None
-
     def test_returns_list_of_candidates(self):
         """Function returns a list of Candidate objects."""
         from eng_words.wsd_gold.collect import get_candidates_for_lemma
@@ -349,12 +337,6 @@ class TestGetCandidatesForLemma:
 class TestCalculateCharSpan:
     """Tests for calculate_char_span function."""
 
-    def test_import_function(self):
-        """Can import calculate_char_span."""
-        from eng_words.wsd_gold.collect import calculate_char_span
-
-        assert calculate_char_span is not None
-
     def test_finds_word_position(self):
         """Correctly calculates character span for a word."""
         from eng_words.wsd_gold.collect import calculate_char_span
@@ -405,12 +387,6 @@ class TestCalculateCharSpan:
 class TestBuildExampleId:
     """Tests for build_example_id function."""
 
-    def test_import_function(self):
-        """Can import build_example_id."""
-        from eng_words.wsd_gold.collect import build_example_id
-
-        assert build_example_id is not None
-
     def test_builds_correct_format(self):
         """Builds example_id in correct format."""
         from eng_words.wsd_gold.collect import build_example_id
@@ -434,12 +410,6 @@ class TestBuildExampleId:
 
 class TestAssignBuckets:
     """Tests for assign_buckets function."""
-
-    def test_import_function(self):
-        """Can import assign_buckets."""
-        from eng_words.wsd_gold.collect import assign_buckets
-
-        assert assign_buckets is not None
 
     def test_assigns_buckets_from_metadata(self):
         """Assigns buckets based on source metadata."""

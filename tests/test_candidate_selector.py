@@ -12,12 +12,6 @@ Tests cover:
 class TestSelectSmartCandidates:
     """Tests for select_smart_candidates function."""
 
-    def test_import(self) -> None:
-        """Test that select_smart_candidates can be imported."""
-        from eng_words.wsd.candidate_selector import select_smart_candidates
-
-        assert callable(select_smart_candidates)
-
     def test_returns_list(self) -> None:
         """Test that function returns a list of tuples."""
         from nltk.corpus import wordnet as wn
@@ -173,12 +167,6 @@ class TestSelectSmartCandidates:
 class TestScoreCombination:
     """Tests for score combination logic."""
 
-    def test_import_compute_combined_score(self) -> None:
-        """Test that compute_combined_score can be imported."""
-        from eng_words.wsd.candidate_selector import compute_combined_score
-
-        assert callable(compute_combined_score)
-
     def test_embedding_score_weight(self) -> None:
         """Test that embedding score contributes to combined score."""
         from nltk.corpus import wordnet as wn
@@ -230,12 +218,6 @@ class TestScoreCombination:
 
 class TestContextKeywordMatch:
     """Tests for context keyword matching."""
-
-    def test_import(self) -> None:
-        """Test that get_context_boost can be imported."""
-        from eng_words.wsd.candidate_selector import get_context_boost
-
-        assert callable(get_context_boost)
 
     def test_no_match_returns_zero(self) -> None:
         """Test that no match returns zero boost."""

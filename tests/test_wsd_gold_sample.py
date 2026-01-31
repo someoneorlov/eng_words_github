@@ -48,12 +48,6 @@ def make_example(
 class TestDifficultyFeatures:
     """Tests for DifficultyFeatures dataclass."""
 
-    def test_import_difficulty_features(self):
-        """Can import DifficultyFeatures."""
-        from eng_words.wsd_gold.sample import DifficultyFeatures
-
-        assert DifficultyFeatures is not None
-
     def test_create_difficulty_features(self):
         """Can create DifficultyFeatures."""
         from eng_words.wsd_gold.sample import DifficultyFeatures
@@ -72,12 +66,6 @@ class TestDifficultyFeatures:
 
 class TestCalculateDifficultyFeatures:
     """Tests for calculate_difficulty_features function."""
-
-    def test_import_function(self):
-        """Can import calculate_difficulty_features."""
-        from eng_words.wsd_gold.sample import calculate_difficulty_features
-
-        assert calculate_difficulty_features is not None
 
     def test_returns_difficulty_features(self):
         """Function returns DifficultyFeatures object."""
@@ -149,12 +137,6 @@ class TestCalculateDifficultyFeatures:
 class TestClassifyDifficulty:
     """Tests for classify_difficulty function."""
 
-    def test_import_function(self):
-        """Can import classify_difficulty."""
-        from eng_words.wsd_gold.sample import classify_difficulty
-
-        assert classify_difficulty is not None
-
     def test_easy_thresholds(self):
         """Easy when sense_count <= 3 and margin >= 0.3."""
         from eng_words.wsd_gold.sample import classify_difficulty
@@ -179,12 +161,6 @@ class TestClassifyDifficulty:
 
 class TestStratifiedSample:
     """Tests for stratified_sample function."""
-
-    def test_import_function(self):
-        """Can import stratified_sample."""
-        from eng_words.wsd_gold.sample import stratified_sample
-
-        assert stratified_sample is not None
 
     def test_returns_correct_size(self):
         """Returns exactly n examples."""
@@ -272,12 +248,6 @@ class TestStratifiedSample:
 class TestSplitBySource:
     """Tests for split_by_source function."""
 
-    def test_import_function(self):
-        """Can import split_by_source."""
-        from eng_words.wsd_gold.sample import split_by_source
-
-        assert split_by_source is not None
-
     def test_returns_two_lists(self):
         """Returns tuple of (dev, test_locked) lists."""
         from eng_words.wsd_gold.sample import split_by_source
@@ -359,12 +329,6 @@ class TestSplitBySource:
 
 class TestGetSamplingStats:
     """Tests for get_sampling_stats function."""
-
-    def test_import_function(self):
-        """Can import get_sampling_stats."""
-        from eng_words.wsd_gold.sample import get_sampling_stats
-
-        assert get_sampling_stats is not None
 
     def test_returns_stats_dict(self):
         """Returns dictionary with stats."""

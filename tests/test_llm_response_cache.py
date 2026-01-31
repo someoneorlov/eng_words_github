@@ -10,12 +10,6 @@ from eng_words.llm.base import LLMResponse
 class TestResponseCache:
     """Tests for ResponseCache."""
 
-    def test_import_cache(self):
-        """Test that ResponseCache can be imported."""
-        from eng_words.llm.response_cache import ResponseCache
-
-        assert ResponseCache is not None
-
     def test_create_cache(self):
         """Test creating cache instance."""
         from eng_words.llm.response_cache import ResponseCache
@@ -249,12 +243,6 @@ class TestResponseCache:
 
 class TestCachedProvider:
     """Tests for CachedProvider wrapper."""
-
-    def test_import_cached_provider(self):
-        """Test that CachedProvider can be imported."""
-        from eng_words.llm.response_cache import CachedProvider
-
-        assert CachedProvider is not None
 
     def test_cached_provider_wraps_calls(self):
         """Test that CachedProvider wraps and caches calls."""

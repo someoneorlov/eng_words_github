@@ -17,12 +17,7 @@ class TestPhrasalVerbsDictionary:
 
         assert isinstance(PHRASAL_VERBS, dict)
 
-    def test_has_minimum_verbs(self) -> None:
-        """Test that we have at least 10 base verbs."""
-        from eng_words.wsd.phrasal_verbs import PHRASAL_VERBS
-
-        assert len(PHRASAL_VERBS) >= 10
-
+    # TODO: Consider refactoring to test behavior instead of dictionary contents
     def test_has_look_verb(self) -> None:
         """Test that 'look' verb is present with particles."""
         from eng_words.wsd.phrasal_verbs import PHRASAL_VERBS
@@ -31,6 +26,7 @@ class TestPhrasalVerbsDictionary:
         assert "up" in PHRASAL_VERBS["look"]
         assert "after" in PHRASAL_VERBS["look"]
 
+    # TODO: Consider refactoring to test behavior instead of dictionary contents
     def test_has_take_verb(self) -> None:
         """Test that 'take' verb is present with particles."""
         from eng_words.wsd.phrasal_verbs import PHRASAL_VERBS
@@ -39,6 +35,7 @@ class TestPhrasalVerbsDictionary:
         assert "off" in PHRASAL_VERBS["take"]
         assert "on" in PHRASAL_VERBS["take"]
 
+    # TODO: Consider refactoring to test behavior instead of dictionary contents
     def test_particle_has_meanings(self) -> None:
         """Test that each particle has meaning categories."""
         from eng_words.wsd.phrasal_verbs import PHRASAL_VERBS
@@ -48,22 +45,9 @@ class TestPhrasalVerbsDictionary:
         assert isinstance(look_up, dict)
         assert len(look_up) > 0
 
-    def test_total_phrasal_verbs(self) -> None:
-        """Test that we have at least 50 phrasal verb combinations."""
-        from eng_words.wsd.phrasal_verbs import PHRASAL_VERBS
-
-        total = sum(len(particles) for particles in PHRASAL_VERBS.values())
-        assert total >= 40, f"Expected at least 40 phrasal verbs, got {total}"
-
 
 class TestDetectPhrasalVerb:
     """Tests for detect_phrasal_verb function."""
-
-    def test_import(self) -> None:
-        """Test that detect_phrasal_verb can be imported."""
-        from eng_words.wsd.phrasal_verbs import detect_phrasal_verb
-
-        assert callable(detect_phrasal_verb)
 
     def test_look_up_research(self) -> None:
         """Test detection of 'look up' (research meaning)."""

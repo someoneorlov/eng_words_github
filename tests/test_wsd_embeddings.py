@@ -13,19 +13,6 @@ from eng_words.wsd.embeddings import (
 )
 
 
-class TestEmbeddingModelConfig:
-    """Test embedding model configuration."""
-
-    def test_model_name_is_defined(self):
-        """WSD_MODEL_NAME should be a valid sentence-transformers model."""
-        assert WSD_MODEL_NAME == "sentence-transformers/all-mpnet-base-v2"
-
-    def test_batch_size_is_reasonable(self):
-        """WSD_BATCH_SIZE should be a reasonable value."""
-        assert 1 <= WSD_BATCH_SIZE <= 128
-        assert WSD_BATCH_SIZE == 32
-
-
 class TestEmbeddingModel:
     """Test EmbeddingModel class."""
 

@@ -26,12 +26,6 @@ def make_output(
 class TestAggregateLables:
     """Tests for aggregate_labels function."""
 
-    def test_import_function(self):
-        """Can import aggregate_labels."""
-        from eng_words.wsd_gold.aggregate import aggregate_labels
-
-        assert aggregate_labels is not None
-
     def test_two_judges_agree(self):
         """2/2 judges agree → majority vote."""
         from eng_words.wsd_gold.aggregate import aggregate_labels
@@ -202,12 +196,6 @@ class TestAggregateLables:
 class TestNeedsThirdJudge:
     """Tests for needs_third_judge function."""
 
-    def test_import_function(self):
-        """Can import needs_third_judge."""
-        from eng_words.wsd_gold.aggregate import needs_third_judge
-
-        assert needs_third_judge is not None
-
     def test_disagreement_needs_third(self):
         """Disagreement → needs third judge."""
         from eng_words.wsd_gold.aggregate import needs_third_judge
@@ -278,12 +266,6 @@ class TestNeedsThirdJudge:
 
 class TestAggregationStats:
     """Tests for aggregation statistics."""
-
-    def test_import_function(self):
-        """Can import get_aggregation_stats."""
-        from eng_words.wsd_gold.aggregate import get_aggregation_stats
-
-        assert get_aggregation_stats is not None
 
     def test_stats_for_labels(self):
         """Get statistics for a list of GoldLabels."""

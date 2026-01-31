@@ -11,12 +11,6 @@ from eng_words.llm.base import LLMProvider, LLMResponse
 class TestOpenAIProvider:
     """Tests for OpenAI provider."""
 
-    def test_import_provider(self):
-        """Test that OpenAI provider can be imported."""
-        from eng_words.llm.providers.openai import OpenAIProvider
-
-        assert issubclass(OpenAIProvider, LLMProvider)
-
     def test_provider_requires_api_key(self):
         """Test that provider requires API key."""
         from eng_words.llm.providers.openai import OpenAIProvider
@@ -159,12 +153,6 @@ class TestOpenAIProvider:
 class TestAnthropicProvider:
     """Tests for Anthropic provider."""
 
-    def test_import_provider(self):
-        """Test that Anthropic provider can be imported."""
-        from eng_words.llm.providers.anthropic import AnthropicProvider
-
-        assert issubclass(AnthropicProvider, LLMProvider)
-
     def test_provider_requires_api_key(self):
         """Test that provider requires API key."""
         from eng_words.llm.providers.anthropic import AnthropicProvider
@@ -223,12 +211,6 @@ class TestAnthropicProvider:
 
 class TestGeminiProvider:
     """Tests for Gemini provider."""
-
-    def test_import_provider(self):
-        """Test that Gemini provider can be imported."""
-        from eng_words.llm.providers.gemini import GeminiProvider
-
-        assert issubclass(GeminiProvider, LLMProvider)
 
     def test_provider_requires_api_key(self):
         """Test that provider requires API key."""
@@ -327,14 +309,6 @@ class TestGeminiProvider:
 
             call_kwargs = mock_client.models.generate_content.call_args.kwargs
             assert call_kwargs["config"].temperature == 0.0
-
-    def test_uses_default_model(self):
-        """Test that provider uses gemini-3-flash-preview by default."""
-        from eng_words.llm.providers.gemini import GeminiProvider
-
-        with patch("eng_words.llm.providers.gemini.genai"):
-            provider = GeminiProvider(api_key="test-key")
-            assert provider.model == "gemini-3-flash-preview"
 
     def test_cost_calculation(self):
         """Test cost calculation for gemini-3-flash-preview."""

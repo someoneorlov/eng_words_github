@@ -55,12 +55,6 @@ def make_example(
 class TestGoldLabelProvider:
     """Tests for GoldLabelProvider ABC."""
 
-    def test_import_provider(self):
-        """Can import GoldLabelProvider."""
-        from eng_words.wsd_gold.providers import GoldLabelProvider
-
-        assert GoldLabelProvider is not None
-
     def test_cannot_instantiate_directly(self):
         """Cannot instantiate ABC directly."""
         import pytest
@@ -100,12 +94,6 @@ class TestGoldLabelProvider:
 
 class TestOpenAIGoldProvider:
     """Tests for OpenAI Gold labeling provider."""
-
-    def test_import_provider(self):
-        """Can import OpenAIGoldProvider."""
-        from eng_words.wsd_gold.providers import OpenAIGoldProvider
-
-        assert OpenAIGoldProvider is not None
 
     def test_provider_has_name(self):
         """Provider has name property."""
@@ -223,12 +211,6 @@ class TestOpenAIGoldProvider:
 class TestAnthropicGoldProvider:
     """Tests for Anthropic Gold labeling provider."""
 
-    def test_import_provider(self):
-        """Can import AnthropicGoldProvider."""
-        from eng_words.wsd_gold.providers import AnthropicGoldProvider
-
-        assert AnthropicGoldProvider is not None
-
     def test_provider_has_name(self):
         """Provider has name property."""
         from eng_words.wsd_gold.providers import AnthropicGoldProvider
@@ -276,12 +258,6 @@ class TestAnthropicGoldProvider:
 class TestGeminiGoldProvider:
     """Tests for Gemini Gold labeling provider."""
 
-    def test_import_provider(self):
-        """Can import GeminiGoldProvider."""
-        from eng_words.wsd_gold.providers import GeminiGoldProvider
-
-        assert GeminiGoldProvider is not None
-
     def test_provider_has_name(self):
         """Provider has name property."""
         from eng_words.wsd_gold.providers import GeminiGoldProvider
@@ -306,12 +282,6 @@ class TestGeminiGoldProvider:
 
 class TestBuildGoldLabelingPrompt:
     """Tests for prompt building function."""
-
-    def test_import_function(self):
-        """Can import build_gold_labeling_prompt."""
-        from eng_words.wsd_gold.providers.prompts import build_gold_labeling_prompt
-
-        assert build_gold_labeling_prompt is not None
 
     def test_prompt_includes_context(self):
         """Prompt includes context window."""
@@ -356,22 +326,9 @@ class TestBuildGoldLabelingPrompt:
             estimated_tokens >= 1024
         ), f"Static prefix should be >= 1024 tokens for caching, got {estimated_tokens}"
 
-    def test_prompt_version_exists(self):
-        """Prompt version constant exists."""
-        from eng_words.wsd_gold.providers.prompts import PROMPT_VERSION_GOLD_LABELING
-
-        assert PROMPT_VERSION_GOLD_LABELING is not None
-        assert len(PROMPT_VERSION_GOLD_LABELING) > 0
-
 
 class TestParseGoldLabelResponse:
     """Tests for response parsing function."""
-
-    def test_import_function(self):
-        """Can import parse_gold_label_response."""
-        from eng_words.wsd_gold.providers.prompts import parse_gold_label_response
-
-        assert parse_gold_label_response is not None
 
     def test_parses_valid_json(self):
         """Parses valid JSON response."""

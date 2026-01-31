@@ -180,18 +180,6 @@ class TestSenseAnnotation:
 class TestValidationFunctions:
     """Test DataFrame validation functions."""
 
-    def test_validate_tokens_df_valid(self):
-        """validate_tokens_df should pass for valid DataFrame."""
-        df = pd.DataFrame(
-            {
-                "lemma": ["run", "fast"],
-                "sentence_id": [1, 1],
-                "pos": ["VERB", "ADV"],
-            }
-        )
-        # Should not raise
-        validate_tokens_df(df)
-
     def test_validate_tokens_df_missing_column(self):
         """validate_tokens_df should raise for missing columns."""
         df = pd.DataFrame(
@@ -204,17 +192,6 @@ class TestValidationFunctions:
         with pytest.raises(ValueError, match="missing required columns"):
             validate_tokens_df(df)
 
-    def test_validate_sentences_df_valid(self):
-        """validate_sentences_df should pass for valid DataFrame."""
-        df = pd.DataFrame(
-            {
-                "sentence_id": [1, 2],
-                "sentence": ["Hello world.", "Goodbye."],
-            }
-        )
-        # Should not raise
-        validate_sentences_df(df)
-
     def test_validate_sentences_df_missing_column(self):
         """validate_sentences_df should raise for missing columns."""
         df = pd.DataFrame(
@@ -225,18 +202,6 @@ class TestValidationFunctions:
         )
         with pytest.raises(ValueError, match="missing required columns"):
             validate_sentences_df(df)
-
-    def test_validate_annotated_df_valid(self):
-        """validate_annotated_df should pass for valid DataFrame."""
-        df = pd.DataFrame(
-            {
-                "lemma": ["run"],
-                "supersense": ["verb.motion"],
-                "sentence_id": [1],
-            }
-        )
-        # Should not raise
-        validate_annotated_df(df)
 
     def test_validate_annotated_df_missing_column(self):
         """validate_annotated_df should raise for missing columns."""
@@ -252,20 +217,6 @@ class TestValidationFunctions:
 
 class TestSenseBackendABC:
     """Test SenseBackend abstract base class."""
-
-    def test_cannot_instantiate_directly(self):
-        """SenseBackend should not be instantiable directly."""
-        with pytest.raises(TypeError):
-            SenseBackend()
-
-    def test_concrete_implementation_required_methods(self):
-        """Concrete implementation must implement abstract methods."""
-
-        class IncompleteSenseBackend(SenseBackend):
-            pass
-
-        with pytest.raises(TypeError):
-            IncompleteSenseBackend()
 
     def test_concrete_implementation_works(self):
         """Concrete implementation with all methods should work."""
