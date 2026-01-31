@@ -10,7 +10,7 @@ import spacy
 from spacy.language import Language
 from spacy.tokens import Doc
 
-from .constants import (
+from eng_words.constants import (
     BOOK,
     BOOK_FREQ,
     COMPONENT_PARSER,

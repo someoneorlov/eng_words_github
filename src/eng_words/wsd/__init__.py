@@ -11,9 +11,9 @@ Main components:
 - WordNetSenseBackend: WSD using Sentence-Transformers + WordNet definitions
 """
 
-from .aggregator import aggregate_sense_statistics
-from .base import SenseAnnotation, SenseBackend
-from .embeddings import (
+from eng_words.wsd.aggregator import aggregate_sense_statistics
+from eng_words.wsd.base import SenseAnnotation, SenseBackend
+from eng_words.wsd.embeddings import (
     WSD_BATCH_SIZE,
     WSD_EMBEDDING_DIM,
     WSD_MODEL_NAME,
@@ -25,13 +25,13 @@ from .embeddings import (
     get_embedding_model,
     get_sentence_embedding,
 )
-from .llm_wsd import llm_wsd_sentence, redistribute_empty_cards
-from .wordnet_backend import (
+from eng_words.wsd.llm_wsd import llm_wsd_sentence, redistribute_empty_cards
+from eng_words.wsd.wordnet_backend import (
     CONTENT_POS_TAGS,
     DEFAULT_CONFIDENCE_THRESHOLD,
     WordNetSenseBackend,
 )
-from .wordnet_utils import (
+from eng_words.wsd.wordnet_utils import (
     SPACY_TO_WORDNET_POS,
     get_all_supersenses_for_lemma,
     get_definition,

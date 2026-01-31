@@ -8,7 +8,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from .constants import (
+from eng_words.constants import (
     BOOK_FREQ,
     DIALECT_LEMMAS_FILTER,
     EXCLUDE_DEFAULT,
@@ -24,7 +24,7 @@ from .constants import (
     SUPERSENSE,
     TARGET_ZIPF_DEFAULT,
 )
-from .storage import load_known_words
+from eng_words.storage import load_known_words
 
 
 def load_known_words_from_csv(csv_path: Path) -> pd.DataFrame:

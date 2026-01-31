@@ -3,7 +3,7 @@
 Exports all constants from submodules for convenient importing.
 """
 
-from .columns import (
+from eng_words.constants.columns import (
     ANKI_COLUMNS,
     BACK,
     BOOK,
@@ -45,7 +45,7 @@ from .columns import (
     VERB_COUNT,
     WHITESPACE,
 )
-from .defaults import (
+from eng_words.constants.defaults import (
     DIALECT_LEMMAS_FILTER,
     ENCODING_UTF8,
     EXAMPLE_FALLBACK_MAX,
@@ -64,7 +64,7 @@ from .defaults import (
     TARGET_ZIPF_DEFAULT,
     TOP_N_DEFAULT,
 )
-from .files import (
+from eng_words.constants.files import (
     DIR_ANKI_EXPORTS,
     EXT_CSV,
     EXT_PARQUET,
@@ -77,13 +77,13 @@ from .files import (
     TEMPLATE_SUPERSENSE_STATS,
     TEMPLATE_TOKENS,
 )
-from .function_words import (
+from eng_words.constants.function_words import (
     FUNCTION_WORDS_CONFIG,
     get_ignored_function_words,
     get_included_function_words,
     should_ignore_function_word,
 )
-from .llm_config import (
+from eng_words.constants.llm_config import (
     CACHE_BACKEND,
     CARD_BATCH_SIZE,
     DEFAULT_CACHE_DIR,
@@ -99,7 +99,7 @@ from .llm_config import (
     PROMPT_VERSION_EVALUATION,
     SPOILER_RISK_THRESHOLD,
 )
-from .llm_pricing import (
+from eng_words.constants.llm_pricing import (
     ANTHROPIC_PRICING,
     GEMINI_PRICING,
     OPENAI_PRICING,
@@ -108,7 +108,41 @@ from .llm_pricing import (
     estimate_cost,
     get_pricing,
 )
-from .spacy_config import (
+from eng_words.constants.paths import (
+    ANKI_EXPORTS_DIR,
+    DATA_DIR,
+    DATA_PROCESSED_DIR,
+    DATA_RAW_DIR,
+    DATA_SYNSET_AGGREGATION_DIR,
+    DATA_SYNSET_CARDS_DIR,
+    DATA_WSD_GOLD_DIR,
+    LOGS_DIR,
+    get_aggregated_cards_path,
+    get_aggregation_cache_dir,
+    get_anki_csv_path,
+    get_anki_export_path,
+    get_book_path,
+    get_card_generation_cache_dir,
+    get_card_generation_output_dir,
+    get_generation_log_path,
+    get_gold_checksum_path,
+    get_gold_dev_path,
+    get_gold_examples_path,
+    get_gold_labels_dir,
+    get_gold_labels_final_path,
+    get_gold_test_locked_path,
+    get_lemma_stats_full_path,
+    get_lemma_stats_path,
+    get_log_path,
+    get_phrasal_verbs_path,
+    get_sense_tokens_path,
+    get_smart_cards_final_path,
+    get_smart_cards_partial_path,
+    get_supersense_stats_path,
+    get_synset_stats_path,
+    get_tokens_path,
+)
+from eng_words.constants.spacy_config import (
     COMPONENT_NER,
     COMPONENT_PARSER,
     COMPONENT_SENTER,
@@ -120,7 +154,7 @@ from .spacy_config import (
     POS_VERB,
     TOKENIZATION_DISABLED,
 )
-from .statuses import (
+from eng_words.constants.statuses import (
     EXCLUDE_DEFAULT,
     ITEM_TYPE_PHRASAL_VERB,
     ITEM_TYPE_WORD,
@@ -128,7 +162,7 @@ from .statuses import (
     STATUS_KNOWN,
     STATUS_LEARNING,
 )
-from .supersenses import (
+from eng_words.constants.supersenses import (
     ADJ_ALL,
     ADJ_PPL,
     ADJ_SUPERSENSES,
@@ -358,4 +392,37 @@ __all__ = [
     "ModelPricing",
     "estimate_cost",
     "get_pricing",
+    # Paths
+    "DATA_DIR",
+    "DATA_RAW_DIR",
+    "DATA_PROCESSED_DIR",
+    "DATA_SYNSET_CARDS_DIR",
+    "DATA_SYNSET_AGGREGATION_DIR",
+    "DATA_WSD_GOLD_DIR",
+    "ANKI_EXPORTS_DIR",
+    "LOGS_DIR",
+    "get_book_path",
+    "get_tokens_path",
+    "get_lemma_stats_path",
+    "get_lemma_stats_full_path",
+    "get_sense_tokens_path",
+    "get_supersense_stats_path",
+    "get_phrasal_verbs_path",
+    "get_anki_export_path",
+    "get_aggregated_cards_path",
+    "get_synset_stats_path",
+    "get_aggregation_cache_dir",
+    "get_card_generation_output_dir",
+    "get_card_generation_cache_dir",
+    "get_smart_cards_partial_path",
+    "get_smart_cards_final_path",
+    "get_anki_csv_path",
+    "get_gold_dev_path",
+    "get_gold_test_locked_path",
+    "get_gold_checksum_path",
+    "get_gold_labels_dir",
+    "get_gold_examples_path",
+    "get_gold_labels_final_path",
+    "get_log_path",
+    "get_generation_log_path",
 ]

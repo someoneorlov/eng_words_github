@@ -1,11 +1,11 @@
 """Validation module for card quality checks."""
 
-from .example_validator import (
+from eng_words.validation.example_validator import (
     ValidationResult,
     fix_invalid_cards,
     validate_card_examples,
 )
-from .synset_validator import validate_examples_for_synset_group
+from eng_words.validation.synset_validator import validate_examples_for_synset_group
 
 __all__ = [
     "ValidationResult",

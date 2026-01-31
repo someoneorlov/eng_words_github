@@ -12,8 +12,10 @@ import hashlib
 import sys
 from pathlib import Path
 
-TEST_LOCKED_PATH = Path("data/wsd_gold/gold_test_locked.jsonl")
-CHECKSUM_PATH = Path("data/wsd_gold/gold_test_locked.sha256")
+from eng_words.constants import get_gold_checksum_path, get_gold_test_locked_path
+
+TEST_LOCKED_PATH = get_gold_test_locked_path()
+CHECKSUM_PATH = get_gold_checksum_path()
 
 
 def compute_sha256(filepath: Path) -> str:

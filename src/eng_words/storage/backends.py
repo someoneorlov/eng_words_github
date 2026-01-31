@@ -15,7 +15,7 @@ try:
 except ImportError:
     GSPREAD_AVAILABLE = False
 
-from ..constants import (
+from eng_words.constants import (
     ITEM_TYPE,
     LEMMA,
     REQUIRED_KNOWN_WORDS_COLUMNS,

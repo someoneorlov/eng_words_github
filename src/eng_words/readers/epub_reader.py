@@ -9,7 +9,7 @@ import ebooklib
 from bs4 import BeautifulSoup
 from ebooklib import epub
 
-from . import BookReader
+from eng_words.readers import BookReader
 
 
 class EpubExtractionError(Exception):

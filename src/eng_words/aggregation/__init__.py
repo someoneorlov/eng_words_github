@@ -3,14 +3,14 @@
 Note: fallback.py has been moved to _archive/ folder (fallback logic removed from pipeline).
 """
 
-from .llm_aggregator import (
+from eng_words.aggregation.llm_aggregator import (
     AggregationResult,
     LLMAggregator,
     SynsetGroup,
     build_aggregation_prompt,
     parse_aggregation_response,
 )
-from .synset_aggregator import SynsetStats, aggregate_by_synset, get_synset_info
+from eng_words.aggregation.synset_aggregator import SynsetStats, aggregate_by_synset, get_synset_info
 
 __all__ = [
     "SynsetStats",

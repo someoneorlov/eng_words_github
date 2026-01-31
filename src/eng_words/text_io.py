@@ -5,10 +5,10 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from .constants import ENCODING_UTF8
-from .epub_reader import extract_epub_text  # Backward compatibility
-from .readers.epub_reader import EpubReader
-from .readers.text_reader import TextReader
+from eng_words.constants import ENCODING_UTF8
+from eng_words.epub_reader import extract_epub_text  # Backward compatibility
+from eng_words.readers.epub_reader import EpubReader
+from eng_words.readers.text_reader import TextReader
 
 
 class TextLoadError(Exception):

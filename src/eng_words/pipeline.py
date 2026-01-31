@@ -9,8 +9,8 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 
-from .anki_export import export_to_anki_csv, prepare_anki_export
-from .constants import (
+from eng_words.anki_export import export_to_anki_csv, prepare_anki_export
+from eng_words.constants import (
     DEFAULT_MODEL_NAME,
     DIR_ANKI_EXPORTS,
     EXAMPLE,
@@ -33,28 +33,28 @@ from .constants import (
     TEMPLATE_TOKENS,
     TOP_N_DEFAULT,
 )
-from .examples import get_examples_for_lemmas, get_examples_for_phrasal_verbs
-from .filtering import (
+from eng_words.examples import get_examples_for_lemmas, get_examples_for_phrasal_verbs
+from eng_words.filtering import (
     filter_by_frequency,
     filter_by_supersense,
     filter_known_words,
     rank_candidates,
 )
-from .phrasal_verbs import (
+from eng_words.phrasal_verbs import (
     calculate_phrasal_verb_stats,
     detect_phrasal_verbs,
     filter_phrasal_verbs,
     initialize_phrasal_model,
     rank_phrasal_verbs,
 )
-from .statistics import (
+from eng_words.statistics import (
     add_global_frequency,
     calculate_lemma_frequency,
     save_lemma_stats_to_parquet,
 )
-from .storage import load_known_words
-from .text_io import load_book_text
-from .text_processing import (
+from eng_words.storage import load_known_words
+from eng_words.text_io import load_book_text
+from eng_words.text_processing import (
     create_sentences_dataframe,
     create_tokens_dataframe,
     initialize_spacy_model,
@@ -134,7 +134,7 @@ def process_book_stage1(
     supersense_stats_path = None
 
     if enable_wsd:
-        from .wsd import WordNetSenseBackend
+        from eng_words.wsd import WordNetSenseBackend
 
         # Reconstruct sentences for WSD
         sentences = reconstruct_sentences_from_tokens(tokens_df)

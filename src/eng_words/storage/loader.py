@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .backends import CSVBackend, GoogleSheetsBackend, KnownWordsBackend
+from eng_words.storage.backends import CSVBackend, GoogleSheetsBackend, KnownWordsBackend
 
 # Pattern for Google Sheets URL: gsheets://spreadsheet_id/worksheet_name
 GSHEETS_PATTERN = re.compile(r"^gsheets://([^/]+)(?:/(.+))?$")

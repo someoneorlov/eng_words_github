@@ -7,10 +7,15 @@ flashcards with SmartCardGenerator.
 
 Usage:
     uv run python scripts/run_synset_card_generation.py
+    uv run python scripts/run_synset_card_generation.py --limit 100
+    uv run python scripts/run_synset_card_generation.py --log-file logs/generation.log
+    uv run python scripts/run_synset_card_generation.py --book-name my_book --log-file logs/gen.log
 """
 
+import argparse
 import json
 import logging
+import sys
 import time
 from collections import defaultdict
 from dataclasses import asdict
@@ -20,6 +25,15 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from eng_words.anki_export import export_to_anki_csv
+from eng_words.constants import (
+    get_aggregated_cards_path,
+    get_anki_csv_path,
+    get_card_generation_cache_dir,
+    get_card_generation_output_dir,
+    get_smart_cards_final_path,
+    get_smart_cards_partial_path,
+    get_tokens_path,
+)
 from eng_words.llm.base import get_provider
 from eng_words.llm.response_cache import ResponseCache
 from eng_words.llm.smart_card_generator import (
@@ -35,19 +49,32 @@ from eng_words.wsd.llm_wsd import redistribute_empty_cards
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
-logger = logging.getLogger(__name__)
 
-# Paths
-BOOK_NAME = "american_tragedy"
-AGGREGATED_CARDS_PATH = Path("data/synset_aggregation_full/aggregated_cards.parquet")
-TOKENS_PATH = Path(f"data/processed/{BOOK_NAME}_tokens.parquet")
-OUTPUT_DIR = Path("data/synset_cards")
-CACHE_DIR = OUTPUT_DIR / "llm_cache"
+def setup_logging(log_file: str | None = None):
+    """Configure logging to output to both terminal and file (if specified)."""
+    handlers = [logging.StreamHandler(sys.stdout)]
+    if log_file:
+        log_path = Path(log_file)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(log_path))
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(message)s",
+        handlers=handlers,
+        force=True,  # Override any existing configuration
+    )
 
-
-def run_card_generation(limit: int | None = None):
+def run_card_generation(book_name: str, limit: int | None = None):
     """Generate Smart Cards using synset-based aggregation."""
+    # Get paths from constants
+    AGGREGATED_CARDS_PATH = get_aggregated_cards_path()
+    TOKENS_PATH = get_tokens_path(book_name)
+    OUTPUT_DIR = get_card_generation_output_dir()
+    CACHE_DIR = get_card_generation_cache_dir()
+    partial_path = get_smart_cards_partial_path()
+    final_path = get_smart_cards_final_path()
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -73,7 +100,7 @@ def run_card_generation(limit: int | None = None):
     provider = get_provider("gemini", "gemini-3-flash-preview")
     cache = ResponseCache(cache_dir=CACHE_DIR, enabled=True)
     generator = SmartCardGenerator(
-        provider=provider, cache=cache, book_name=BOOK_NAME, max_retries=2
+        provider=provider, cache=cache, book_name=book_name, max_retries=2
     )
 
     # Step 4: Prepare items and generate cards
@@ -93,8 +120,6 @@ def run_card_generation(limit: int | None = None):
     selection_stats = defaultdict(int)
 
     # Check for partial results to resume
-    partial_path = OUTPUT_DIR / "synset_smart_cards_partial.json"
-    final_path = OUTPUT_DIR / "synset_smart_cards_final.json"
     resume_from = 0
     if partial_path.exists():
         logger.info("  Found partial results, loading...")
@@ -258,7 +283,7 @@ def run_card_generation(limit: int | None = None):
                 examples=valid_examples,
                 provider=provider,
                 cache=cache,
-                book_name=BOOK_NAME,
+                book_name=book_name,
             )
 
             # Statistics for spoilers
@@ -446,7 +471,7 @@ def run_card_generation(limit: int | None = None):
     logger.info("\n## Step 8: Save results")
 
     # Save full JSON (final cards after all processing)
-    json_path = OUTPUT_DIR / "synset_smart_cards_final.json"
+    json_path = get_smart_cards_final_path()
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump([card_to_serializable(c) for c in final_cards], f, ensure_ascii=False, indent=2)
     logger.info(f"  Final JSON: {json_path}")
@@ -463,7 +488,7 @@ def run_card_generation(limit: int | None = None):
     if cards_with_examples:
         anki_rows = [c.to_anki_row() for c in cards_with_examples]
         anki_df = pd.DataFrame(anki_rows)
-        anki_path = OUTPUT_DIR / "synset_anki.csv"
+        anki_path = get_anki_csv_path()
         export_to_anki_csv(anki_df, anki_path)
         logger.info(f"  Anki CSV: {anki_path}")
 
@@ -506,15 +531,37 @@ def run_card_generation(limit: int | None = None):
 
 
 if __name__ == "__main__":
-    import sys
+    parser = argparse.ArgumentParser(
+        description="Generate Smart Cards using synset-based aggregation"
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Limit the number of cards to generate (for testing)",
+    )
+    parser.add_argument(
+        "--book-name",
+        type=str,
+        default="american_tragedy",
+        help="Book name for token path and book context (default: american_tragedy)",
+    )
+    parser.add_argument(
+        "--log-file",
+        type=str,
+        default=None,
+        help="Optional path to log file (logs will also go to terminal)",
+    )
 
-    # Check for limit argument
-    limit = None
-    if len(sys.argv) > 1:
-        try:
-            limit = int(sys.argv[1])
-            logger.info(f"Running with limit: {limit}")
-        except ValueError:
-            logger.warning(f"Invalid limit argument: {sys.argv[1]}, running full")
+    args = parser.parse_args()
 
-    run_card_generation(limit=limit)
+    # Setup logging before creating logger
+    setup_logging(log_file=args.log_file)
+    logger = logging.getLogger(__name__)
+
+    if args.limit:
+        logger.info(f"Running with limit: {args.limit}")
+    if args.log_file:
+        logger.info(f"Logging to file: {args.log_file}")
+
+    run_card_generation(limit=args.limit, book_name=args.book_name)

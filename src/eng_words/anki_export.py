@@ -7,7 +7,7 @@ from typing import Iterable
 
 import pandas as pd
 
-from .constants import (
+from eng_words.constants import (
     ANKI_COLUMNS,
     BACK,
     EXAMPLE,

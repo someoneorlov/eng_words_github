@@ -10,7 +10,7 @@ import pandas as pd
 import spacy
 from spacy.language import Language
 
-from .constants import (
+from eng_words.constants import (
     BOOK,
     COMPONENT_SENTER,
     DEFAULT_MODEL_NAME,

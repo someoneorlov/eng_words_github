@@ -9,7 +9,7 @@ from typing import Dict, Set
 import pandas as pd
 from wordfreq import zipf_frequency
 
-from .constants import (
+from eng_words.constants import (
     BOOK_FREQ,
     DOC_COUNT,
     GLOBAL_ZIPF,

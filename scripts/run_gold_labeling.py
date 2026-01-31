@@ -122,7 +122,7 @@ def main(
         help="Input JSONL file with examples",
     ),
     output_dir: Path = typer.Option(
-        Path("data/wsd_gold/labels"),
+        get_gold_labels_dir(),
         "--output-dir",
         "-o",
         help="Output directory for labels",

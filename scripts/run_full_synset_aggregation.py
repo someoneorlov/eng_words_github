@@ -3,7 +3,8 @@
 Run full LLM-based synset aggregation on all lemmas.
 
 Usage:
-    uv run python scripts/run_full_synset_aggregation.py
+    uv run python scripts/run_full_synset_aggregation.py --book-name american_tragedy
+    uv run python scripts/run_full_synset_aggregation.py --book-name american_tragedy --log-file logs/aggregation.log
 """
 
 import json
@@ -13,10 +14,18 @@ from dataclasses import asdict
 from pathlib import Path
 
 import pandas as pd
+import typer
 from dotenv import load_dotenv
 
 from eng_words.aggregation.llm_aggregator import LLMAggregator
 from eng_words.aggregation.synset_aggregator import aggregate_by_synset
+from eng_words.constants import (
+    DATA_SYNSET_AGGREGATION_DIR,
+    get_aggregated_cards_path,
+    get_aggregation_cache_dir,
+    get_sense_tokens_path,
+    get_synset_stats_path,
+)
 from eng_words.llm.base import get_provider
 from eng_words.llm.response_cache import ResponseCache
 
@@ -25,14 +34,18 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 logger = logging.getLogger(__name__)
 
-# Paths
-SENSE_TOKENS_PATH = Path("data/processed/american_tragedy_wsd_sense_tokens.parquet")
-OUTPUT_DIR = Path("data/synset_aggregation_full")
-CACHE_DIR = OUTPUT_DIR / "llm_cache"
+app = typer.Typer(help="Run full LLM-based synset aggregation on all lemmas")
 
 
-def run_full_aggregation():
-    """Run full synset aggregation on American Tragedy."""
+def run_full_aggregation(book_name: str):
+    """Run full synset aggregation on specified book."""
+    logger = logging.getLogger(__name__)
+    
+    # Get paths from constants
+    SENSE_TOKENS_PATH = get_sense_tokens_path(book_name)
+    OUTPUT_DIR = DATA_SYNSET_AGGREGATION_DIR
+    CACHE_DIR = get_aggregation_cache_dir()
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -51,7 +64,7 @@ def run_full_aggregation():
     )
 
     # Save synset stats
-    synset_stats_path = OUTPUT_DIR / "synset_stats.parquet"
+    synset_stats_path = get_synset_stats_path()
     synset_stats_df.to_parquet(synset_stats_path)
     logger.info(f"  Saved to {synset_stats_path}")
 
@@ -145,7 +158,7 @@ def run_full_aggregation():
     logger.info(f"  Saved results to {results_json_path}")
 
     # Save cards DataFrame
-    cards_path = OUTPUT_DIR / "aggregated_cards.parquet"
+    cards_path = get_aggregated_cards_path()
     cards_df.to_parquet(cards_path)
     logger.info(f"  Saved cards to {cards_path}")
 
@@ -171,5 +184,30 @@ def run_full_aggregation():
     return cards_df, all_results
 
 
+@app.command()
+def main(
+    book_name: str = typer.Option(
+        "american_tragedy",
+        "--book-name",
+        "-b",
+        help="Book name (e.g., american_tragedy)",
+    ),
+    log_file: str | None = typer.Option(
+        None,
+        "--log-file",
+        help="Optional path to log file (logs will also go to terminal)",
+    ),
+) -> None:
+    """Run full synset aggregation on specified book."""
+    # Setup logging before running
+    setup_logging(log_file=log_file)
+    logger = logging.getLogger(__name__)
+    
+    if log_file:
+        logger.info(f"Logging to file: {log_file}")
+    
+    run_full_aggregation(book_name=book_name)
+
+
 if __name__ == "__main__":
-    run_full_aggregation()
+    app()

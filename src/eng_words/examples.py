@@ -7,7 +7,7 @@ from typing import Dict, Iterable, List, Optional
 
 import pandas as pd
 
-from .constants import (
+from eng_words.constants import (
     EXAMPLE,
     EXAMPLE_FALLBACK_MAX,
     EXAMPLE_FALLBACK_MIN,

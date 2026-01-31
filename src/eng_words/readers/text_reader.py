@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from . import BookReader
-from ..constants import ENCODING_UTF8
+from eng_words.readers import BookReader
+from eng_words.constants import ENCODING_UTF8
 
 
 class TextLoadError(Exception):
