@@ -30,7 +30,7 @@ class TestSmartCard:
             selected_examples=["He runs every morning."],
             excluded_examples=["The program runs on Windows."],
             simple_definition="to move quickly using your legs",
-            translation_ru="бежать",
+            translation_ru="run",
             generated_example="She runs in the park every day.",
             wn_definition="move fast by using one's feet",
             book_name="test_book",
@@ -41,7 +41,7 @@ class TestSmartCard:
         assert card.supersense == "verb.motion"
         assert len(card.selected_examples) == 1
         assert len(card.excluded_examples) == 1
-        assert card.translation_ru == "бежать"
+        assert card.translation_ru == "run"
 
     def test_create_smart_card_with_quality_scores(self):
         """Test creating SmartCard with quality_scores and generated_examples."""
@@ -54,7 +54,7 @@ class TestSmartCard:
             selected_examples=["He runs every morning.", "She runs fast."],
             excluded_examples=[],
             simple_definition="to move quickly using your legs",
-            translation_ru="бежать",
+            translation_ru="run",
             generated_example="They run together.",
             wn_definition="move fast by using one's feet",
             book_name="test_book",
@@ -76,7 +76,7 @@ class TestSmartCard:
             selected_examples=["He runs."],
             excluded_examples=[],
             simple_definition="to move fast",
-            translation_ru="бежать",
+            translation_ru="run",
             generated_example="She runs.",
             wn_definition="move fast",
             book_name="test",
@@ -85,7 +85,7 @@ class TestSmartCard:
         d = card.to_dict()
         assert isinstance(d, dict)
         assert d["lemma"] == "run"
-        assert d["translation_ru"] == "бежать"
+        assert d["translation_ru"] == "run"
 
 
 class TestSmartCardPrompt:
@@ -228,7 +228,7 @@ class TestSmartCardGenerator:
                     "selected_indices": [1, 2],
                     "generated_examples": ["She runs every morning."],
                     "simple_definition": "to move fast using legs",
-                    "translation_ru": "бежать",
+                    "translation_ru": "run",
                 }),
                 model="test-model",
                 input_tokens=100,
@@ -255,7 +255,7 @@ class TestSmartCardGenerator:
             assert isinstance(card, SmartCard)
             assert card.lemma == "run"
             assert card.simple_definition == "to move fast using legs"
-            assert card.translation_ru == "бежать"
+            assert card.translation_ru == "run"
             assert card.quality_scores == {1: 5, 2: 4, 3: 5}
             assert card.generated_examples == ["She runs every morning."]
             # generated_example should be set from generated_examples[0] if exists
@@ -279,7 +279,7 @@ class TestSmartCardGenerator:
                     "selected_indices": [1],
                     "generated_examples": ["Test example."],
                     "simple_definition": "test",
-                    "translation_ru": "тест",
+                    "translation_ru": "test",
                 }),
                 model="test-model",
                 input_tokens=100,
@@ -358,7 +358,7 @@ class TestSmartCardGenerator:
                     "selected_indices": [1],
                     "excluded_indices": [],
                     "simple_definition": "test",
-                    "translation_ru": "тест",
+                    "translation_ru": "test",
                     "generated_example": "Test.",
                 }),
                 model="test-model",
@@ -405,7 +405,7 @@ class TestSmartCardGenerator:
                     "selected_indices": [1],
                     "excluded_indices": [],
                     "simple_definition": "test",
-                    "translation_ru": "тест",
+                    "translation_ru": "test",
                     "generated_example": "Test.",
                 }),
                 model="test-model",
@@ -460,7 +460,7 @@ class TestSmartCardGenerator:
                     "selected_indices": [1],
                     "excluded_indices": [],
                     "simple_definition": "test",
-                    "translation_ru": "тест",
+                    "translation_ru": "test",
                     "generated_example": "Test.",
                 }),
                 model="test-model",
@@ -507,7 +507,7 @@ class TestSmartCardGenerator:
                 "selected_indices": [1],
                 "excluded_indices": [],
                 "simple_definition": "to move fast",
-                "translation_ru": "бежать",
+                "translation_ru": "run",
                 "generated_example": "She runs."
             }),
             model="test",
@@ -550,7 +550,7 @@ class TestSmartCardGenerator:
             selected_examples=["He runs."],
             excluded_examples=[],
             simple_definition="to move fast",
-            translation_ru="бежать",
+            translation_ru="run",
             generated_example="She runs.",
             wn_definition="move fast",
             book_name="test",
@@ -571,7 +571,7 @@ class TestSmartCardGenerator:
             selected_examples=["He runs."],
             excluded_examples=[],
             simple_definition="to move fast",
-            translation_ru="бежать",
+            translation_ru="run",
             generated_example="She runs.",
             wn_definition="move fast",
             book_name="test",
@@ -600,7 +600,7 @@ class TestSmartCardGenerator:
                     "selected_indices": [],  # No examples selected
                     "generated_examples": ["This is a test."],
                     "simple_definition": "test",
-                    "translation_ru": "тест",
+                    "translation_ru": "test",
                 }),
                 model="test-model",
                 input_tokens=100,
@@ -646,7 +646,7 @@ class TestSmartCardGenerator:
                     "selected_indices": [1],
                     "generated_examples": ["This is a test."],
                     "simple_definition": "test",
-                    "translation_ru": "тест",
+                    "translation_ru": "test",
                 }),
                 model="test-model",
                 input_tokens=100,

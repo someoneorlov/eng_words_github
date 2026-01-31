@@ -1,94 +1,94 @@
-# Настройка API ключей для LLM провайдеров
+# LLM provider API keys setup
 
-Для работы WSD Gold Dataset pipeline требуются API ключи от трёх провайдеров:
+The WSD Gold Dataset pipeline requires API keys from three providers:
 - OpenAI (GPT)
 - Anthropic (Claude)
 - Google (Gemini)
 
 ## 1. OpenAI API Key
 
-### Получение ключа:
-1. Перейти на https://platform.openai.com/
-2. Войти или создать аккаунт
-3. Перейти в **Settings → API Keys** (https://platform.openai.com/api-keys)
-4. Нажать **"Create new secret key"**
-5. Скопировать ключ (начинается с `sk-...`)
+### Getting a key:
+1. Go to https://platform.openai.com/
+2. Sign in or create an account
+3. Go to **Settings → API Keys** (https://platform.openai.com/api-keys)
+4. Click **"Create new secret key"**
+5. Copy the key (starts with `sk-...`)
 
-### Пополнение баланса:
-1. Перейти в **Settings → Billing** (https://platform.openai.com/settings/organization/billing/overview)
-2. Добавить способ оплаты
-3. Рекомендуемый начальный баланс: **$5-10**
+### Adding credits:
+1. Go to **Settings → Billing** (https://platform.openai.com/settings/organization/billing/overview)
+2. Add a payment method
+3. Recommended initial balance: **$5–10**
 
-### Стоимость (Jan 2026):
-| Модель | Input (1M tokens) | Output (1M tokens) |
+### Pricing (Jan 2026):
+| Model | Input (1M tokens) | Output (1M tokens) |
 |--------|-------------------|-------------------|
 | gpt-5-nano | $0.06 | $0.48 |
 | gpt-5-mini (default) | $0.30 | $2.40 |
 | gpt-5 | $1.25 | $10.00 |
 | gpt-5.2 | $2.00 | $16.00 |
 
-**Оценка для Gold Dataset**: ~$0.25 за 500 примеров (gpt-5-mini)
+**Estimate for Gold Dataset**: ~$0.25 for 500 examples (gpt-5-mini)
 
 ---
 
 ## 2. Anthropic API Key
 
-### Получение ключа:
-1. Перейти на https://console.anthropic.com/
-2. Войти или создать аккаунт (может потребоваться waitlist)
-3. Перейти в **Settings → API Keys** (https://console.anthropic.com/settings/keys)
-4. Нажать **"Create Key"**
-5. Скопировать ключ (начинается с `sk-ant-...`)
+### Getting a key:
+1. Go to https://console.anthropic.com/
+2. Sign in or create an account (waitlist may apply)
+3. Go to **Settings → API Keys** (https://console.anthropic.com/settings/keys)
+4. Click **"Create Key"**
+5. Copy the key (starts with `sk-ant-...`)
 
-### Пополнение баланса:
-1. Перейти в **Plans & Billing** (https://console.anthropic.com/settings/billing)
-2. Добавить способ оплаты
-3. Рекомендуемый начальный баланс: **$5-10**
+### Adding credits:
+1. Go to **Plans & Billing** (https://console.anthropic.com/settings/billing)
+2. Add a payment method
+3. Recommended initial balance: **$5–10**
 
-### Стоимость (Jan 2026):
-| Модель | Input (1M tokens) | Output (1M tokens) |
+### Pricing (Jan 2026):
+| Model | Input (1M tokens) | Output (1M tokens) |
 |--------|-------------------|-------------------|
 | claude-haiku-4-5-20251001 (default) | $1.00 | $5.00 |
 | claude-sonnet-4-5-20250929 | $3.00 | $15.00 |
 | claude-opus-4-5-20251101 | $5.00 | $25.00 |
 
-**Оценка для Gold Dataset**: ~$0.50 за 500 примеров (claude-haiku-4-5)
+**Estimate for Gold Dataset**: ~$0.50 for 500 examples (claude-haiku-4-5)
 
 ---
 
 ## 3. Google Gemini API Key
 
-### Получение ключа:
-1. Перейти на https://aistudio.google.com/
-2. Войти с Google аккаунтом
-3. Нажать **"Get API Key"** в левом меню
-4. Выбрать существующий проект или создать новый
-5. Нажать **"Create API key"**
-6. Скопировать ключ (начинается с `AIza...`)
+### Getting a key:
+1. Go to https://aistudio.google.com/
+2. Sign in with your Google account
+3. Click **"Get API Key"** in the left menu
+4. Select an existing project or create a new one
+5. Click **"Create API key"**
+6. Copy the key (starts with `AIza...`)
 
-### Альтернатива через Google Cloud:
-1. Перейти на https://console.cloud.google.com/
-2. Создать проект
-3. Включить **Generative Language API**
-4. Создать API key в **APIs & Services → Credentials**
+### Alternative via Google Cloud:
+1. Go to https://console.cloud.google.com/
+2. Create a project
+3. Enable **Generative Language API**
+4. Create an API key under **APIs & Services → Credentials**
 
-### Стоимость (Jan 2026):
-| Модель | Input (1M tokens) | Output (1M tokens) |
+### Pricing (Jan 2026):
+| Model | Input (1M tokens) | Output (1M tokens) |
 |--------|-------------------|-------------------|
 | gemini-2.0-flash (default) | $0.10 | $0.40 |
 | gemini-2.5-flash | $0.08 | $0.32 |
 | gemini-2.5-pro | $1.25 | $5.00 |
 | gemini-3-pro-preview | $1.50 | $6.00 |
 
-**Оценка для Gold Dataset**: ~$0.05 за 500 примеров (gemini-2.0-flash)
+**Estimate for Gold Dataset**: ~$0.05 for 500 examples (gemini-2.0-flash)
 
-⚠️ **Бесплатный tier**: Gemini имеет бесплатный лимит 15 RPM (requests per minute), достаточно для тестирования.
+⚠️ **Free tier**: Gemini has a free limit of 15 RPM (requests per minute), enough for testing.
 
 ---
 
-## 4. Настройка .env файла
+## 4. .env file setup
 
-Создайте файл `.env` в корне проекта:
+Create a `.env` file in the project root:
 
 ```bash
 # OpenAI
@@ -101,14 +101,14 @@ ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_API_KEY=AIza...
 ```
 
-### Проверка ключей:
+### Verifying keys:
 
 ```bash
-# Запустить тест с реальными вызовами
+# Run test with real API calls
 python scripts/test_gold_pipeline_real_data.py --with-llm
 ```
 
-Ожидаемый вывод для каждого провайдера:
+Expected output for each provider:
 ```
 🔵 Testing OpenAI provider...
 ✅ OpenAI provider works!
@@ -122,15 +122,15 @@ python scripts/test_gold_pipeline_real_data.py --with-llm
 
 ---
 
-## 5. Зависимости
+## 5. Dependencies
 
-Убедитесь, что установлены необходимые пакеты:
+Ensure required packages are installed:
 
 ```bash
-# Установка всех LLM зависимостей
+# Install all LLM dependencies
 pip install -e ".[llm]"
 
-# Или вручную:
+# Or manually:
 pip install openai>=2.11.0
 pip install anthropic>=0.75.0
 pip install google-genai>=1.0.0
@@ -138,43 +138,42 @@ pip install google-genai>=1.0.0
 
 ---
 
-## 6. Устранение проблем
+## 6. Troubleshooting
 
 ### OpenAI: "Incorrect API key provided"
-- Проверьте что ключ начинается с `sk-`
-- Убедитесь что баланс > $0
+- Check that the key starts with `sk-`
+- Ensure balance > $0
 
 ### Anthropic: "Invalid API Key"
-- Проверьте что ключ начинается с `sk-ant-`
-- Убедитесь что аккаунт активирован
+- Check that the key starts with `sk-ant-`
+- Ensure the account is activated
 
 ### Gemini: "API key not valid"
-- Проверьте что Generative Language API включен в проекте
-- Попробуйте пересоздать ключ
+- Check that Generative Language API is enabled for the project
+- Try recreating the key
 
 ### Gemini: "RESOURCE_EXHAUSTED" / 429
-- Превышен лимит бесплатного tier
-- Проверьте квоту на https://ai.dev/rate-limit
-- Подождите ~1 минуту и попробуйте снова
-- Или перейдите на платный план
+- Free tier limit exceeded
+- Check quota at https://ai.dev/rate-limit
+- Wait ~1 minute and try again
+- Or switch to a paid plan
 
-### Rate Limits
-- OpenAI: Новые аккаунты имеют низкие лимиты (Tier 1)
-- Anthropic: Batch API обходит rate limits
-- Gemini: 15 RPM на бесплатном tier
+### Rate limits
+- OpenAI: New accounts have low limits (Tier 1)
+- Anthropic: Batch API bypasses rate limits
+- Gemini: 15 RPM on free tier
 
 ---
 
-## 7. Оценка общей стоимости Gold Dataset
+## 7. Gold Dataset cost estimate
 
-Для 500 примеров × 3 провайдера:
+For 500 examples × 3 providers:
 
-| Провайдер | Модель | Стоимость |
+| Provider | Model | Cost |
 |-----------|--------|-----------|
 | OpenAI | gpt-5-mini | ~$0.25 |
 | Anthropic | claude-haiku-4-5 | ~$0.50 |
 | Gemini | gemini-2.0-flash | ~$0.05 |
-| **Итого** | | **~$0.80** |
+| **Total** | | **~$0.80** |
 
-Для полного dataset (1000+ примеров): **~$1-2**
-
+For full dataset (1000+ examples): **~$1–2**

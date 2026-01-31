@@ -66,7 +66,7 @@ SMART_CARD_PROMPT = """You are helping create Anki flashcards for an English lan
   "selected_indices": [1, 2, 3],
   "generated_examples": ["Example 1", "Example 2"],
   "simple_definition": "to move quickly using your legs",
-  "translation_ru": "бежать"
+  "translation_ru": "run"
 }}
 
 **Note**: invalid_indices should only be used for examples with wrong sense (different meaning), NOT for length or spoilers (these are already filtered before this step).
@@ -106,7 +106,7 @@ def count_words(text: str) -> int:
 def mark_examples_by_length(
     examples: list[tuple[int, str]],  # (sentence_id, sentence)
     max_words: int = 50,
-    min_words: int = 6,  # Минимальная длина для нормального контекста
+    min_words: int = 6,  # Minimum length for a proper context
 ) -> dict[int, bool]:  # sentence_id -> is_appropriate_length
     """Mark examples by length (don't filter, just mark).
     
@@ -302,19 +302,19 @@ def _parse_spoiler_response(
 
 
 def select_examples_for_generation(
-    all_examples: list[tuple[int, str]],  # Все примеры (не фильтрованные)
+    all_examples: list[tuple[int, str]],  # All examples (unfiltered)
     length_flags: dict[int, bool],  # sentence_id -> is_appropriate_length
     spoiler_flags: dict[int, bool],  # sentence_id -> has_spoiler
     target_count: int = 3,
 ) -> dict[str, Any]:
     """Select examples for generation based on simple logic and flags.
     
-    Простая логика:
-    - Используем только примеры с is_appropriate_length=True и has_spoiler=False
-    - Дедупликация: убираем дубликаты (одинаковые предложения)
-    - Если есть 3+ таких примеров → берем 2 из книги + генерируем 1
-    - Если есть 1-2 таких примера → берем все + генерируем остальные до 3
-    - Если нет таких примеров → генерируем 3
+    Logic:
+    - Use only examples with is_appropriate_length=True and has_spoiler=False
+    - Deduplicate: drop duplicate sentences
+    - If 3+ such examples: take 2 from book + generate 1
+    - If 1-2 such examples: take all + generate the rest up to 3
+    - If none: generate 3
     
     Args:
         all_examples: List of all (sentence_id, sentence) tuples (not filtered)
@@ -328,17 +328,17 @@ def select_examples_for_generation(
         - generate_count: Number of examples to generate (always 1, 2, or 3)
         - flags: Dictionary with all flags for future reference
     """
-    # Выбираем только примеры с правильными флагами
+    # Keep only examples with correct flags
     valid_examples = [
         (sid, ex) for sid, ex in all_examples
         if length_flags.get(sid, False) and not spoiler_flags.get(sid, True)
     ]
     
-    # Дедупликация: убираем дубликаты (одинаковые предложения, но разные sentence_id)
+    # Deduplicate: drop duplicate sentences (same text, different sentence_id)
     seen_sentences = set()
     deduplicated_examples = []
     for sid, ex in valid_examples:
-        # Нормализуем для сравнения (нижний регистр, убираем лишние пробелы)
+        # Normalize for comparison (lowercase, strip)
         normalized = ex.lower().strip()
         if normalized not in seen_sentences:
             seen_sentences.add(normalized)
@@ -349,7 +349,7 @@ def select_examples_for_generation(
     count = len(valid_examples)
     
     if count >= 3:
-        # Есть 3+ примеров без спойлеров нормальной длины → берем 2 из книги + генерируем 1
+        # 3+ good examples: take 2 from book + generate 1
         return {
             "selected_from_book": valid_examples[:2],
             "generate_count": 1,
@@ -359,7 +359,7 @@ def select_examples_for_generation(
             },
         }
     elif count >= 1:
-        # Есть 1-2 примера без спойлеров → берем все + генерируем остальные до 3
+        # 1-2 good examples: take all + generate rest up to 3
         return {
             "selected_from_book": valid_examples,
             "generate_count": target_count - count,  # 1 or 2
@@ -369,7 +369,7 @@ def select_examples_for_generation(
             },
         }
     else:
-        # Нет примеров без спойлеров нормальной длины → генерируем 3
+        # No good examples: generate 3
         return {
             "selected_from_book": [],
             "generate_count": target_count,  # 3

@@ -178,7 +178,7 @@ def _parse_validation_response(
     }
 
 
-# Удаляем _generate_cache_key - используем cache.generate_key() напрямую
+# Use cache.generate_key() directly (no _generate_cache_key)
 
 
 # Maximum examples per batch to avoid JSON parsing errors

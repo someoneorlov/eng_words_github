@@ -1,16 +1,16 @@
-# Как работает GOOGLE_APPLICATION_CREDENTIALS
+# How GOOGLE_APPLICATION_CREDENTIALS works
 
-## Обзор
+## Overview
 
-`GOOGLE_APPLICATION_CREDENTIALS` - это переменная окружения, которая указывает путь к JSON файлу с credentials для Google Service Account.
+`GOOGLE_APPLICATION_CREDENTIALS` is an environment variable that points to the path of a JSON file containing credentials for a Google Service Account.
 
-## Как это работает в нашем коде
+## How it works in our code
 
-### 1. Приоритет поиска credentials
+### 1. Credential lookup order
 
-Когда создается `GoogleSheetsBackend`, система ищет credentials в следующем порядке:
+When creating `GoogleSheetsBackend`, the system looks for credentials in this order:
 
-1. **Параметр `credentials_path`** (если передан при создании бэкенда)
+1. **`credentials_path` parameter** (if passed when creating the backend)
    ```python
    backend = GoogleSheetsBackend(
        "spreadsheet_id",
@@ -19,86 +19,85 @@
    )
    ```
 
-2. **Переменная окружения `GOOGLE_APPLICATION_CREDENTIALS_JSON`**
-   - Содержит JSON строку напрямую
-   - Используется редко, обычно для CI/CD
+2. **Environment variable `GOOGLE_APPLICATION_CREDENTIALS_JSON`**
+   - Contains the JSON string directly
+   - Used rarely, usually for CI/CD
 
-3. **Переменная окружения `GOOGLE_APPLICATION_CREDENTIALS`**
-   - Содержит путь к JSON файлу
-   - **Рекомендуемый способ** для локальной разработки
+3. **Environment variable `GOOGLE_APPLICATION_CREDENTIALS`**
+   - Contains the path to the JSON file
+   - **Recommended** for local development
 
-4. **Ошибка**, если ничего не найдено
+4. **Error** if none found
 
-### 2. Где устанавливать GOOGLE_APPLICATION_CREDENTIALS
+### 2. Where to set GOOGLE_APPLICATION_CREDENTIALS
 
-#### Вариант A: Системная переменная окружения (рекомендуется)
+#### Option A: System environment variable (recommended)
 
-Установите в `~/.zshrc` (или `~/.bashrc`):
+Add to `~/.zshrc` (or `~/.bashrc`):
 
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/eng_words/google-credentials.json"
 ```
 
-**Преимущества:**
-- Работает для всех проектов
-- Не нужно дублировать в каждом проекте
-- Безопаснее (не в репозитории)
+**Advantages:**
+- Works for all projects
+- No need to duplicate in each project
+- Safer (not in the repo)
 
-#### Вариант B: В .env файле проекта (альтернатива)
+#### Option B: In project .env file (alternative)
 
-Можно добавить в `.env`:
+You can add to `.env`:
 
 ```bash
 GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/eng_words/google-credentials.json
 ```
 
-**Но:** Это не обязательно, так как `python-dotenv` автоматически загружает `.env`, но переменные окружения из системы имеют приоритет.
+**Note:** Not required, since `python-dotenv` loads `.env` automatically, but system environment variables take precedence.
 
-### 3. Почему в .env.example это закомментировано?
+### 3. Why is it commented out in .env.example?
 
-В `.env.example` строка закомментирована, потому что:
+In `.env.example` the line is commented because:
 
-1. **Обычно credentials устанавливаются в системных переменных** (`~/.zshrc`)
-2. **Не нужно дублировать** в каждом проекте
-3. **Безопаснее** - credentials не попадут в репозиторий даже случайно
+1. **Credentials are usually set in system variables** (`~/.zshrc`)
+2. **No need to duplicate** in each project
+3. **Safer** — credentials won't end up in the repo by mistake
 
-### 4. Как проверить, что credentials работают?
+### 4. How to verify credentials work?
 
 ```bash
-# Проверить переменную окружения
+# Check environment variable
 echo $GOOGLE_APPLICATION_CREDENTIALS
 
-# Проверить, что файл существует
+# Check that file exists
 ls -la $GOOGLE_APPLICATION_CREDENTIALS
 
-# Запустить тест
+# Run test
 python scripts/test_gsheets.py
 ```
 
-### 5. Полный пример настройки
+### 5. Full setup example
 
 ```bash
-# 1. Сохранить credentials
+# 1. Save credentials
 mkdir -p ~/.config/eng_words
 mv ~/Downloads/your-project-xxxxx.json ~/.config/eng_words/google-credentials.json
 chmod 600 ~/.config/eng_words/google-credentials.json
 
-# 2. Установить переменную окружения (в ~/.zshrc)
+# 2. Set environment variable (in ~/.zshrc)
 echo 'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/eng_words/google-credentials.json"' >> ~/.zshrc
 source ~/.zshrc
 
-# 3. Проверить
+# 3. Verify
 echo $GOOGLE_APPLICATION_CREDENTIALS
 
-# 4. Использовать в проекте
-# В .env файле указываем только GOOGLE_SHEETS_URL:
+# 4. Use in project
+# In .env only set GOOGLE_SHEETS_URL:
 # GOOGLE_SHEETS_URL=gsheets://YOUR_SPREADSHEET_ID/Sheet1
 ```
 
-## Итого
+## Summary
 
-- **GOOGLE_APPLICATION_CREDENTIALS** - путь к JSON файлу с credentials
-- Устанавливается в **системных переменных окружения** (`~/.zshrc`)
-- **Не нужно** указывать в `.env` файле (но можно, если хотите)
-- Код автоматически найдет credentials через переменную окружения
-
+- **GOOGLE_APPLICATION_CREDENTIALS** — path to the JSON credentials file
+- Set in **system environment** (`~/.zshrc`)
+- **No need** to set in `.env` (but you can if you prefer)
+- The code finds credentials automatically via the environment variable

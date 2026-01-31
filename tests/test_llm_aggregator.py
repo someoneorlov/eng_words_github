@@ -84,7 +84,7 @@ class TestBuildPrompt:
         synsets = [{"synset_id": "test.n.01", "definition": "test", "freq": 1}]
         prompt = build_aggregation_prompt("test", synsets)
         
-        assert "объединить" in prompt.lower() or "ОБЪЕДИНИТЬ" in prompt
+        assert "merge" in prompt.lower() or "merged" in prompt.lower()
         assert "JSON" in prompt
 
 

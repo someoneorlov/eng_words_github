@@ -27,7 +27,7 @@ class TestSenseCardDataclass:
             pos="NOUN",
             supersense="noun.group",
             definition_simple="a company where you keep your money safe",
-            translation_ru="банк",
+            translation_ru="bank",
             generic_examples=["I need to go to the bank."],
             book_examples={},
             generated_at=datetime.now(),
@@ -37,7 +37,7 @@ class TestSenseCardDataclass:
 
         assert card.synset_id == "bank.n.01"
         assert card.lemma == "bank"
-        assert card.translation_ru == "банк"
+        assert card.translation_ru == "bank"
 
     def test_sense_card_to_dict(self):
         """SenseCard can be converted to dict for JSON serialization."""
@@ -49,7 +49,7 @@ class TestSenseCardDataclass:
             pos="NOUN",
             supersense="noun.group",
             definition_simple="a company where you keep your money safe",
-            translation_ru="банк",
+            translation_ru="bank",
             generic_examples=["I need to go to the bank."],
             book_examples={"American Tragedy": ["He went to the bank."]},
             generated_at=datetime(2024, 1, 1, 12, 0, 0),
@@ -73,7 +73,7 @@ class TestSenseCardDataclass:
             "pos": "NOUN",
             "supersense": "noun.group",
             "definition_simple": "a company where you keep your money safe",
-            "translation_ru": "банк",
+            "translation_ru": "bank",
             "generic_examples": ["I need to go to the bank."],
             "book_examples": {},
             "generated_at": "2024-01-01T12:00:00",
@@ -134,7 +134,7 @@ class TestSenseCache:
                 pos="NOUN",
                 supersense="noun.group",
                 definition_simple="a company where you keep your money safe",
-                translation_ru="банк",
+                translation_ru="bank",
                 generic_examples=["I need to go to the bank."],
                 book_examples={},
                 generated_at=datetime.now(),
@@ -148,7 +148,7 @@ class TestSenseCache:
             retrieved = cache.get("bank.n.01")
             assert retrieved is not None
             assert retrieved.synset_id == "bank.n.01"
-            assert retrieved.translation_ru == "банк"
+            assert retrieved.translation_ru == "bank"
 
     def test_store_persists_to_disk(self):
         """store() persists data to disk (survives cache recreation)."""
@@ -165,7 +165,7 @@ class TestSenseCache:
                 pos="VERB",
                 supersense="verb.motion",
                 definition_simple="to move fast using your legs",
-                translation_ru="бежать",
+                translation_ru="run",
                 generic_examples=["He runs every morning."],
                 book_examples={},
                 generated_at=datetime.now(),
@@ -179,7 +179,7 @@ class TestSenseCache:
             retrieved = cache2.get("run.v.01")
 
             assert retrieved is not None
-            assert retrieved.translation_ru == "бежать"
+            assert retrieved.translation_ru == "run"
 
     def test_add_book_examples(self):
         """add_book_examples() adds examples to existing card."""
@@ -194,7 +194,7 @@ class TestSenseCache:
                 pos="NOUN",
                 supersense="noun.group",
                 definition_simple="a company where you keep your money safe",
-                translation_ru="банк",
+                translation_ru="bank",
                 generic_examples=["I need to go to the bank."],
                 book_examples={},
                 generated_at=datetime.now(),
@@ -227,7 +227,7 @@ class TestSenseCache:
                 pos="NOUN",
                 supersense="noun.group",
                 definition_simple="a company where you keep your money safe",
-                translation_ru="банк",
+                translation_ru="bank",
                 generic_examples=[],
                 book_examples={},
                 generated_at=datetime.now(),
@@ -268,7 +268,7 @@ class TestSenseCache:
                     pos="NOUN",
                     supersense="noun.group",
                     definition_simple="test",
-                    translation_ru="тест",
+                    translation_ru="test",
                     generic_examples=[],
                     book_examples={},
                     generated_at=datetime.now(),
@@ -296,7 +296,7 @@ class TestSenseCache:
                 pos="NOUN",
                 supersense="noun.group",
                 definition_simple="test",
-                translation_ru="тест",
+                translation_ru="test",
                 generic_examples=[],
                 book_examples={},
                 generated_at=datetime.now(),
@@ -329,7 +329,7 @@ class TestSenseCache:
                         pos="NOUN",
                         supersense="noun.group",
                         definition_simple=f"definition {i}",
-                        translation_ru=f"перевод {i}",
+                        translation_ru=f"translation {i}",
                         generic_examples=[],
                         book_examples={},
                         generated_at=datetime.now(),

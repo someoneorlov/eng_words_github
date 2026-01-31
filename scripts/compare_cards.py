@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Сравнение карточек между эталоном и текущими результатами.
+Compare cards between reference (expected) and current results.
 
-Использование:
+Usage:
     python scripts/compare_cards.py --expected backups/2026-01-19/benchmark_100/ --actual data/synset_cards/
 """
 
@@ -14,13 +14,13 @@ from typing import Any
 
 
 def load_cards(json_path: Path) -> list[dict[str, Any]]:
-    """Загрузить карточки из JSON."""
+    """Load cards from JSON."""
     with open(json_path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def normalize_card(card: dict[str, Any]) -> dict[str, Any]:
-    """Нормализовать карточку для сравнения (сортировка списков, удаление None)."""
+    """Normalize card for comparison (sort lists, strip None)."""
     normalized = {
         "lemma": card.get("lemma", ""),
         "pos": card.get("pos", ""),
@@ -33,110 +33,112 @@ def normalize_card(card: dict[str, Any]) -> dict[str, Any]:
 
 
 def compare_cards(expected: list[dict], actual: list[dict]) -> tuple[bool, list[str]]:
-    """Сравнить два списка карточек.
-    
+    """Compare two lists of cards.
+
     Returns:
         (is_match, list_of_diffs)
     """
     diffs = []
-    
-    # Создаём словари по lemma+pos для быстрого поиска
+
+    # Build dicts by lemma+pos for fast lookup
     expected_dict = {}
     for card in expected:
         key = (card.get("lemma", ""), card.get("pos", ""))
         expected_dict[key] = normalize_card(card)
-    
+
     actual_dict = {}
     for card in actual:
         key = (card.get("lemma", ""), card.get("pos", ""))
         actual_dict[key] = normalize_card(card)
-    
-    # Проверяем все карточки из expected
+
+    # Check all expected cards
     for key in expected_dict:
         if key not in actual_dict:
-            diffs.append(f"❌ Карточка {key[0]} ({key[1]}) отсутствует в actual")
+            diffs.append(f"❌ Card {key[0]} ({key[1]}) missing in actual")
             continue
-        
+
         exp = expected_dict[key]
         act = actual_dict[key]
-        
+
         for field in ["lemma", "pos", "simple_definition", "translation_ru"]:
             if exp[field] != act[field]:
                 diffs.append(
-                    f"❌ {key[0]} ({key[1]}): поле '{field}' различается\n"
+                    f"❌ {key[0]} ({key[1]}): field '{field}' differs\n"
                     f"   Expected: {exp[field]}\n"
                     f"   Actual:   {act[field]}"
                 )
-        
+
         if exp["selected_examples"] != act["selected_examples"]:
             diffs.append(
-                f"❌ {key[0]} ({key[1]}): selected_examples различаются\n"
+                f"❌ {key[0]} ({key[1]}): selected_examples differ\n"
                 f"   Expected: {exp['selected_examples']}\n"
                 f"   Actual:   {act['selected_examples']}"
             )
-        
+
         if exp["generated_examples"] != act["generated_examples"]:
             diffs.append(
-                f"❌ {key[0]} ({key[1]}): generated_examples различаются\n"
+                f"❌ {key[0]} ({key[1]}): generated_examples differ\n"
                 f"   Expected: {exp['generated_examples']}\n"
                 f"   Actual:   {act['generated_examples']}"
             )
-    
-    # Проверяем лишние карточки в actual
+
+    # Check for extra cards in actual
     for key in actual_dict:
         if key not in expected_dict:
-            diffs.append(f"⚠️  Карточка {key[0]} ({key[1]}) есть в actual, но отсутствует в expected")
-    
+            diffs.append(f"⚠️  Card {key[0]} ({key[1]}) present in actual but not in expected")
+
     return len(diffs) == 0, diffs
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Сравнение карточек между эталоном и текущими результатами")
+    parser = argparse.ArgumentParser(
+        description="Compare cards between reference and current results"
+    )
     parser.add_argument(
         "--expected",
         type=Path,
         required=True,
-        help="Путь к директории с эталонными результатами (должен содержать synset_smart_cards_final.json)",
+        help="Path to directory with reference results (must contain synset_smart_cards_final.json)",
     )
     parser.add_argument(
         "--actual",
         type=Path,
         required=True,
-        help="Путь к директории с текущими результатами (должен содержать synset_smart_cards_final.json)",
+        help="Path to directory with current results (must contain synset_smart_cards_final.json)",
     )
-    
+
     args = parser.parse_args()
-    
+
     expected_path = args.expected / "synset_smart_cards_final.json"
     actual_path = args.actual / "synset_smart_cards_final.json"
-    
+
     if not expected_path.exists():
-        print(f"❌ Ошибка: эталонный файл не найден: {expected_path}")
+        print(f"❌ Error: reference file not found: {expected_path}")
         sys.exit(1)
-    
+
     if not actual_path.exists():
-        print(f"❌ Ошибка: текущий файл не найден: {actual_path}")
+        print(f"❌ Error: actual file not found: {actual_path}")
         sys.exit(1)
-    
-    print(f"📊 Сравнение карточек:")
+
+    print(f"📊 Comparing cards:")
     print(f"   Expected: {expected_path}")
     print(f"   Actual:   {actual_path}")
     print()
-    
+
     expected_cards = load_cards(expected_path)
     actual_cards = load_cards(actual_path)
-    
-    print(f"   Expected: {len(expected_cards)} карточек")
-    print(f"   Actual:   {len(actual_cards)} карточек")
+
+    print(f"   Expected: {len(expected_cards)} cards")
+    print(f"   Actual:   {len(actual_cards)} cards")
     print()
-    
+
     is_match, diffs = compare_cards(expected_cards, actual_cards)
-    
+
     if is_match:
-        print("✅ Все карточки идентичны!")
+        print("✅ All cards match!")
         sys.exit(0)
     else:
-        print(f"❌ Найдено {len(diffs)} различий:\n")
+        print(f"❌ Found {len(diffs)} difference(s):\n")
         for diff in diffs:
             print(diff)
         sys.exit(1)

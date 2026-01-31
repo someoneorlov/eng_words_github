@@ -1,36 +1,36 @@
-# Backlog Ideas
+# Backlog ideas
 
-> Идеи и TODO, извлечённые из архивируемой документации.  
-> Обновлено: 2026-01-21
-
----
-
-## Высокий приоритет (сделать в ближайшее время)
-
-*Пока пусто — заполняется при архивации документов*
+> Ideas and TODOs extracted from archived documentation.  
+> Updated: 2026-01-21
 
 ---
 
-## Средний приоритет (полезно, но не срочно)
+## High priority (do soon)
 
-*Пока пусто*
-
----
-
-## Низкий приоритет (идеи на будущее)
-
-*Пока пусто*
+*Empty — filled when archiving documents*
 
 ---
 
-## Отклонено / Неактуально
+## Medium priority (useful but not urgent)
 
-*Идеи, которые были рассмотрены и отклонены*
+*Empty*
 
 ---
 
-## Источники
+## Low priority (future ideas)
 
-| Документ | Дата архивации | Извлечённые идеи |
-|----------|----------------|------------------|
-| *заполняется при архивации* | | |
+*Empty*
+
+---
+
+## Rejected / obsolete
+
+*Ideas that were considered and rejected*
+
+---
+
+## Sources
+
+| Document | Archive date | Extracted ideas |
+|----------|--------------|-----------------|
+| *filled when archiving* | | |

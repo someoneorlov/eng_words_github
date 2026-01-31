@@ -17,12 +17,21 @@ DEFAULT_TEMPERATURE = 0.0
 class GeminiProvider(LLMProvider):
     """Google Gemini API provider.
 
-    Supports Gemini 3 Flash (default), Gemini 2.5 Flash, and other models.
+    Supports two backends:
+    - Google AI Studio (Gemini API): use api_key or GOOGLE_API_KEY.
+    - Vertex AI: use vertexai=True with project/location, or set
+      GOOGLE_GENAI_USE_VERTEXAI=true, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION.
+      Auth via Application Default Credentials (no API key).
+
+    Same SDK (google-genai) and same response shape for both.
 
     Args:
-        api_key: Google API key. If not provided, reads from GOOGLE_API_KEY env var.
+        api_key: Google API key (AI Studio). Ignored if vertexai=True.
         model: Model to use. Defaults to gemini-3-flash-preview.
         temperature: Temperature for sampling. Defaults to 0.0 for determinism.
+        vertexai: If True, use Vertex AI instead of AI Studio.
+        project: GCP project ID (Vertex AI). Defaults to GOOGLE_CLOUD_PROJECT.
+        location: GCP region (Vertex AI), e.g. us-central1. Defaults to GOOGLE_CLOUD_LOCATION.
     """
 
     def __init__(
@@ -30,16 +39,37 @@ class GeminiProvider(LLMProvider):
         api_key: str | None = None,
         model: str = DEFAULT_MODEL_GEMINI,
         temperature: float = DEFAULT_TEMPERATURE,
+        vertexai: bool | None = None,
+        project: str | None = None,
+        location: str | None = None,
     ):
-        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY")
-        if not self.api_key:
-            raise ValueError(
-                "GOOGLE_API_KEY not found. Set it as environment variable or pass api_key."
-            )
+        use_vertex = vertexai if vertexai is not None else (
+            os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() in ("true", "1", "yes")
+        )
 
         self.model = model
         self.temperature = temperature
-        self._client = genai.Client(api_key=self.api_key)
+
+        if use_vertex:
+            self.api_key = None
+            _project = project or os.environ.get("GOOGLE_CLOUD_PROJECT")
+            _location = location or os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+            if not _project:
+                raise ValueError(
+                    "Vertex AI requires project. Set GOOGLE_CLOUD_PROJECT or pass project=."
+                )
+            self._client = genai.Client(
+                vertexai=True,
+                project=_project,
+                location=_location,
+            )
+        else:
+            self.api_key = api_key or os.environ.get("GOOGLE_API_KEY")
+            if not self.api_key:
+                raise ValueError(
+                    "GOOGLE_API_KEY not found. Set it as environment variable or pass api_key."
+                )
+            self._client = genai.Client(api_key=self.api_key)
 
     def complete(self, prompt: str, **kwargs) -> LLMResponse:
         """Execute a completion request.

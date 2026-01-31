@@ -1,29 +1,29 @@
-# Как пользоваться WSD Gold Dataset
+# WSD Gold Dataset usage
 
-## Что это такое
+## What it is
 
-WSD Gold Dataset — эталонный набор данных для оценки качества алгоритмов Word Sense Disambiguation.
+The WSD Gold Dataset is a reference dataset for evaluating Word Sense Disambiguation algorithms.
 
-**Состав:**
-- 3000 примеров из 4 книг
-- Размечено LLM-судьями (Claude, Gemini, GPT)
-- Разделено на dev (1500) и test_locked (1500)
+**Contents:**
+- 3000 examples from 4 books
+- Labeled by LLM judges (Claude, Gemini, GPT)
+- Split into dev (1500) and test_locked (1500)
 
 ---
 
-## Быстрый старт
+## Quick start
 
-### Оценить текущий WSD
+### Evaluate current WSD
 
 ```bash
-# Полная оценка на dev set (~2 минуты)
+# Full evaluation on dev set (~2 minutes)
 make eval-wsd-gold
 
-# Быстрая оценка (100 примеров)
+# Quick evaluation (100 examples)
 make eval-wsd-gold-quick
 ```
 
-### Проверить целостность test set
+### Verify test set integrity
 
 ```bash
 make verify-gold
@@ -32,11 +32,11 @@ make verify-gold
 
 ---
 
-## Правила использования
+## Usage rules
 
-### ✅ МОЖНО
+### ✅ ALLOWED
 
-1. **Использовать dev set для разработки**
+1. **Use dev set for development**
    ```python
    from eng_words.wsd_gold.eval import load_gold_examples
    
@@ -47,35 +47,35 @@ make verify-gold
        print(f"Gold answer: {ex['gold_synset_id']}")
    ```
 
-2. **Смотреть на ошибки в dev set**
+2. **Inspect errors on dev set**
    ```bash
    uv run python scripts/eval_wsd_on_gold.py --show-errors --top-errors 20
    ```
 
-3. **Подбирать параметры по dev set**
-   - Threshold уверенности
-   - Веса для разных POS
-   - Правила для конструкций
+3. **Tune parameters on dev set**
+   - Confidence threshold
+   - Weights for different POS
+   - Rules for constructions
 
-### ❌ НЕЛЬЗЯ
+### ❌ NOT ALLOWED
 
-1. **НЕ смотреть на `gold_test_locked.jsonl`!**
-   - Только для финального сравнения
-   - Посмотрел = скомпрометировал результаты
+1. **Do NOT look at `gold_test_locked.jsonl`!**
+   - Only for final comparison
+   - Looking at it compromises results
 
-2. **НЕ подбирать параметры по test set**
-   - Это data leakage
-   - Результаты будут нечестными
+2. **Do NOT tune parameters on test set**
+   - That is data leakage
+   - Results would be unfair
 
-3. **НЕ редактировать test set**
-   - CI проверяет checksum
-   - Любое изменение — сломает проверку
+3. **Do NOT edit test set**
+   - CI checks the checksum
+   - Any change will break the check
 
 ---
 
-## Структура данных
+## Data structure
 
-### Пример из датасета
+### Example from the dataset
 
 ```json
 {
@@ -113,84 +113,84 @@ make verify-gold
 }
 ```
 
-### Ключевые поля
+### Key fields
 
-| Поле | Описание |
-|------|----------|
-| `context_window` | Предложение с целевым словом |
-| `target.lemma` | Лемма целевого слова |
-| `target.pos` | Часть речи (NOUN, VERB, ADJ, ADV) |
-| `candidates` | Возможные значения из WordNet |
-| `gold_synset_id` | Правильный ответ |
-| `gold_confidence` | Уверенность (1.0 = все LLM согласились) |
-| `gold_agreement` | Доля согласных LLM (0.67 = 2 из 3) |
-| `metadata.baseline_top1` | Ответ baseline WSD |
-| `metadata.baseline_margin` | Отрыв от второго кандидата |
+| Field | Description |
+|------|-------------|
+| `context_window` | Sentence containing the target word |
+| `target.lemma` | Lemma of the target word |
+| `target.pos` | Part of speech (NOUN, VERB, ADJ, ADV) |
+| `candidates` | Possible senses from WordNet |
+| `gold_synset_id` | Correct answer |
+| `gold_confidence` | Confidence (1.0 = all LLMs agreed) |
+| `gold_agreement` | Fraction of agreeing LLMs (0.67 = 2 of 3) |
+| `metadata.baseline_top1` | Baseline WSD answer |
+| `metadata.baseline_margin` | Margin over second candidate |
 
 ---
 
-## Типичный workflow
+## Typical workflow
 
-### 1. Установить baseline
+### 1. Establish baseline
 
 ```bash
 make eval-wsd-gold
 # Overall Accuracy: 47.5%
 ```
 
-### 2. Внести изменения в WSD
+### 2. Change WSD code
 
 ```python
 # src/eng_words/wsd/wordnet_backend.py
-# ... ваши изменения ...
+# ... your changes ...
 ```
 
-### 3. Проверить на dev set
+### 3. Evaluate on dev set
 
 ```bash
 make eval-wsd-gold
-# Overall Accuracy: 52.3%  # Улучшение!
+# Overall Accuracy: 52.3%  # Improvement!
 ```
 
-### 4. Повторить 2-3 пока не достигли цели
+### 4. Repeat 2–3 until goal is met
 
-### 5. Финальное сравнение на test set
+### 5. Final comparison on test set
 
 ```bash
 uv run python scripts/eval_wsd_on_gold.py \
   --gold-path data/wsd_gold/gold_test_locked.jsonl
 ```
 
-⚠️ **Делать только ОДИН раз в конце!**
+⚠️ **Do this only ONCE at the end!**
 
 ---
 
-## Метрики
+## Metrics
 
-### По частям речи
-
-```
-ADJ  (прилагательные): 56.8%
-ADV  (наречия):        53.0%
-NOUN (существительные): 50.6%
-VERB (глаголы):        34.0%  ← Слабое место!
-```
-
-### По сложности
+### By part of speech
 
 ```
-Easy   (≤2 значения, margin ≥0.3):  80.8%
-Medium (3-5 значений):              46.4%
-Hard   (≥6 значений, margin <0.15): 25.7%
+ADJ  (adjectives):  56.8%
+ADV  (adverbs):     53.0%
+NOUN (nouns):       50.6%
+VERB (verbs):       34.0%  ← Weak spot!
 ```
 
-**Вывод**: Фокусироваться на глаголах и сложных словах.
+### By difficulty
+
+```
+Easy   (≤2 senses, margin ≥0.3):  80.8%
+Medium (3–5 senses):             46.4%
+Hard   (≥6 senses, margin <0.15): 25.7%
+```
+
+**Conclusion**: Focus on verbs and hard words.
 
 ---
 
 ## API
 
-### Загрузка примеров
+### Loading examples
 
 ```python
 from eng_words.wsd_gold import load_gold_examples
@@ -199,7 +199,7 @@ examples = load_gold_examples("data/wsd_gold/gold_dev.jsonl")
 print(f"Loaded {len(examples)} examples")
 ```
 
-### Оценка одного примера
+### Evaluating a single example
 
 ```python
 from eng_words.wsd_gold import evaluate_single
@@ -211,7 +211,7 @@ result = evaluate_single(
 print(result["is_correct"])  # True
 ```
 
-### Полная оценка
+### Full evaluation
 
 ```python
 from eng_words.wsd import WordNetSenseBackend
@@ -228,20 +228,20 @@ print(f"By POS: {results['by_pos']}")
 print(f"By Difficulty: {results['by_difficulty']}")
 ```
 
-### Использование кэша LLM
+### Using LLM cache
 
 ```python
 from eng_words.wsd_gold import LLMCache
 
 cache = LLMCache(cache_dir="data/wsd_gold/cache")
 
-# Проверить в кэше
+# Check cache
 cached = cache.get("example_id", "gpt-5.2")
 
-# Сохранить в кэш
+# Save to cache
 cache.set("example_id", "gpt-5.2", model_output)
 
-# Статистика
+# Stats
 print(cache.stats)  # {"hits": 100, "misses": 5, "hit_rate": 0.95}
 ```
 
@@ -249,26 +249,25 @@ print(cache.stats)  # {"hits": 100, "misses": 5, "hit_rate": 0.95}
 
 ## FAQ
 
-### Почему split по книгам, а не 375 из каждой?
+### Why split by book instead of 375 from each?
 
-Для предотвращения **data leakage**:
-- Модель может запомнить стиль автора
-- Частотность слов в книге
-- Контекст персонажей
+To avoid **data leakage**:
+- The model may memorize author style
+- Word frequency in the book
+- Character context
 
-Split по книгам — более строгий тест.
+Splitting by book is a stricter test.
 
-### Можно ли добавить новые примеры?
+### Can I add new examples?
 
-Да, но нужно:
-1. Не трогать `gold_test_locked.jsonl`
-2. Добавлять только в dev set
-3. Пересчитать checksum если меняли test
+Yes, but:
+1. Do not touch `gold_test_locked.jsonl`
+2. Add only to the dev set
+3. Recompute checksum if you changed the test set
 
-### Что делать если LLM ошибся в разметке?
+### What if an LLM made a labeling mistake?
 
-Примерно 2-5% примеров могут иметь неточные gold-метки. Это нормально:
-- На большом датасете шум усредняется
-- Важнее общая тенденция, чем отдельные примеры
-- Можно создать "quarantine" список для спорных случаев
-
+About 2–5% of examples may have noisy gold labels. That is normal:
+- On a large dataset, noise averages out
+- Overall trend matters more than individual examples
+- You can maintain a "quarantine" list for borderline cases

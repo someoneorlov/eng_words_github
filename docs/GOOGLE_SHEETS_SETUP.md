@@ -1,63 +1,63 @@
-# Настройка Google Sheets для Known Words
+# Google Sheets setup for Known Words
 
-Пошаговая инструкция по настройке интеграции с Google Sheets для хранения списка изученных слов.
+Step-by-step guide to set up Google Sheets integration for storing your list of known words.
 
-## Шаг 1: Создание Google Cloud Project и Service Account
+## Step 1: Create Google Cloud project and Service Account
 
-1. **Перейдите в Google Cloud Console:**
-   - Откройте https://console.cloud.google.com/
-   - Войдите в свой Google аккаунт
+1. **Open Google Cloud Console:**
+   - Go to https://console.cloud.google.com/
+   - Sign in with your Google account
 
-2. **Создайте новый проект (или выберите существующий):**
-   - Нажмите на выпадающий список проектов вверху
-   - Нажмите "New Project"
-   - Введите название: `eng-words` (или любое другое)
-   - Нажмите "Create"
+2. **Create a new project (or select an existing one):**
+   - Click the project dropdown at the top
+   - Click "New Project"
+   - Enter a name: `eng-words` (or any other)
+   - Click "Create"
 
-3. **Включите необходимые API:**
-   - В меню слева выберите "APIs & Services" → "Library"
-   - Найдите и включите:
+3. **Enable required APIs:**
+   - In the left menu select "APIs & Services" → "Library"
+   - Find and enable:
      - **Google Sheets API**
      - **Google Drive API**
 
-4. **Создайте Service Account:**
-   - Перейдите в "APIs & Services" → "Credentials"
-   - Нажмите "Create Credentials" → "Service Account"
-   - Заполните:
+4. **Create a Service Account:**
+   - Go to "APIs & Services" → "Credentials"
+   - Click "Create Credentials" → "Service Account"
+   - Fill in:
      - **Service account name**: `eng-words-service`
-     - **Service account ID**: автоматически заполнится
+     - **Service account ID**: auto-filled
      - **Description**: `Service account for English Words learning tool`
-   - Нажмите "Create and Continue"
-   - Роль можно пропустить (нажмите "Continue")
-   - Нажмите "Done"
+   - Click "Create and Continue"
+   - You can skip the role (click "Continue")
+   - Click "Done"
 
-5. **Создайте ключ для Service Account:**
-   - Найдите созданный Service Account в списке
-   - Нажмите на него
-   - Перейдите на вкладку "Keys"
-   - Нажмите "Add Key" → "Create new key"
-   - Выберите формат: **JSON**
-   - Нажмите "Create"
-   - **Файл автоматически скачается** - сохраните его в безопасном месте!
+5. **Create a key for the Service Account:**
+   - Find the created Service Account in the list
+   - Click on it
+   - Go to the "Keys" tab
+   - Click "Add Key" → "Create new key"
+   - Choose format: **JSON**
+   - Click "Create"
+   - **The file will download automatically** — save it in a safe place!
 
-6. **Скопируйте email Service Account:**
-   - В разделе "Details" Service Account найдите поле **Email**
-   - Скопируйте этот email (выглядит как `eng-words-service@your-project.iam.gserviceaccount.com`)
-   - Он понадобится на следующем шаге
+6. **Copy the Service Account email:**
+   - In the Service Account "Details" section find the **Email** field
+   - Copy this email (looks like `eng-words-service@your-project.iam.gserviceaccount.com`)
+   - You will need it in the next step
 
-## Шаг 2: Создание Google Sheets таблицы
+## Step 2: Create the Google Sheet
 
-1. **Создайте новую Google Sheets таблицу:**
-   - Откройте https://sheets.google.com/
-   - Нажмите "Blank" для создания новой таблицы
-   - Назовите её, например: `English Words - Known Words`
+1. **Create a new Google Sheet:**
+   - Go to https://sheets.google.com/
+   - Click "Blank" to create a new sheet
+   - Name it e.g.: `English Words - Known Words`
 
-2. **Настройте заголовки:**
-   - В первой строке введите заголовки:
+2. **Set up headers:**
+   - In the first row enter:
      ```
      lemma | status | item_type | tags
      ```
-   - Пример заполнения:
+   - Example rows:
      ```
      lemma      | status  | item_type    | tags
      run        | known   | word         | A2 basic_verbs
@@ -65,61 +65,60 @@
      the        | ignore  | word         | stopword
      ```
 
-3. **Предоставьте доступ Service Account:**
-   - Нажмите кнопку "Share" (Поделиться) в правом верхнем углу
-   - В поле "Add people and groups" вставьте **email Service Account** (из шага 1.6)
-   - Выберите роль: **Editor** (Редактор)
-   - **Снимите галочку** "Notify people" (чтобы не отправлять уведомление)
-   - Нажмите "Share"
+3. **Share with the Service Account:**
+   - Click the "Share" button (top right)
+   - In "Add people and groups" paste the **Service Account email** (from step 1.6)
+   - Set role: **Editor**
+   - **Uncheck** "Notify people" (to avoid sending an email)
+   - Click "Share"
 
-4. **Скопируйте Spreadsheet ID:**
-   - Посмотрите на URL таблицы в браузере
-   - URL выглядит так: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`
-   - Скопируйте `SPREADSHEET_ID` (длинная строка между `/d/` и `/edit`)
-   - Пример: `1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms`
+4. **Copy the Spreadsheet ID:**
+   - Look at the sheet URL in your browser
+   - URL looks like: `https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit`
+   - Copy `SPREADSHEET_ID` (the long string between `/d/` and `/edit`)
+   - Example: `1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms`
 
-## Шаг 3: Сохранение credentials в проекте
+## Step 3: Save credentials
 
-1. **Создайте папку для credentials:**
+1. **Create a directory for credentials:**
    ```bash
    mkdir -p ~/.config/eng_words
    ```
 
-2. **Переместите скачанный JSON файл:**
+2. **Move the downloaded JSON file:**
    ```bash
-   # Переместите скачанный файл (например, your-project-xxxxx.json)
    mv ~/Downloads/your-project-xxxxx.json ~/.config/eng_words/google-credentials.json
    ```
 
-3. **Установите права доступа (важно для безопасности):**
+3. **Set file permissions (important for security):**
    ```bash
    chmod 600 ~/.config/eng_words/google-credentials.json
    ```
 
-4. **Добавьте в .gitignore (если еще не добавлено):**
+4. **Add to .gitignore (if not already):**
    ```bash
    echo "*.json" >> .gitignore
    echo ".config/" >> .gitignore
    ```
 
-## Шаг 4: Настройка переменных окружения
+## Step 4: Set environment variables
 
-1. **Установите переменную окружения:**
+1. **Set the environment variable:**
    
-   Для текущей сессии:
+   For the current session:
    ```bash
    export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/eng_words/google-credentials.json"
    ```
 
-   Для постоянного использования добавьте в `~/.zshrc` (или `~/.bashrc`):
+   For permanent use add to `~/.zshrc` (or `~/.bashrc`):
    ```bash
    echo 'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/eng_words/google-credentials.json"' >> ~/.zshrc
    source ~/.zshrc
    ```
 
-## Шаг 5: Тестирование интеграции
+## Step 5: Test the integration
 
-Создайте тестовый скрипт для проверки:
+Create a test script:
 
 ```python
 # test_gsheets.py
@@ -127,17 +126,16 @@ from pathlib import Path
 from eng_words.storage import load_known_words, save_known_words
 import pandas as pd
 
-# Замените на ваш SPREADSHEET_ID и имя листа
+# Replace with your SPREADSHEET_ID and worksheet name
 SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE"
-WORKSHEET_NAME = "Sheet1"  # или другое имя листа
+WORKSHEET_NAME = "Sheet1"  # or another worksheet name
 
-# URL формат
 gsheets_url = f"gsheets://{SPREADSHEET_ID}/{WORKSHEET_NAME}"
 
 print("Testing Google Sheets integration...")
 print(f"URL: {gsheets_url}")
 
-# Тест 1: Загрузка данных
+# Test 1: Load data
 try:
     df = load_known_words(gsheets_url)
     print(f"✅ Load successful! Found {len(df)} rows")
@@ -147,7 +145,7 @@ try:
 except Exception as e:
     print(f"❌ Load failed: {e}")
 
-# Тест 2: Сохранение данных
+# Test 2: Save data
 try:
     test_df = pd.DataFrame({
         "lemma": ["test_word", "test_phrase"],
@@ -160,7 +158,7 @@ try:
 except Exception as e:
     print(f"❌ Save failed: {e}")
 
-# Тест 3: Повторная загрузка для проверки
+# Test 3: Reload to verify
 try:
     df = load_known_words(gsheets_url)
     print(f"\n✅ Reload successful! Found {len(df)} rows")
@@ -170,14 +168,14 @@ except Exception as e:
     print(f"❌ Reload failed: {e}")
 ```
 
-Запустите:
+Run:
 ```bash
 python test_gsheets.py
 ```
 
-## Шаг 6: Использование в CLI
+## Step 6: Use in CLI
 
-После успешного тестирования используйте в пайплайне:
+After a successful test, use in the pipeline:
 
 ```bash
 python -m eng_words.pipeline \
@@ -191,45 +189,44 @@ python -m eng_words.pipeline \
   --top-n 150
 ```
 
-## Формат данных
+## Data format
 
-Таблица должна содержать следующие колонки (обязательные):
-- `lemma` - лемма слова (lowercase)
-- `status` - статус: `known`, `learning`, `ignore`, `maybe`
-- `item_type` - тип: `word`, `phrasal_verb`, `ngram`
-- `tags` - теги (опционально, может быть пустым)
+The sheet must have these columns (required):
+- `lemma` — word lemma (lowercase)
+- `status` — one of: `known`, `learning`, `ignore`, `maybe`
+- `item_type` — one of: `word`, `phrasal_verb`, `ngram`
+- `tags` — optional, can be empty
 
-Дополнительные колонки (опциональные, будут проигнорированы):
+Additional columns (optional, ignored):
 - `created_at`
 - `last_seen_in_book`
 - `examples_count`
 - `notes`
 
-## Устранение проблем
+## Troubleshooting
 
-### Ошибка: "Failed to access Google Sheets"
-- Проверьте, что Service Account имеет доступ к таблице (роль Editor)
-- Проверьте, что Spreadsheet ID правильный
-- Проверьте, что имя листа (worksheet) правильное
+### Error: "Failed to access Google Sheets"
+- Check that the Service Account has Editor access to the sheet
+- Check that the Spreadsheet ID is correct
+- Check that the worksheet name is correct
 
-### Ошибка: "Google credentials not found"
-- Проверьте путь к файлу credentials: `echo $GOOGLE_APPLICATION_CREDENTIALS`
-- Проверьте, что файл существует: `ls -la $GOOGLE_APPLICATION_CREDENTIALS`
-- Проверьте права доступа: `chmod 600 $GOOGLE_APPLICATION_CREDENTIALS`
+### Error: "Google credentials not found"
+- Check credentials path: `echo $GOOGLE_APPLICATION_CREDENTIALS`
+- Check that the file exists: `ls -la $GOOGLE_APPLICATION_CREDENTIALS`
+- Check permissions: `chmod 600 $GOOGLE_APPLICATION_CREDENTIALS`
 
-### Ошибка: "Permission denied"
-- Убедитесь, что Service Account имеет роль **Editor** (не Viewer!)
-- Проверьте, что email Service Account правильный
+### Error: "Permission denied"
+- Ensure the Service Account has role **Editor** (not Viewer!)
+- Check that the Service Account email is correct
 
-### Таблица не создается автоматически
-- Убедитесь, что Service Account имеет доступ к таблице
-- Проверьте, что имя листа правильное (регистр важен!)
+### Sheet not created automatically
+- Ensure the Service Account has access to the sheet
+- Check that the worksheet name is correct (case matters!)
 
-## Безопасность
+## Security
 
-⚠️ **Важно:**
-- Никогда не коммитьте файл credentials в git
-- Храните credentials в безопасном месте
-- Используйте права доступа 600 для файла credentials
-- Не делитесь credentials с другими
-
+⚠️ **Important:**
+- Never commit the credentials file to git
+- Store credentials in a safe place
+- Use permissions 600 for the credentials file
+- Do not share credentials with others

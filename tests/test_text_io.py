@@ -31,7 +31,9 @@ def test_load_text_empty_file(tmp_path: Path) -> None:
 
 
 def test_load_text_wrong_encoding(tmp_path: Path) -> None:
+    """Loading cp1251-encoded file (non-UTF-8) must raise TextLoadError."""
     encoded_file = tmp_path / "cp1251.txt"
+    # Cyrillic in cp1251 — not valid UTF-8
     encoded_file.write_bytes("привет".encode("cp1251"))
 
     with pytest.raises(TextLoadError):

@@ -1,171 +1,170 @@
-# Инструкции по запуску полной генерации карточек
+# Full card generation instructions
 
-## Текущий статус
+## Current status
 
-- **Всего карточек для генерации**: ~7,872
-- **Уже сгенерировано**: проверьте через команды ниже
-- **Скрипт генерации**: `scripts/run_synset_card_generation.py`
-- **Поддержка checkpoint**: ✅ Да (сохранение каждые 100 карточек)
-- **Поддержка resume**: ✅ Да (автоматическое продолжение с checkpoint)
+- **Total cards to generate**: ~7,872
+- **Already generated**: check via commands below
+- **Generation script**: `scripts/run_synset_card_generation.py`
+- **Checkpoint support**: ✅ Yes (save every 100 cards)
+- **Resume support**: ✅ Yes (automatic continuation from checkpoint)
 
-## Быстрый старт
+## Quick start
 
-### 1. Запуск генерации
+### 1. Start generation
 
 ```bash
 ./scripts/run_full_generation.sh
 ```
 
-Или вручную:
+Or manually:
 ```bash
 nohup uv run python scripts/run_synset_card_generation.py \
   > data/synset_cards/full_generation.log 2>&1 &
 ```
 
-### 2. Мониторинг прогресса (в отдельном терминале)
+### 2. Monitor progress (in another terminal)
 
 ```bash
 ./scripts/monitor_generation.sh
 ```
 
-Скрипт показывает:
-- Текущий прогресс (X / 7,872 карточек)
-- Процент завершения
-- Размер checkpoint файла
-- Последние события из лога
+The script shows:
+- Current progress (X / 7,872 cards)
+- Completion percentage
+- Checkpoint file size
+- Latest log entries
 
-### 3. Проверка статуса
+### 3. Check status
 
 ```bash
-# Количество сгенерированных карточек
+# Number of generated cards
 python3 -c "import json; f='data/synset_cards/synset_smart_cards_partial.json'; print(len(json.load(open(f))) if __import__('os').path.exists(f) else 0)"
 
-# Просмотр последних строк лога
+# View last log lines
 tail -20 data/synset_cards/full_generation.log
 
-# Поиск прогресса в логе
+# Search for progress in log
 tail -f data/synset_cards/full_generation.log | grep "Generating cards"
 ```
 
-## Детальные команды
+## Detailed commands
 
-### Просмотр логов
+### View logs
 
 ```bash
-# Следить за логом в реальном времени
+# Follow log in real time
 tail -f data/synset_cards/full_generation.log
 
-# Только прогресс
+# Progress only
 tail -f data/synset_cards/full_generation.log | grep "Generating cards"
 
-# Последние 50 строк
+# Last 50 lines
 tail -50 data/synset_cards/full_generation.log
 ```
 
-### Проверка checkpoint
+### Check checkpoint
 
 ```bash
-# Количество карточек в checkpoint
+# Number of cards in checkpoint
 python3 -c "import json; print(len(json.load(open('data/synset_cards/synset_smart_cards_partial.json'))))"
 
-# Размер файла
+# File size
 ls -lh data/synset_cards/synset_smart_cards_partial.json
 
-# Время последнего обновления
+# Last update time
 stat -f "%Sm" data/synset_cards/synset_smart_cards_partial.json
 ```
 
-### Остановка процесса
+### Stop process
 
 ```bash
-# Найти процесс
+# Find process
 ps aux | grep run_synset_card_generation.py
 
-# Остановить (замените PID на реальный)
+# Stop (replace PID with actual)
 kill <PID>
 
-# Или более агрессивно
+# Or more aggressive
 killall -9 python
 ```
 
-**Важно**: При остановке прогресс сохраняется в checkpoint. Можно просто перезапустить скрипт - он продолжит с последнего checkpoint.
+**Important**: On stop, progress is saved in the checkpoint. You can simply restart the script — it will continue from the last checkpoint.
 
-### Перезапуск после остановки
+### Restart after stop
 
-Просто запустите скрипт снова:
+Just run the script again:
 ```bash
 ./scripts/run_full_generation.sh
 ```
 
-Скрипт автоматически обнаружит checkpoint и продолжит генерацию с последнего места.
+The script will detect the checkpoint and continue from where it left off.
 
-## После завершения генерации
+## After generation completes
 
-Когда генерация всех карточек завершится, выполните финальную обработку:
+When all cards are generated, run final processing:
 
 ```bash
 uv run python scripts/complete_card_generation.py
 ```
 
-Этот скрипт:
-1. Выполнит `redistribute_empty_cards` для карточек без примеров
-2. Выполнит `fix_invalid_cards` для валидации примеров
-3. Сохранит финальный результат в `data/synset_cards/synset_smart_cards_final.json`
+This script:
+1. Runs `redistribute_empty_cards` for cards without examples
+2. Runs `fix_invalid_cards` for example validation
+3. Saves the final result to `data/synset_cards/synset_smart_cards_final.json`
 
-## Ожидаемое время выполнения
+## Expected runtime
 
-- **Скорость**: ~2-3 секунды на карточку
-- **Для 7,872 карточек**: ~4-6 часов
-- **С учетом retry и API delays**: может быть больше
+- **Speed**: ~2–3 seconds per card
+- **For 7,872 cards**: ~4–6 hours
+- **With retries and API delays**: may be longer
 
-## Возможные проблемы
+## Troubleshooting
 
 ### 503 Server Error (UNAVAILABLE)
 
-Скрипт автоматически обрабатывает эту ошибку:
-- Сохраняет checkpoint
-- Ждет 10 секунд
-- Продолжает генерацию
+The script handles this automatically:
+- Saves checkpoint
+- Waits 10 seconds
+- Resumes generation
 
-### Прерванная генерация
+### Interrupted generation
 
-Если генерация была прервана:
-1. Проверьте checkpoint: `ls -lh data/synset_cards/synset_smart_cards_partial.json`
-2. Перезапустите скрипт - он автоматически продолжит
+If generation was interrupted:
+1. Check checkpoint: `ls -lh data/synset_cards/synset_smart_cards_partial.json`
+2. Restart the script — it will continue automatically
 
-### Проверка корректности checkpoint
+### Verify checkpoint
 
 ```bash
-# Проверить, что JSON валидный
+# Check that JSON is valid
 python3 -c "import json; json.load(open('data/synset_cards/synset_smart_cards_partial.json')); print('OK')"
 ```
 
-## Мониторинг ресурсов
+## Resource monitoring
 
 ```bash
-# Использование памяти процессом
+# Memory usage of process
 ps aux | grep run_synset_card_generation.py | awk '{print $6/1024 " MB"}'
 
-# Размер лог файла
+# Log file size
 ls -lh data/synset_cards/full_generation.log
 
-# Размер cache (может быть большой)
+# Cache size (can be large)
 du -sh data/synset_cards/llm_cache/
 ```
 
-## Результаты
+## Outputs
 
-После завершения генерации и обработки:
+After generation and processing complete:
 
-- **Финальный JSON**: `data/synset_cards/synset_smart_cards_final.json`
-- **Anki CSV**: `data/synset_cards/synset_anki.csv` (если экспорт включен)
-- **Логи**: `data/synset_cards/full_generation.log`
-- **Checkpoint**: автоматически удаляется после успешного завершения
+- **Final JSON**: `data/synset_cards/synset_smart_cards_final.json`
+- **Anki CSV**: `data/synset_cards/synset_anki.csv` (if export enabled)
+- **Logs**: `data/synset_cards/full_generation.log`
+- **Checkpoint**: removed automatically after successful completion
 
-## Контакты и поддержка
+## Support
 
-При возникновении проблем проверьте:
-1. Логи: `tail -100 data/synset_cards/full_generation.log`
-2. Checkpoint: существует ли и валиден ли
-3. Процесс: запущен ли (`ps aux | grep python`)
-
+If something goes wrong, check:
+1. Logs: `tail -100 data/synset_cards/full_generation.log`
+2. Checkpoint: does it exist and is it valid
+3. Process: is it running (`ps aux | grep python`)

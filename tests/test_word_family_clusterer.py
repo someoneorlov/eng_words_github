@@ -33,7 +33,7 @@ def sample_response():
                 {
                     "meaning_id": 1,
                     "definition_en": "to have an opinion",
-                    "definition_ru": "иметь мнение",
+                    "definition_ru": "have an opinion",
                     "part_of_speech": "verb",
                     "selected_example_indices": [1, 3],
                     "generated_example": "I think this is correct."
@@ -41,7 +41,7 @@ def sample_response():
                 {
                     "meaning_id": 2,
                     "definition_en": "to consider carefully",
-                    "definition_ru": "обдумывать",
+                    "definition_ru": "consider",
                     "part_of_speech": "verb",
                     "selected_example_indices": [2, 4],
                     "generated_example": "Let me think about it."

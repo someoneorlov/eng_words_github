@@ -100,7 +100,9 @@ def get_provider(provider_name: str, model: str | None = None, **kwargs) -> LLMP
     Args:
         provider_name: Name of provider ("openai", "anthropic", "gemini")
         model: Optional model name. Uses default if not specified.
-        **kwargs: Additional provider-specific arguments.
+        **kwargs: Additional provider-specific arguments. For gemini with Vertex AI:
+            vertexai=True, project="gcp-project", location="us-central1" (or set
+            GOOGLE_GENAI_USE_VERTEXAI=true, GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION).
 
     Returns:
         Configured LLMProvider instance.
@@ -109,9 +111,9 @@ def get_provider(provider_name: str, model: str | None = None, **kwargs) -> LLMP
         ValueError: If provider_name is unknown.
 
     Examples:
-        >>> provider = get_provider("gemini")  # default model
+        >>> provider = get_provider("gemini")  # AI Studio, default model
+        >>> provider = get_provider("gemini", vertexai=True, project="my-project")
         >>> provider = get_provider("openai", "gpt-5-mini")
-        >>> provider = get_provider("anthropic", "claude-haiku-4.5")
     """
     # Import here to avoid circular imports
     from eng_words.llm.providers.anthropic import AnthropicProvider

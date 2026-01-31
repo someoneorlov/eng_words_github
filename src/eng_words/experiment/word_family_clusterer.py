@@ -54,7 +54,7 @@ OUTPUT (strict JSON):
     {{
       "meaning_id": 1,
       "definition_en": "clear, concise definition in English",
-      "definition_ru": "перевод определения на русский",
+      "definition_ru": "translation of definition",
       "part_of_speech": "noun/verb/adj/adv",
       "selected_example_indices": [1, 5, 12],
       "generated_example": "Simple example sentence using the word."
@@ -106,7 +106,7 @@ OUTPUT (strict JSON):
     {{
       "meaning_id": 1,
       "definition_en": "clear definition covering the core meaning",
-      "definition_ru": "перевод на русский",
+      "definition_ru": "translation",
       "part_of_speech": "noun/verb/adj/adv",
       "selected_example_indices": [1, 5, 12],
       "generated_example": "Simple example sentence."
@@ -158,7 +158,7 @@ OUTPUT (strict JSON):
     {{
       "meaning_id": 1,
       "definition_en": "clear, concise definition",
-      "definition_ru": "перевод на русский",
+      "definition_ru": "translation",
       "part_of_speech": "noun/verb/adj/adv",
       "selected_example_indices": [1, 5, 12],
       "generated_example": "Simple example sentence."
@@ -203,7 +203,7 @@ OUTPUT (JSON):
     {{
       "meaning_id": 1,
       "definition_en": "clear definition",
-      "definition_ru": "перевод",
+      "definition_ru": "translation",
       "part_of_speech": "noun/verb/adj/adv",
       "selected_example_indices": [1, 5],
       "generated_example": "Simple example."
@@ -260,7 +260,7 @@ OUTPUT (strict JSON):
     {{
       "meaning_id": 1,
       "definition_en": "clear, concise definition in English",
-      "definition_ru": "перевод определения на русский",
+      "definition_ru": "translation of definition",
       "part_of_speech": "noun/verb/adj/adv",
       "wordnet_synset": "matching synset ID if applicable, or null",
       "selected_example_indices": [1, 5, 12],

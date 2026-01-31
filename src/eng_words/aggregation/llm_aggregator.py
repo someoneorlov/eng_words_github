@@ -50,8 +50,8 @@ def build_aggregation_prompt(lemma: str, synsets: list[dict]) -> str:
     """
     synsets_numbered = "\n".join(
         [
-            f"{i+1}. {s['synset_id']} (встречается {s['freq']}x)\n"
-            f"   Определение: {s['definition']}"
+            f"{i+1}. {s['synset_id']} (occurs {s['freq']}x)\n"
+            f"   Definition: {s['definition']}"
             for i, s in enumerate(synsets)
         ]
     )
@@ -61,41 +61,41 @@ def build_aggregation_prompt(lemma: str, synsets: list[dict]) -> str:
     {
       "synsets": [1, 3],
       "primary_synset": 1,
-      "reason": "почему объединяем"
+      "reason": "why we merge these"
     },
     {
       "synsets": [2],
       "primary_synset": 2,
-      "reason": "почему отдельно"
+      "reason": "why kept separate"
     }
   ],
   "total_cards": 2
 }"""
 
-    return f"""Ты помогаешь создавать Anki-карточки для изучения английского (уровень B1-B2).
+    return f"""You are helping create Anki flashcards for English learning (B1-B2 level).
 
-## Задача
-Для слова "{lemma}" есть несколько значений (synsets) из WordNet.
-Реши, какие значения стоит ОБЪЕДИНИТЬ в одну карточку, а какие оставить отдельными.
+## Task
+For the word "{lemma}" there are several senses (synsets) from WordNet.
+Decide which senses should be MERGED into one card and which should stay separate.
 
-## Критерии объединения:
-- Значения очень похожи и различаются только нюансами
-- Для изучающего язык разница несущественна
-- Лучше учить как одно понятие
+## Merge criteria:
+- Senses are very similar and differ only in nuance
+- For a language learner the difference is negligible
+- Better to learn as one concept
 
-## Критерии разделения:
-- Значения принципиально разные (разные концепции)
-- Важно понимать разницу для правильного использования
-- Разные контексты использования (formal/informal, technical/everyday)
-- Разные части речи (глагол vs существительное)
+## Split criteria:
+- Senses are fundamentally different (different concepts)
+- Important to understand the difference for correct usage
+- Different contexts (formal/informal, technical/everyday)
+- Different parts of speech (verb vs noun)
 
-## Значения слова "{lemma}":
+## Senses for "{lemma}":
 {synsets_numbered}
 
-## Формат ответа (JSON):
+## Response format (JSON):
 {json_schema}
 
-Ответь ТОЛЬКО JSON без пояснений.
+Reply with ONLY JSON, no explanations.
 """
 
 

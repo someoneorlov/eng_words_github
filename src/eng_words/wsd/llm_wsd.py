@@ -33,7 +33,7 @@ Definition: {definition}
 Example: "{example}"
 
 Return ONLY the Russian translation (one word or short phrase).
-Example response: бежать"""
+Example response: run"""
 
 
 WSD_PROMPT_TEMPLATE = """Word: "{lemma}"

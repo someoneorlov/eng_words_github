@@ -60,7 +60,7 @@ RULES:
 
 OUTPUT (strict JSON, no markdown):
 {{
-  "definition_ru": "русский перевод",
+  "definition_ru": "translation",
   "clean_examples": [
     {{"sentence_id": 5, "text": "Example from book.", "source": "book"}},
     {{"sentence_id": null, "text": "Generated example.", "source": "generated"}}
@@ -96,7 +96,7 @@ OUTPUT (strict JSON array, no markdown):
   "cards": [
     {{
       "meaning_id": 1,
-      "definition_ru": "перевод",
+      "definition_ru": "translation",
       "clean_examples": [
         {{"sentence_id": 5, "text": "Example.", "source": "book"}},
         {{"sentence_id": null, "text": "Generated.", "source": "generated"}}

@@ -207,7 +207,7 @@ Return a JSON array with one object per sense:
   {{
     "synset_id": "bank.n.01",
     "definition_simple": "a company where you keep your money safe",
-    "translation_ru": "банк",
+    "translation_ru": "bank",
     "book_examples_selected": [
       {{"text": "He walked into the bank.", "spoiler_risk": "none"}},
       {{"text": "The bank was closed.", "spoiler_risk": "none"}}

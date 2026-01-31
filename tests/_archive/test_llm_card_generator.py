@@ -266,7 +266,7 @@ class TestCardGeneratorLLMIntegration:
                 {
                     "synset_id": "bank.n.01",
                     "definition_simple": "a place to keep money",
-                    "translation_ru": "банк",
+                    "translation_ru": "bank",
                     "book_examples_selected": [
                         {"text": "He went to the bank.", "spoiler_risk": "none"}
                     ],
@@ -300,7 +300,7 @@ class TestCardGeneratorLLMIntegration:
             assert provider.complete.called
             assert len(cards) == 1
             assert cards[0].definition_simple == "a place to keep money"
-            assert cards[0].translation_ru == "банк"
+            assert cards[0].translation_ru == "bank"
 
     def test_generate_batch_filters_spoilers(self):
         """generate_batch filters out examples with spoiler_risk != none."""
@@ -319,7 +319,7 @@ class TestCardGeneratorLLMIntegration:
                 {
                     "synset_id": "bank.n.01",
                     "definition_simple": "a place to keep money",
-                    "translation_ru": "банк",
+                    "translation_ru": "bank",
                     "book_examples_selected": [
                         {"text": "He went to the bank.", "spoiler_risk": "none"},
                         {"text": "The bank was robbed!", "spoiler_risk": "high"},
@@ -377,7 +377,7 @@ class TestCardGeneratorLLMIntegration:
                 pos="NOUN",
                 supersense="noun.group",
                 definition_simple="cached definition",
-                translation_ru="кэшированный перевод",
+                translation_ru="cached translation",
                 generic_examples=[],
                 book_examples={},
                 generated_at=datetime.now(),
@@ -431,7 +431,7 @@ class TestExportToAnki:
                     pos="NOUN",
                     supersense="noun.group",
                     definition_simple="a place to keep money",
-                    translation_ru="банк",
+                    translation_ru="bank",
                     generic_examples=["I deposit money at the bank."],
                     book_examples={"Test Book": ["He went to the bank."]},
                     generated_at=datetime.now(),
@@ -448,7 +448,7 @@ class TestExportToAnki:
 
             content = out_path.read_text(encoding="utf-8")
             assert "bank" in content
-            assert "банк" in content
+            assert "bank" in content
             assert "He went to the bank" in content
 
     def test_skips_cards_without_examples(self):
@@ -466,7 +466,7 @@ class TestExportToAnki:
                     pos="NOUN",
                     supersense="noun.group",
                     definition_simple="a place to keep money",
-                    translation_ru="банк",
+                    translation_ru="bank",
                     generic_examples=[],  # No examples
                     book_examples={},
                     generated_at=datetime.now(),
@@ -495,7 +495,7 @@ class TestExportToAnki:
                     pos="NOUN",
                     supersense="noun.group",
                     definition_simple="a place to keep money",
-                    translation_ru="банк",
+                    translation_ru="bank",
                     generic_examples=["Generic example here."],
                     book_examples={},  # No book examples
                     generated_at=datetime.now(),
