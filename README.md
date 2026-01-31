@@ -127,14 +127,29 @@ eng_words/
 ### Installation
 
 ```bash
-# Activate virtual environment
-source .venv/bin/activate
+# Install base dependencies (required)
+uv sync
 
-# Install dependencies
-uv pip install -e .
+# Install with optional extras (recommended for full functionality)
+# - dev: testing and development tools
+# - wsd: Word Sense Disambiguation (sentence-transformers)
+# - llm: LLM providers for smart card generation
+uv sync --extra dev --extra llm --extra wsd
+```
 
-# Download spaCy model
-python -m spacy download en_core_web_sm
+**Note:** The spaCy model (`en_core_web_sm`) is automatically installed as a dependency — no manual download needed.
+
+### Verify installation
+
+```bash
+# Test that the pipeline module is accessible
+uv run python -m eng_words.pipeline --help
+
+# Run a quick test (if dev dependencies installed)
+uv run pytest tests/ -v -x
+
+# Verify LLM imports (if llm extra installed)
+uv run python -c "from eng_words.llm import get_provider; print('✓ LLM module OK')"
 ```
 
 ### Usage
@@ -142,7 +157,7 @@ python -m spacy download en_core_web_sm
 #### Full pipeline (text → Anki CSV)
 
 ```bash
-python -m eng_words.pipeline \
+uv run python -m eng_words.pipeline \
   --book-path data/raw/theodore-dreiser_an-american-tragedy.epub \
   --book-name american_tragedy \
   --output-dir data/processed \
@@ -177,7 +192,7 @@ Output files:
 To update the CSV for review (e.g. before uploading to Google Sheets):
 
 ```bash
-python scripts/export_for_review.py \
+uv run python scripts/export_for_review.py \
   --lemma-stats data/processed/american_tragedy_lemma_stats_full.parquet \
   --score-source data/processed/american_tragedy_lemma_stats.parquet \
   --status-source data/review_export_all_processed.csv \
@@ -206,29 +221,14 @@ The tool supports two ways to store the list of known words:
 - Easy editing in the browser
 - Usage: `--known-words gsheets://SPREADSHEET_ID/WORKSHEET_NAME`
 
-**Google Sheets setup:**
+**Setup:** See [docs/GOOGLE_SHEETS_SETUP.md](docs/GOOGLE_SHEETS_SETUP.md) for complete setup instructions.
 
-1. Create a Google Service Account:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a project (or select an existing one)
-   - Enable Google Sheets API and Google Drive API
-   - Create a Service Account and download the JSON key
-
-2. Configure access:
-   - Open the JSON file and copy `client_email`
-   - Open your Google Sheet
-   - Share the sheet with this email (role: Editor)
-
-3. Set credentials path:
-   - Set env var: `export GOOGLE_APPLICATION_CREDENTIALS=/path/to/credentials.json`
-   - Or pass the path when creating the backend (in code)
-
-4. Use in CLI:
-   ```bash
-   python -m eng_words.pipeline \
-     --known-words gsheets://YOUR_SPREADSHEET_ID/Sheet1 \
-     ...
-   ```
+**Quick summary:**
+1. Create a Google Service Account and download JSON credentials
+2. Create a Google Sheet with headers: `lemma,status,item_type,tags`
+3. Share the sheet with the Service Account email (role: Editor)
+4. Set `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to the credentials file
+5. Use `gsheets://SPREADSHEET_ID/WORKSHEET_NAME` in the pipeline
 
 **Google Sheets format:** The sheet must have headers: `lemma,status,item_type,tags` (same as CSV). If the worksheet does not exist, it will be created.
 
@@ -249,7 +249,7 @@ The tool supports two ways to store the list of known words:
 The tool supports disambiguating word meanings via WSD:
 
 ```bash
-python -m eng_words.pipeline \
+uv run python -m eng_words.pipeline \
   --book-path data/raw/book.epub \
   --book-name my_book \
   --output-dir data/processed \
@@ -269,7 +269,7 @@ python -m eng_words.pipeline \
 
 **Export for manual review:**
 ```bash
-python scripts/export_for_review.py \
+uv run python scripts/export_for_review.py \
   --supersense-stats data/processed/my_book_supersense_stats.parquet \
   --sense-tokens data/processed/my_book_sense_tokens.parquet \
   --output review_export_supersenses.csv
@@ -288,7 +288,7 @@ python scripts/export_for_review.py \
 Automatic generation of Anki cards using an LLM:
 
 ```bash
-python -m eng_words.pipeline \
+uv run python -m eng_words.pipeline \
   --book-path data/raw/book.epub \
   --book-name my_book \
   --output-dir data/processed \

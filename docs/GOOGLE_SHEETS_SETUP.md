@@ -2,7 +2,60 @@
 
 Step-by-step guide to set up Google Sheets integration for storing your list of known words.
 
-## Step 1: Create Google Cloud project and Service Account
+## Quick Start
+
+If you're familiar with Google Cloud, here's the condensed version:
+
+1. **Create Service Account:**
+   - Go to https://console.cloud.google.com/
+   - Create/select a project
+   - Enable Google Sheets API and Google Drive API
+   - Create Service Account → Keys → Create new key (JSON)
+   - Copy the Service Account email
+
+2. **Create Google Sheet:**
+   - Create a new sheet at https://sheets.google.com/
+   - Add headers: `lemma | status | item_type | tags`
+   - Share with Service Account email (role: Editor)
+   - Copy Spreadsheet ID from URL
+
+3. **Save credentials:**
+   ```bash
+   mkdir -p ~/.config/eng_words
+   mv ~/Downloads/your-project-xxxxx.json ~/.config/eng_words/google-credentials.json
+   chmod 600 ~/.config/eng_words/google-credentials.json
+   echo 'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/eng_words/google-credentials.json"' >> ~/.zshrc
+   source ~/.zshrc
+   ```
+
+4. **Test:**
+   - Edit `scripts/test_gsheets.py` with your Spreadsheet ID
+   - Run: `python scripts/test_gsheets.py`
+
+5. **Configure (optional):**
+   - Create `.env` file: `cp .env.example .env`
+   - Set: `GOOGLE_SHEETS_URL=gsheets://YOUR_SPREADSHEET_ID/Sheet1`
+
+6. **Use in pipeline:**
+   ```bash
+   python -m eng_words.pipeline \
+     --book-path data/raw/your-book.epub \
+     --book-name book_name \
+     --output-dir data/processed \
+     --known-words gsheets://YOUR_SPREADSHEET_ID/Sheet1 \
+     --min-book-freq 3 \
+     --min-zipf 2.0 \
+     --max-zipf 5.3 \
+     --top-n 150
+   ```
+
+**For detailed instructions, continue reading below.**
+
+---
+
+## Detailed Setup
+
+### Step 1: Create Google Cloud project and Service Account
 
 1. **Open Google Cloud Console:**
    - Go to https://console.cloud.google.com/
@@ -45,7 +98,7 @@ Step-by-step guide to set up Google Sheets integration for storing your list of 
    - Copy this email (looks like `eng-words-service@your-project.iam.gserviceaccount.com`)
    - You will need it in the next step
 
-## Step 2: Create the Google Sheet
+### Step 2: Create the Google Sheet
 
 1. **Create a new Google Sheet:**
    - Go to https://sheets.google.com/
@@ -78,7 +131,7 @@ Step-by-step guide to set up Google Sheets integration for storing your list of 
    - Copy `SPREADSHEET_ID` (the long string between `/d/` and `/edit`)
    - Example: `1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms`
 
-## Step 3: Save credentials
+### Step 3: Save credentials
 
 1. **Create a directory for credentials:**
    ```bash
@@ -101,7 +154,7 @@ Step-by-step guide to set up Google Sheets integration for storing your list of 
    echo ".config/" >> .gitignore
    ```
 
-## Step 4: Set environment variables
+### Step 4: Set environment variables
 
 1. **Set the environment variable:**
    
@@ -116,7 +169,7 @@ Step-by-step guide to set up Google Sheets integration for storing your list of 
    source ~/.zshrc
    ```
 
-## Step 5: Test the integration
+### Step 5: Test the integration
 
 Create a test script:
 
@@ -173,10 +226,47 @@ Run:
 python test_gsheets.py
 ```
 
-## Step 6: Use in CLI
+Or use the existing test script:
+```bash
+# Edit scripts/test_gsheets.py and replace YOUR_SPREADSHEET_ID_HERE with your Spreadsheet ID
+python scripts/test_gsheets.py
+```
+
+### Step 6: Configure .env (optional)
+
+You can configure the Google Sheets URL in `.env` to avoid passing `--known-words` on every command:
+
+1. **Create `.env` file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit `.env` and set:**
+   ```bash
+   GOOGLE_SHEETS_URL=gsheets://YOUR_SPREADSHEET_ID/Sheet1
+   ```
+
+Now you can run the pipeline without specifying `--known-words` — it will be read from `.env`.
+
+**Note:** The `GOOGLE_APPLICATION_CREDENTIALS` environment variable is typically set in your system shell (`~/.zshrc` or `~/.bashrc`), not in `.env`. See the [Credentials Explanation](#credentials-explanation) section below for details.
+
+### Step 7: Use in CLI
 
 After a successful test, use in the pipeline:
 
+**With .env configured:**
+```bash
+python -m eng_words.pipeline \
+  --book-path data/raw/your-book.epub \
+  --book-name book_name \
+  --output-dir data/processed \
+  --min-book-freq 3 \
+  --min-zipf 2.0 \
+  --max-zipf 5.3 \
+  --top-n 150
+```
+
+**Or without .env (specify directly):**
 ```bash
 python -m eng_words.pipeline \
   --book-path data/raw/your-book.epub \
@@ -203,6 +293,108 @@ Additional columns (optional, ignored):
 - `examples_count`
 - `notes`
 
+## Credentials Explanation
+
+### How GOOGLE_APPLICATION_CREDENTIALS works
+
+`GOOGLE_APPLICATION_CREDENTIALS` is an environment variable that points to the path of a JSON file containing credentials for a Google Service Account.
+
+### Credential lookup order
+
+When creating `GoogleSheetsBackend`, the system looks for credentials in this order:
+
+1. **`credentials_path` parameter** (if passed when creating the backend)
+   ```python
+   backend = GoogleSheetsBackend(
+       "spreadsheet_id",
+       "Sheet1",
+       credentials_path=Path("/path/to/credentials.json")
+   )
+   ```
+
+2. **Environment variable `GOOGLE_APPLICATION_CREDENTIALS_JSON`**
+   - Contains the JSON string directly
+   - Used rarely, usually for CI/CD
+
+3. **Environment variable `GOOGLE_APPLICATION_CREDENTIALS`**
+   - Contains the path to the JSON file
+   - **Recommended** for local development
+
+4. **Error** if none found
+
+### Where to set GOOGLE_APPLICATION_CREDENTIALS
+
+#### Option A: System environment variable (recommended)
+
+Add to `~/.zshrc` (or `~/.bashrc`):
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/eng_words/google-credentials.json"
+```
+
+**Advantages:**
+- Works for all projects
+- No need to duplicate in each project
+- Safer (not in the repo)
+
+#### Option B: In project .env file (alternative)
+
+You can add to `.env`:
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/eng_words/google-credentials.json
+```
+
+**Note:** Not required, since `python-dotenv` loads `.env` automatically, but system environment variables take precedence.
+
+### Why is it commented out in .env.example?
+
+In `.env.example` the line is commented because:
+
+1. **Credentials are usually set in system variables** (`~/.zshrc`)
+2. **No need to duplicate** in each project
+3. **Safer** — credentials won't end up in the repo by mistake
+
+### How to verify credentials work?
+
+```bash
+# Check environment variable
+echo $GOOGLE_APPLICATION_CREDENTIALS
+
+# Check that file exists
+ls -la $GOOGLE_APPLICATION_CREDENTIALS
+
+# Run test
+python scripts/test_gsheets.py
+```
+
+### Full setup example
+
+```bash
+# 1. Save credentials
+mkdir -p ~/.config/eng_words
+mv ~/Downloads/your-project-xxxxx.json ~/.config/eng_words/google-credentials.json
+chmod 600 ~/.config/eng_words/google-credentials.json
+
+# 2. Set environment variable (in ~/.zshrc)
+echo 'export GOOGLE_APPLICATION_CREDENTIALS="$HOME/.config/eng_words/google-credentials.json"' >> ~/.zshrc
+source ~/.zshrc
+
+# 3. Verify
+echo $GOOGLE_APPLICATION_CREDENTIALS
+
+# 4. Use in project
+# In .env only set GOOGLE_SHEETS_URL:
+# GOOGLE_SHEETS_URL=gsheets://YOUR_SPREADSHEET_ID/Sheet1
+```
+
+### Summary
+
+- **GOOGLE_APPLICATION_CREDENTIALS** — path to the JSON credentials file
+- Set in **system environment** (`~/.zshrc`)
+- **No need** to set in `.env` (but you can if you prefer)
+- The code finds credentials automatically via the environment variable
+
 ## Troubleshooting
 
 ### Error: "Failed to access Google Sheets"
@@ -214,14 +406,21 @@ Additional columns (optional, ignored):
 - Check credentials path: `echo $GOOGLE_APPLICATION_CREDENTIALS`
 - Check that the file exists: `ls -la $GOOGLE_APPLICATION_CREDENTIALS`
 - Check permissions: `chmod 600 $GOOGLE_APPLICATION_CREDENTIALS`
+- Verify the environment variable is set: `env | grep GOOGLE_APPLICATION_CREDENTIALS`
 
 ### Error: "Permission denied"
 - Ensure the Service Account has role **Editor** (not Viewer!)
 - Check that the Service Account email is correct
+- Verify the Service Account email matches the one you shared the sheet with
 
 ### Sheet not created automatically
 - Ensure the Service Account has access to the sheet
 - Check that the worksheet name is correct (case matters!)
+
+### Credentials not loading
+- If using `.env`, remember that system environment variables take precedence
+- Restart your terminal after adding to `~/.zshrc` or `~/.bashrc`
+- Check credential lookup order (see [Credentials Explanation](#credentials-explanation))
 
 ## Security
 
@@ -230,3 +429,4 @@ Additional columns (optional, ignored):
 - Store credentials in a safe place
 - Use permissions 600 for the credentials file
 - Do not share credentials with others
+- Prefer system environment variables over `.env` for credentials

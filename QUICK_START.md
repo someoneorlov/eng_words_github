@@ -22,12 +22,6 @@ python3 -c "import json; f='data/synset_cards/synset_smart_cards_partial.json'; 
 tail -f data/synset_cards/full_generation.log
 ```
 
-## 4. After completion
-
-```bash
-uv run python scripts/complete_card_generation.py
-```
-
 ---
 
 Full docs: `docs/GENERATION_INSTRUCTIONS.md`
