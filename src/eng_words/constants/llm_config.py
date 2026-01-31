@@ -1,6 +1,6 @@
 """LLM configuration constants."""
 
-from pathlib import Path
+from eng_words.constants.paths import LLM_CACHE_DIR
 
 # =============================================================================
 # Provider settings
@@ -54,7 +54,7 @@ SPOILER_RISK_THRESHOLD = "none"  # Only "none" passes to final cards
 # Cache settings
 # =============================================================================
 
-DEFAULT_CACHE_DIR = Path("data/llm_cache")
+DEFAULT_CACHE_DIR = LLM_CACHE_DIR
 CACHE_BACKEND = "json"  # "json" | "sqlite" (for future)
 
 # =============================================================================

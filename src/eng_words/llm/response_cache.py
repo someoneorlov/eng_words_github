@@ -12,11 +12,12 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Callable
 
+from eng_words.constants import LLM_RESPONSE_CACHE_DIR
 from eng_words.llm.base import LLMProvider, LLMResponse
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CACHE_DIR = Path("data/cache/llm_responses")
+DEFAULT_CACHE_DIR = LLM_RESPONSE_CACHE_DIR
 
 
 class ResponseCache:

@@ -12,12 +12,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from eng_words.constants import DATA_WSD_GOLD_DIR
 from eng_words.wsd_gold.models import GoldExample, LLMUsage, ModelOutput
 from eng_words.wsd_gold.providers.prompts import PROMPT_VERSION_GOLD_LABELING
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_CACHE_DIR = Path("data/wsd_gold/cache")
+DEFAULT_CACHE_DIR = DATA_WSD_GOLD_DIR / "cache"
 
 
 def get_cache_key(example_id: str, model: str, prompt_version: str) -> str:

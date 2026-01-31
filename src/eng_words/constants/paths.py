@@ -17,6 +17,10 @@ DATA_WSD_GOLD_DIR = DATA_DIR / "wsd_gold"
 ANKI_EXPORTS_DIR = Path("anki_exports")
 LOGS_DIR = Path("logs")
 
+# Cache directories
+LLM_CACHE_DIR = DATA_DIR / "llm_cache"
+LLM_RESPONSE_CACHE_DIR = DATA_DIR / "cache" / "llm_responses"
+
 
 # === File path builders ===
 
