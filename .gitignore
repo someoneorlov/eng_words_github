@@ -92,3 +92,4 @@ QUICK_TEST_VALIDATION.md
 # scripts/_archive/
 # tests/_archive/
 
+.coverage
