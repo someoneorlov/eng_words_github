@@ -21,6 +21,7 @@ from pathlib import Path
 
 import typer
 
+from eng_words.constants import get_gold_dev_path
 from eng_words.wsd import WordNetSenseBackend
 from eng_words.wsd_gold.eval import evaluate_wsd_on_gold
 
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 app = typer.Typer(help="Evaluate WSD on gold dataset")
 
-DEFAULT_GOLD_PATH = Path("data/wsd_gold/gold_dev.jsonl")
+DEFAULT_GOLD_PATH = get_gold_dev_path()
 REPORTS_DIR = Path("reports")
 
 

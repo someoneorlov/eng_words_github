@@ -14,9 +14,17 @@ import hashlib
 import json
 import logging
 from datetime import datetime, timezone
-from pathlib import Path
 
 import typer
+
+from eng_words.constants import (
+    DATA_WSD_GOLD_DIR,
+    get_gold_checksum_path,
+    get_gold_dev_path,
+    get_gold_examples_path,
+    get_gold_labels_final_path,
+    get_gold_test_locked_path,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,14 +34,14 @@ logger = logging.getLogger(__name__)
 
 app = typer.Typer(help="Freeze gold dataset with dev/test split")
 
-EXAMPLES_PATH = Path("data/wsd_gold/examples_all.jsonl")
-LABELS_PATH = Path("data/wsd_gold/gold_labels_final.jsonl")
+EXAMPLES_PATH = get_gold_examples_path()
+LABELS_PATH = get_gold_labels_final_path()
 
-OUTPUT_DIR = Path("data/wsd_gold")
-DEV_PATH = OUTPUT_DIR / "gold_dev.jsonl"
-TEST_LOCKED_PATH = OUTPUT_DIR / "gold_test_locked.jsonl"
-CHECKSUM_PATH = OUTPUT_DIR / "gold_test_locked.sha256"
-MANIFEST_PATH = OUTPUT_DIR / "gold_manifest.json"
+OUTPUT_DIR = DATA_WSD_GOLD_DIR
+DEV_PATH = get_gold_dev_path()
+TEST_LOCKED_PATH = get_gold_test_locked_path()
+CHECKSUM_PATH = get_gold_checksum_path()
+MANIFEST_PATH = DATA_WSD_GOLD_DIR / "gold_manifest.json"
 
 # Split by source: 2 books for dev, 2 books for test
 DEV_SOURCES = ["american_tragedy", "on_the_edge"]

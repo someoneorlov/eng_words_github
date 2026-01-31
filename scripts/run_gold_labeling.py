@@ -17,6 +17,7 @@ from pathlib import Path
 import typer
 from dotenv import load_dotenv
 
+from eng_words.constants import DATA_WSD_GOLD_DIR, get_gold_labels_dir
 from eng_words.wsd_gold.models import GoldExample, ModelOutput
 
 # Load environment variables from .env
@@ -116,7 +117,7 @@ def estimate_cost(examples: list[GoldExample], provider_name: str) -> float:
 @app.command()
 def main(
     input_path: Path = typer.Option(
-        Path("data/wsd_gold/pilot_examples.jsonl"),
+        DATA_WSD_GOLD_DIR / "pilot_examples.jsonl",
         "--input",
         "-i",
         help="Input JSONL file with examples",
