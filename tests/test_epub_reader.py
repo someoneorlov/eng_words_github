@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from ebooklib import epub
 
-from eng_words.epub_reader import extract_epub_text
+from eng_words.readers.epub_reader import extract_epub_text
 from eng_words.text_io import load_book_text
 
 

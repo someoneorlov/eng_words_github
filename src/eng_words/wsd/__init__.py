@@ -25,7 +25,6 @@ from eng_words.wsd.embeddings import (
     get_embedding_model,
     get_sentence_embedding,
 )
-from eng_words.wsd.llm_wsd import llm_wsd_sentence, redistribute_empty_cards
 from eng_words.wsd.wordnet_backend import (
     CONTENT_POS_TAGS,
     DEFAULT_CONFIDENCE_THRESHOLD,
@@ -74,7 +73,4 @@ __all__ = [
     "get_all_supersenses_for_lemma",
     "has_multiple_senses",
     "get_most_common_synset",
-    # LLM WSD
-    "llm_wsd_sentence",
-    "redistribute_empty_cards",
 ]

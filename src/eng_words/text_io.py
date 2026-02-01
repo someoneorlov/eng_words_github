@@ -6,8 +6,7 @@ import re
 from pathlib import Path
 
 from eng_words.constants import ENCODING_UTF8
-from eng_words.epub_reader import extract_epub_text  # Backward compatibility
-from eng_words.readers.epub_reader import EpubReader
+from eng_words.readers.epub_reader import EpubReader, EpubExtractionError, extract_epub_text
 from eng_words.readers.text_reader import TextReader
 
 

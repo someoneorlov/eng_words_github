@@ -1,14 +1,14 @@
-"""LLM integration module for card generation.
+"""LLM integration module.
 
-This module provides:
+Provides:
 - LLMProvider abstract base class for different LLM backends
 - Concrete providers for OpenAI, Anthropic, Gemini
-- SmartCardGenerator for creating Anki flashcards
 - ResponseCache for caching LLM responses
 - Retry utilities for robust LLM calls
 
-Note: Legacy modules (cache.py, card_generator.py, evaluator.py, prompts.py)
-have been moved to _archive/ folder.
+Used by word_family/clusterer when running in-process clustering.
+Batch script (run_pipeline_b_batch.py) calls Gemini API directly and does not use this module.
+Legacy card_generator/cache/evaluator removed; see docs/REMOVED_ARCHIVE.md.
 """
 
 from eng_words.llm.base import LLMProvider, LLMResponse

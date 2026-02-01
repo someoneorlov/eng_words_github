@@ -2,14 +2,12 @@
 
 from eng_words.validation.example_validator import (
     ValidationResult,
-    fix_invalid_cards,
-    validate_card_examples,
+    _get_word_forms,
+    _word_in_text,
 )
-from eng_words.validation.synset_validator import validate_examples_for_synset_group
 
 __all__ = [
     "ValidationResult",
-    "validate_card_examples",
-    "fix_invalid_cards",
-    "validate_examples_for_synset_group",
+    "_get_word_forms",
+    "_word_in_text",
 ]

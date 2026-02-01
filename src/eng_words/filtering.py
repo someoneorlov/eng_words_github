@@ -18,10 +18,7 @@ from eng_words.constants import (
     MIN_BOOK_FREQ_DEFAULT,
     MIN_ZIPF_DEFAULT,
     SCORE,
-    SENSE_COUNT,
-    SENSE_FREQ,
     STATUS,
-    SUPERSENSE,
     TARGET_ZIPF_DEFAULT,
 )
 from eng_words.storage import load_known_words
@@ -167,66 +164,6 @@ def calculate_rarity_score(
     diff = float(zipf_freq) - float(target_zipf)
     score = float(np.exp(-(diff**2) / 2))
     return score
-
-
-def filter_by_supersense(
-    supersense_stats_df: pd.DataFrame,
-    *,
-    min_sense_freq: int | None = None,
-    max_senses: int | None = None,
-) -> pd.DataFrame:
-    """Filter supersense statistics by sense frequency and limit senses per lemma.
-
-    Args:
-        supersense_stats_df: DataFrame with supersense statistics. Must contain:
-            - lemma: The lemmatized word
-            - supersense: The supersense category
-            - sense_freq: Frequency of this specific sense
-            - sense_count: Number of different senses for this lemma
-        min_sense_freq: Minimum frequency for a sense to be included
-        max_senses: Maximum number of senses per lemma (keeps top N by frequency)
-
-    Returns:
-        Filtered DataFrame with same structure
-
-    Example:
-        >>> stats = pd.DataFrame({
-        ...     "lemma": ["run", "run", "run", "bank", "bank"],
-        ...     "supersense": ["verb.motion", "verb.social", "noun.act",
-        ...                    "noun.group", "noun.object"],
-        ...     "sense_freq": [17, 10, 8, 15, 5],
-        ...     "sense_count": [3, 3, 3, 2, 2],
-        ... })
-        >>> filtered = filter_by_supersense(stats, min_sense_freq=10, max_senses=2)
-        >>> # Only "run" with verb.motion and verb.social, "bank" with noun.group
-    """
-    if supersense_stats_df is None:
-        raise ValueError("supersense_stats_df must be provided")
-
-    required = {LEMMA, SUPERSENSE, SENSE_FREQ}
-    missing = required - set(supersense_stats_df.columns)
-    if missing:
-        raise ValueError(f"supersense_stats_df is missing required columns: {missing}")
-
-    df = supersense_stats_df.copy()
-
-    # Filter by minimum sense frequency
-    if min_sense_freq is not None:
-        df = df[df[SENSE_FREQ] >= int(min_sense_freq)]
-
-    # Limit number of senses per lemma (keep top N by frequency)
-    if max_senses is not None and max_senses > 0:
-        # Sort by sense_freq descending, then group by lemma and take top N
-        df = df.sort_values(by=[LEMMA, SENSE_FREQ], ascending=[True, False])
-        df = df.groupby(LEMMA).head(max_senses).reset_index(drop=True)
-
-        # Recalculate sense_count after filtering
-        if SENSE_COUNT in df.columns:
-            sense_counts = df.groupby(LEMMA)[SUPERSENSE].nunique().reset_index(name=SENSE_COUNT)
-            df = df.drop(columns=[SENSE_COUNT], errors="ignore")
-            df = df.merge(sense_counts, on=LEMMA)
-
-    return df.reset_index(drop=True)
 
 
 def rank_candidates(
