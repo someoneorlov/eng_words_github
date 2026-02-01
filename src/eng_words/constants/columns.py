@@ -73,5 +73,7 @@ TOKEN_COLUMNS = [
 SENTENCE_COLUMNS = {SENTENCE_ID, SENTENCE}
 
 REQUIRED_KNOWN_WORDS_COLUMNS = [LEMMA, STATUS, ITEM_TYPE, TAGS]
+# Optional synset_id: when set, filtering is by (lemma, synset_id); when empty, by lemma only (all senses).
+KNOWN_WORDS_COLUMNS = [LEMMA, STATUS, ITEM_TYPE, TAGS, SYNSET_ID]
 
 ANKI_COLUMNS = [FRONT, BACK, TAGS]

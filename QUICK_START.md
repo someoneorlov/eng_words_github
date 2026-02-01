@@ -1,27 +1,27 @@
-# Quick start — full card generation
+# Быстрый старт — полная генерация карточек
 
-## 1. Run
+## 1. Запуск
 
 ```bash
 ./scripts/run_full_generation.sh
 ```
 
-## 2. Monitor (in another terminal)
+## 2. Мониторинг (в другом терминале)
 
 ```bash
 ./scripts/monitor_generation.sh
 ```
 
-## 3. Check status
+## 3. Проверка статуса
 
 ```bash
-# How many cards generated
+# Сколько карточек сгенерировано
 python3 -c "import json; f='data/synset_cards/synset_smart_cards_partial.json'; print(len(json.load(open(f))) if __import__('os').path.exists(f) else 0)"
 
-# Logs
+# Логи
 tail -f data/synset_cards/full_generation.log
 ```
 
 ---
 
-Full docs: `docs/GENERATION_INSTRUCTIONS.md`
+Подробная документация: `docs/GENERATION_INSTRUCTIONS.md`

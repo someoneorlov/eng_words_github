@@ -37,7 +37,6 @@ from eng_words.examples import get_examples_for_lemmas, get_examples_for_phrasal
 from eng_words.filtering import (
     filter_by_frequency,
     filter_by_supersense,
-    filter_known_words,
     rank_candidates,
 )
 from eng_words.phrasal_verbs import (
@@ -185,14 +184,7 @@ def process_book_stage1(
     save_lemma_stats_to_parquet(full_lemma_stats, stats_full_path)
 
     lemma_stats = add_global_frequency(calculate_lemma_frequency(tokens_df))
-    if known_words_path:
-        try:
-            known_df = load_known_words(known_words_path)
-            if not known_df.empty:
-                lemma_stats = filter_known_words(lemma_stats, known_df)
-        except (ValueError, FileNotFoundError, Exception) as e:
-            print(f"⚠️  Warning: Failed to load known words from {known_words_path}: {e}")
-            print("   Continuing without known words filtering...")
+    # Known-words filtering is done at (lemma, synset_id) level in card generation, not here.
     lemma_stats = filter_by_frequency(
         lemma_stats,
         min_book_freq=min_book_freq,
@@ -216,7 +208,8 @@ def process_book_stage1(
         phrasal_known = None
         if known_words_path:
             known_df = load_known_words(known_words_path)
-            phrasal_known = known_df[known_df[ITEM_TYPE] == ITEM_TYPE_PHRASAL_VERB]
+            if not known_df.empty:
+                phrasal_known = known_df[known_df[ITEM_TYPE] == ITEM_TYPE_PHRASAL_VERB]
         phrasal_stats_df = filter_phrasal_verbs(phrasal_stats_df, phrasal_known)
         phrasal_stats_df = rank_phrasal_verbs(phrasal_stats_df)
         phrasal_stats_path = output_dir / f"{book_name}{TEMPLATE_PHRASAL_VERB_STATS}"

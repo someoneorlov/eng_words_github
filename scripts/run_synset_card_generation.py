@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 
 from eng_words.anki_export import export_to_anki_csv
 from eng_words.constants import (
+    EXCLUDE_DEFAULT,
     get_aggregated_cards_path,
     get_anki_csv_path,
     get_card_generation_cache_dir,
@@ -34,6 +35,7 @@ from eng_words.constants import (
     get_smart_cards_partial_path,
     get_tokens_path,
 )
+from eng_words.storage import load_known_words
 from eng_words.llm.base import get_provider
 from eng_words.llm.response_cache import ResponseCache
 from eng_words.llm.smart_card_generator import (
@@ -65,7 +67,11 @@ def setup_logging(log_file: str | None = None):
         force=True,  # Override any existing configuration
     )
 
-def run_card_generation(book_name: str, limit: int | None = None):
+def run_card_generation(
+    book_name: str,
+    limit: int | None = None,
+    known_words_path: str | Path | None = None,
+):
     """Generate Smart Cards using synset-based aggregation."""
     # Get paths from constants
     AGGREGATED_CARDS_PATH = get_aggregated_cards_path()
@@ -86,6 +92,34 @@ def run_card_generation(book_name: str, limit: int | None = None):
     logger.info("\n## Step 1: Load aggregated cards")
     cards_df = pd.read_parquet(AGGREGATED_CARDS_PATH)
     logger.info(f"  Loaded {len(cards_df):,} card items")
+
+    # Filter by known (lemma, synset_id) — same granularity as cards
+    if known_words_path:
+        known_df = load_known_words(known_words_path)
+        if not known_df.empty:
+            exclude = set(EXCLUDE_DEFAULT)
+            # (lemma, synset_id or None). None = "all senses of this lemma"
+            known_set = set()
+            for _, row in known_df.iterrows():
+                if str(row.get("status", "")).lower() in exclude:
+                    lemma = str(row.get("lemma", "")).strip().lower()
+                    sid = row.get("synset_id", "")
+                    if pd.isna(sid) or str(sid).strip() == "":
+                        known_set.add((lemma, None))
+                    else:
+                        known_set.add((lemma, str(sid).strip()))
+            before = len(cards_df)
+            mask = []
+            for _, row in cards_df.iterrows():
+                lemma = str(row.get("lemma", "")).strip().lower()
+                primary = row.get("primary_synset", "")
+                primary = "" if pd.isna(primary) else str(primary).strip()
+                if (lemma, primary) in known_set or (lemma, None) in known_set:
+                    mask.append(False)
+                else:
+                    mask.append(True)
+            cards_df = cards_df.loc[mask].reset_index(drop=True)
+            logger.info(f"  Filtered by known (lemma, synset): {before:,} -> {len(cards_df):,} cards")
 
     # Step 2: Reconstruct sentences for examples
     logger.info("\n## Step 2: Reconstruct sentences")
@@ -552,6 +586,12 @@ if __name__ == "__main__":
         default=None,
         help="Optional path to log file (logs will also go to terminal)",
     )
+    parser.add_argument(
+        "--known-words",
+        type=str,
+        default=None,
+        help="Known words: CSV path or gsheets://SPREADSHEET_ID/SHEET. Filter by (lemma, synset_id).",
+    )
 
     args = parser.parse_args()
 
@@ -564,4 +604,8 @@ if __name__ == "__main__":
     if args.log_file:
         logger.info(f"Logging to file: {args.log_file}")
 
-    run_card_generation(limit=args.limit, book_name=args.book_name)
+    run_card_generation(
+        book_name=args.book_name,
+        limit=args.limit,
+        known_words_path=args.known_words,
+    )

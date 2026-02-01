@@ -1,44 +1,44 @@
-# Architecture Overview
+# Обзор архитектуры
 
-This document provides a high-level overview of the English Words pipeline architecture, designed to help developers understand the codebase structure and data flow.
+Краткий обзор архитектуры пайплайна English Words: структура кодовой базы и поток данных.
 
-## High-Level Flow
+## Поток данных (высокий уровень)
 
 ```
 ┌─────────────┐
-│  EPUB Book  │
+│  EPUB книга │
 └──────┬──────┘
        │
        ▼
 ┌─────────────────────────────────────┐
-│  Stage 1: Tokenization & Statistics │
-│  - Extract text from EPUB           │
-│  - Tokenize & lemmatize (spaCy)     │
-│  - Calculate frequency stats        │
-│  - Filter by Zipf/known words       │
+│  Этап 1: Токенизация и статистика   │
+│  - Извлечение текста из EPUB        │
+│  - Токенизация и лемматизация (spaCy)│
+│  - Расчёт частотной статистики       │
+│  - Фильтрация по Zipf/известным словам│
 └──────┬──────────────────────────────┘
        │
        ▼
 ┌─────────────────────────────────────┐
-│  WSD: Word Sense Disambiguation     │
-│  - Annotate tokens with WordNet     │
-│    synsets (optional)               │
-│  - Aggregate by supersense          │
+│  WSD: Снятие неоднозначности смысла  │
+│  - Разметка токенов synset'ами       │
+│    WordNet (опционально)              │
+│  - Агрегация по supersense           │
 └──────┬──────────────────────────────┘
        │
        ▼
 ┌─────────────────────────────────────┐
-│  Aggregation: Synset Grouping       │
-│  - Group WordNet synsets by meaning │
-│  - LLM-based semantic clustering    │
+│  Агрегация: группировка synset'ов   │
+│  - Группировка synset'ов по смыслу   │
+│  - Семантическая кластеризация (LLM)│
 └──────┬──────────────────────────────┘
        │
        ▼
 ┌─────────────────────────────────────┐
-│  Card Generation                    │
-│  - Validate examples                │
-│  - Generate definitions/translations │
-│  - Select & filter examples         │
+│  Генерация карточек                  │
+│  - Проверка примеров                 │
+│  - Определения/переводы (LLM)        │
+│  - Выбор и фильтрация примеров       │
 └──────┬──────────────────────────────┘
        │
        ▼
@@ -47,114 +47,114 @@ This document provides a high-level overview of the English Words pipeline archi
 └─────────────┘
 ```
 
-## Module Responsibilities
+## Ответственность модулей
 
-### Core Pipeline (`src/eng_words/pipeline.py`)
-- **Stage 1 orchestration**: Coordinates tokenization, statistics calculation, and filtering
-- **Full pipeline**: Runs complete flow from EPUB to Anki CSV (optional)
-- **Entry point**: `python -m eng_words.pipeline` CLI
+### Ядро пайплайна (`src/eng_words/pipeline.py`)
+- **Оркестрация этапа 1**: токенизация, расчёт статистики, фильтрация
+- **Полный пайплайн**: от EPUB до Anki CSV (опционально)
+- **Точка входа**: CLI `python -m eng_words.pipeline`
 
-### LLM Layer (`src/eng_words/llm/`)
-- **Providers** (`llm/providers/`): Abstraction for Gemini, OpenAI, Anthropic APIs
-- **Smart Card Generator** (`smart_card_generator.py`): Generates flashcards with definitions, translations, examples
-- **Response Cache** (`response_cache.py`): Caches LLM responses to reduce API costs
-- **Retry Logic** (`retry.py`): Handles transient failures and rate limits
+### Слой LLM (`src/eng_words/llm/`)
+- **Провайдеры** (`llm/providers/`): абстракция для Gemini, OpenAI, Anthropic
+- **Smart Card Generator** (`smart_card_generator.py`): генерация карточек с определениями, переводами, примерами
+- **Response Cache** (`response_cache.py`): кэш ответов LLM для снижения затрат на API
+- **Retry Logic** (`retry.py`): обработка временных сбоев и лимитов
 
-### Word Sense Disambiguation (`src/eng_words/wsd/`)
-- **WordNet Backend** (`wordnet_backend.py`): Annotates tokens with WordNet synsets
-- **LLM WSD** (`llm_wsd.py`): Uses LLM for disambiguation when WordNet is ambiguous
-- **Candidate Selector** (`candidate_selector.py`): Selects best synset candidates using embeddings
-- **Aggregator** (`aggregator.py`): Aggregates sense statistics by supersense
+### WSD (`src/eng_words/wsd/`)
+- **WordNet Backend** (`wordnet_backend.py`): разметка токенов synset'ами WordNet
+- **LLM WSD** (`llm_wsd.py`): использование LLM для снятия неоднозначности при неоднозначности WordNet
+- **Candidate Selector** (`candidate_selector.py`): выбор кандидатов synset по эмбеддингам
+- **Aggregator** (`aggregator.py`): агрегация статистики по supersense
 
-### Aggregation (`src/eng_words/aggregation/`)
-- **Synset Aggregator** (`synset_aggregator.py`): Groups WordNet synsets by frequency/statistics
-- **LLM Aggregator** (`llm_aggregator.py`): Uses LLM to semantically group synsets into meaning families
+### Агрегация (`src/eng_words/aggregation/`)
+- **Synset Aggregator** (`synset_aggregator.py`): группировка synset'ов WordNet по частоте/статистике
+- **LLM Aggregator** (`llm_aggregator.py`): семантическая группировка synset'ов в «семейства значений» с помощью LLM
 
-### Validation (`src/eng_words/validation/`)
-- **Example Validator** (`example_validator.py`): Validates that book examples match synset meanings
-- **Synset Validator** (`synset_validator.py`): Validates examples for synset groups using LLM
+### Валидация (`src/eng_words/validation/`)
+- **Example Validator** (`example_validator.py`): проверка соответствия примеров из книги значению synset'а
+- **Synset Validator** (`synset_validator.py`): проверка примеров для групп synset'ов с помощью LLM
 
-### Storage (`src/eng_words/storage/`)
-- **Backends** (`backends.py`): CSV and Google Sheets backends for known words
-- **Loader** (`loader.py`): Unified interface for loading/saving known words
+### Хранение (`src/eng_words/storage/`)
+- **Backends** (`backends.py`): бэкенды CSV и Google Sheets для списка известных слов
+- **Loader** (`loader.py`): единый интерфейс загрузки/сохранения известных слов
 
-### Constants (`src/eng_words/constants/`)
-- **Configuration**: Model names, file templates, column names, defaults
-- **LLM Pricing** (`llm_pricing.py`): Cost estimation for different providers/models
-- **Supersenses** (`supersenses.py`): WordNet supersense taxonomy
+### Константы (`src/eng_words/constants/`)
+- **Конфигурация**: имена моделей, шаблоны файлов, колонки, значения по умолчанию
+- **LLM Pricing** (`llm_pricing.py`): оценка стоимости по провайдерам/моделям
+- **Supersenses** (`supersenses.py`): таксономия supersense WordNet
 
-### Supporting Modules
-- **Text Processing** (`text_processing.py`): Tokenization, sentence reconstruction, spaCy integration
-- **Statistics** (`statistics.py`): Frequency calculation, Zipf scoring
-- **Filtering** (`filtering.py`): Filter by frequency, known words, supersense
-- **Examples** (`examples.py`): Extract and select example sentences from book
-- **Anki Export** (`anki_export.py`): Convert cards to Anki CSV format
-- **EPUB Reader** (`epub_reader.py`): Extract text from EPUB files
+### Вспомогательные модули
+- **Text Processing** (`text_processing.py`): токенизация, реконструкция предложений, интеграция со spaCy
+- **Statistics** (`statistics.py`): расчёт частот, Zipf-скор
+- **Filtering** (`filtering.py`): фильтрация по частоте, известным словам, supersense
+- **Examples** (`examples.py`): извлечение и выбор примеров предложений из книги
+- **Anki Export** (`anki_export.py`): экспорт карточек в формат Anki CSV
+- **EPUB Reader** (`epub_reader.py`): извлечение текста из EPUB
 
-## Data Flow
+## Поток данных
 
-### Input
-- **Raw books**: `data/raw/*.epub` - EPUB files containing source material
-- **Known words**: `data/known_words.csv` or Google Sheets URL - Words already learned
+### Вход
+- **Книги**: `data/raw/*.epub` — исходные EPUB
+- **Известные слова**: `data/known_words.csv` или URL Google Sheets
 
-### Intermediate Files (`data/processed/`)
-- `{book_name}_tokens.parquet` - Tokenized text with lemmas, POS tags, sentence IDs
-- `{book_name}_lemma_stats.parquet` - Frequency statistics per lemma
-- `{book_name}_sense_tokens.parquet` - Tokens annotated with WordNet synsets (if WSD enabled)
-- `{book_name}_supersense_stats.parquet` - Aggregated statistics by supersense
+### Промежуточные файлы (`data/processed/`)
+- `{book_name}_tokens.parquet` — токены с леммами, POS, ID предложений
+- `{book_name}_lemma_stats.parquet` — частотная статистика по леммам
+- `{book_name}_sense_tokens.parquet` — токены с synset'ами WordNet (если включён WSD)
+- `{book_name}_supersense_stats.parquet` — агрегированная статистика по supersense
 
-### Output
-- **Synset cards**: `data/synset_cards/synset_smart_cards_final.json` - Generated flashcards in JSON format
-- **Anki CSV**: `data/synset_cards/synset_anki.csv` or `anki_exports/` - Import-ready Anki deck
-- **LLM cache**: `data/synset_cards/llm_cache/` - Cached LLM responses
+### Выход
+- **Карточки synset**: `data/synset_cards/synset_smart_cards_final.json` — сгенерированные карточки в JSON
+- **Anki CSV**: `data/synset_cards/synset_anki.csv` или `anki_exports/` — колода для импорта в Anki
+- **Кэш LLM**: `data/synset_cards/llm_cache/` — кэш ответов LLM
 
-## Entry Points
+## Точки входа
 
-### Full Workflow for New Book
+### Полный сценарий для новой книги
 
 ```bash
-# Step 1: Tokenize book, calculate stats, annotate with WSD
+# Шаг 1: Токенизация, статистика, WSD
 uv run python -m eng_words.pipeline \
   --book-path data/raw/book.epub \
   --book-name my_book \
   --enable-wsd
 
-# Step 2: Aggregate by synset (uses LLM for semantic grouping)
+# Шаг 2: Агрегация по synset (LLM)
 uv run python scripts/run_full_synset_aggregation.py
 
-# Step 3: Generate cards and export to Anki
+# Шаг 3: Генерация карточек и экспорт в Anki
 uv run python scripts/run_synset_card_generation.py
 ```
 
-### Main Scripts
+### Основные скрипты
 
-**Stage 1: Tokenization & WSD** (`python -m eng_words.pipeline`):
+**Этап 1: Токенизация и WSD** (`python -m eng_words.pipeline`):
 ```bash
 uv run python -m eng_words.pipeline --book-path data/raw/book.epub --book-name book --enable-wsd
 ```
-- Extracts text from EPUB
-- Tokenizes and calculates frequency stats
-- Annotates with WordNet synsets (WSD)
-- Outputs: `{book}_tokens.parquet`, `{book}_sense_tokens.parquet`
+- Извлечение текста из EPUB
+- Токенизация и расчёт частот
+- Разметка synset'ами WordNet (WSD)
+- Выход: `{book}_tokens.parquet`, `{book}_sense_tokens.parquet`
 
-**Stage 2: Synset Aggregation** (`scripts/run_full_synset_aggregation.py`):
+**Этап 2: Агрегация synset'ов** (`scripts/run_full_synset_aggregation.py`):
 ```bash
 uv run python scripts/run_full_synset_aggregation.py
 ```
-- Groups tokens by (lemma, synset_id)
-- Uses LLM to cluster related synsets
-- Outputs: `aggregated_cards.parquet`
+- Группировка токенов по (lemma, synset_id)
+- Кластеризация связанных synset'ов с помощью LLM
+- Выход: `aggregated_cards.parquet`
 
-**Stage 3: Card Generation** (`scripts/run_synset_card_generation.py`):
+**Этап 3: Генерация карточек** (`scripts/run_synset_card_generation.py`):
 ```bash
 uv run python scripts/run_synset_card_generation.py [limit]
 ```
-- Loads aggregated synset cards
-- Generates smart cards with LLM
-- Validates examples
-- Exports to Anki CSV
+- Загрузка агрегированных карточек
+- Генерация умных карточек с LLM
+- Проверка примеров
+- Экспорт в Anki CSV
 
-**Stage 1 Only** (`python -m eng_words.pipeline`):
+**Только этап 1** (`python -m eng_words.pipeline`):
 ```bash
 uv run python -m eng_words.pipeline \
   --book-path data/raw/book.epub \
@@ -163,35 +163,35 @@ uv run python -m eng_words.pipeline \
   --known-words data/known_words.csv \
   --enable-wsd
 ```
-- Tokenization and statistics
-- Optional WSD annotation
-- Example extraction
-- Anki export (if using full pipeline)
+- Токенизация и статистика
+- Опциональная WSD-разметка
+- Извлечение примеров
+- Экспорт в Anki (при полном пайплайне)
 
-### Testing
+### Тестирование
 ```bash
-make check          # Format + lint + test
-make test           # Run all tests
-make test-wsd       # Run WSD tests only
+make check          # Формат + линт + тесты
+make test           # Все тесты
+make test-wsd       # Только тесты WSD
 ```
 
-### Other Scripts
-- `scripts/eval_wsd_on_gold.py` - Evaluate WSD accuracy on gold dataset
-- `scripts/verify_gold_checksum.py` - Verify gold dataset integrity
-- `scripts/benchmark_wsd.py` - Benchmark WSD performance
+### Прочие скрипты
+- `scripts/eval_wsd_on_gold.py` — оценка точности WSD на gold-датасете
+- `scripts/verify_gold_checksum.py` — проверка целостности gold-датасета
+- `scripts/benchmark_wsd.py` — бенчмарк WSD
 
-## Key Design Decisions
+## Ключевые решения
 
-1. **Modular Architecture**: Each stage (tokenization, WSD, aggregation, generation) is independent and can be run separately
-2. **LLM Abstraction**: Provider-agnostic interface allows switching between Gemini, OpenAI, Anthropic
-3. **Caching Strategy**: LLM responses are cached to reduce API costs and enable resumable generation
-4. **Parquet Format**: Intermediate data stored as Parquet for efficient I/O and resumability
-5. **Validation Pipeline**: Multi-stage validation ensures card quality (synset matching, example length, spoiler detection)
+1. **Модульность**: этапы (токенизация, WSD, агрегация, генерация) независимы и могут запускаться по отдельности
+2. **Абстракция LLM**: интерфейс, не привязанный к провайдеру, позволяет переключаться между Gemini, OpenAI, Anthropic
+3. **Кэширование**: ответы LLM кэшируются для снижения затрат и возможности возобновления генерации
+4. **Формат Parquet**: промежуточные данные в Parquet для эффективного I/O и возобновляемости
+5. **Валидация по этапам**: многоступенчатая проверка качества карточек (соответствие synset'у, длина примеров, детекция спойлеров)
 
-## Dependencies
+## Зависимости
 
-- **spaCy**: Tokenization, POS tagging, lemmatization
-- **WordNet**: Word sense disambiguation
-- **sentence-transformers**: Embedding-based candidate selection (optional)
-- **LLM APIs**: Gemini, OpenAI, Anthropic (via provider abstraction)
-- **pandas**: Data manipulation and Parquet I/O
+- **spaCy**: токенизация, POS-разметка, лемматизация
+- **WordNet**: снятие неоднозначности смысла
+- **sentence-transformers**: выбор кандидатов по эмбеддингам (опционально)
+- **LLM API**: Gemini, OpenAI, Anthropic (через абстракцию провайдеров)
+- **pandas**: обработка данных и I/O Parquet

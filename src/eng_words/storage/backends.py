@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -17,10 +18,12 @@ except ImportError:
 
 from eng_words.constants import (
     ITEM_TYPE,
+    KNOWN_WORDS_COLUMNS,
     LEMMA,
     REQUIRED_KNOWN_WORDS_COLUMNS,
     STATUS,
     STATUS_KNOWN,
+    SYNSET_ID,
     TAGS,
 )
 
@@ -277,20 +280,22 @@ class KnownWordsBackend(ABC):
             ValueError: If required columns are missing.
         """
         if df.empty:
-            return pd.DataFrame(columns=REQUIRED_KNOWN_WORDS_COLUMNS)
+            return pd.DataFrame(columns=KNOWN_WORDS_COLUMNS)
 
         missing = [col for col in REQUIRED_KNOWN_WORDS_COLUMNS if col not in df.columns]
         if missing:
             raise ValueError(f"Known words data missing columns: {missing}")
 
-        df = df[REQUIRED_KNOWN_WORDS_COLUMNS].copy()
-        df[LEMMA] = df[LEMMA].astype(str).str.strip().str.lower()
-        df[STATUS] = df[STATUS].astype(str).str.strip().str.lower()
-        df[ITEM_TYPE] = df[ITEM_TYPE].astype(str).str.strip()
-        df[TAGS] = df[TAGS].astype(str).fillna("")
+        out = cast(pd.DataFrame, df[REQUIRED_KNOWN_WORDS_COLUMNS].copy())
+        if SYNSET_ID not in out.columns:
+            out[SYNSET_ID] = ""
+        out[SYNSET_ID] = out[SYNSET_ID].astype(str).str.strip().fillna("")
+        out[LEMMA] = out[LEMMA].astype(str).str.strip().str.lower()
+        out[STATUS] = out[STATUS].astype(str).str.strip().str.lower()
+        out[ITEM_TYPE] = out[ITEM_TYPE].astype(str).str.strip()
+        out[TAGS] = out[TAGS].astype(str).fillna("")
 
-        df = df.drop_duplicates(subset=[LEMMA, ITEM_TYPE], keep="last").reset_index(drop=True)
-        return df
+        return out.drop_duplicates(subset=[LEMMA, SYNSET_ID, ITEM_TYPE], keep="last").reset_index(drop=True)
 
 
 class CSVBackend(KnownWordsBackend):
@@ -312,7 +317,7 @@ class CSVBackend(KnownWordsBackend):
         try:
             df = pd.read_csv(self.path)
         except pd.errors.EmptyDataError:
-            return pd.DataFrame(columns=REQUIRED_KNOWN_WORDS_COLUMNS)
+            return pd.DataFrame(columns=KNOWN_WORDS_COLUMNS)
 
         return self._normalize_dataframe(df)
 
@@ -442,7 +447,7 @@ class GoogleSheetsBackend(KnownWordsBackend):
             raise ValueError(f"Failed to access Google Sheets: {exc}") from exc
 
         if not records:
-            return pd.DataFrame(columns=REQUIRED_KNOWN_WORDS_COLUMNS)
+            return pd.DataFrame(columns=KNOWN_WORDS_COLUMNS)
 
         df = pd.DataFrame(records)
         return self._normalize_dataframe(df)
@@ -462,7 +467,7 @@ class GoogleSheetsBackend(KnownWordsBackend):
             worksheet.clear()
 
             # Write header
-            worksheet.append_row(REQUIRED_KNOWN_WORDS_COLUMNS)
+            worksheet.append_row(KNOWN_WORDS_COLUMNS)
 
             # Write data rows
             if not normalized.empty:

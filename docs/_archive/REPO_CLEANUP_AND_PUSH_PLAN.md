@@ -1,52 +1,52 @@
-# Repository cleanup and push plan (GitHub, other machine)
+# План уборки репозитория и пуша (GitHub, другая машина)
 
-**Goal:** Keep the current project as-is in Russian. Create a **new** project by copying the repo, then in the copy: remove data/archive, translate everything to English, and push to GitHub with **no history** (single initial commit).
-
----
-
-## Workflow: copy → clean → translate → fresh repo → push
-
-- **Current project (this folder):** Leave **completely unchanged**. No edits, no git changes. It remains your full Russian project with data and history.
-- **New project:** A separate folder (e.g. `eng_words_github` or `eng_words_en`). Created by copying this project, then in the copy only: delete excluded paths, update .gitignore, translate to English, `git init`, one initial commit, push to a new GitHub repo. Result: new repo with zero history.
-
-Steps below (sections 1–4, 7) apply **only to the new copy**, not to the current project.
+**Цель:** Оставить текущий проект как есть, на русском. Создать **новый** проект копированием репо, затем в копии: убрать data/archive, перевести всё на английский и запушить в GitHub **без истории** (один начальный коммит).
 
 ---
 
-## 1. What to EXCLUDE in the new copy (do not push)
+## Сценарий: копия → очистка → перевод → новый репо → пуш
 
-| Category | Paths / patterns | Reason |
-|----------|------------------|--------|
-| **Data** | `data/` (all contents) | Parquet, JSONL, books, experiment results — you’ll move as archive separately |
-| **Logs & reports** | `logs/`, `reports/` | Temporary outputs |
-| **Archive docs** | `docs/archive/` | Old plans/results; not needed for refactoring |
-| **Books / raw inputs** | `*.epub`, `*.parquet`, `*.csv` (except fixtures) | Already in `.gitignore`; ensure no tracked |
-| **Secrets / env** | `.env`, `known_words.csv` | Already in `.gitignore` |
-| **Large caches** | `data/synset_cards/llm_cache/`, `backups/` | Already in `.gitignore` |
-| **Batch outputs** | `data/experiment/batch/` (requests/results JSONL) | Generated; can re-run on other machine |
-| **Gold labels / WSD data** | `data/wsd_gold/*.jsonl`, `data/wsd_gold/labels*/`, `data/wsd_gold/batch_*` | Not needed for refactoring; see below |
+- **Текущий проект (эта папка):** Оставить **полностью без изменений**. Ни правок, ни изменений в git. Это ваш полный русский проект с данными и историей.
+- **Новый проект:** Отдельная папка (например `eng_words_github` или `eng_words_en`). Создаётся копированием этого проекта; только в копии: удалить исключённые пути, обновить .gitignore, перевести на английский, `git init`, один начальный коммит, пуш в новый репозиторий GitHub. Итог: новый репо без истории.
 
-**In the new copy:** Either do not copy these paths when copying the project, or delete them in the copy before `git init`. Also add them to `.gitignore` in the copy so they never get committed.
-
-**Gold dataset:** Tests do **not** depend on `data/wsd_gold/` — they use temporary files (`tmp_path / "gold.jsonl"`) and in-memory data. For refactoring you only need the code and the documented JSONL format; the full gold dataset does not need to be in the repo. If later you want to run WSD eval on the VM (e.g. `evaluate_wsd_on_gold("data/wsd_gold/gold_dev.jsonl", ...)`), copy `gold_dev.jsonl` (or similar) from your backup into the new copy’s `data/wsd_gold/` after clone. So: **do not push the golden dataset**; it is not required for refactoring or for tests to pass.
+Шаги ниже (разделы 1–4, 7) относятся **только к новой копии**, не к текущему проекту.
 
 ---
 
-## 2. What to KEEP in the new copy (push to GitHub)
+## 1. Что ИСКЛЮЧИТЬ в новой копии (не пушить)
 
-| Category | Contents |
-|----------|----------|
-| **Source** | `src/eng_words/` (including `_archive` if you use it for reference) |
-| **Tests** | `tests/` (and `tests/fixtures/` — keep small JSON/CSV used by tests) |
-| **Scripts** | `scripts/` (except heavy one-off scripts in `_archive` — optional keep/remove) |
-| **Active docs** | `docs/` **excluding** `docs/archive/` (see list below) |
-| **Config / project** | `.env.example`, `known_words.csv.example`, `Makefile`, `pyproject.toml`, `uv.lock` |
-| **Root docs** | `README.md`, `QUICK_START.md`, `QUICK_START_GSHEETS.md`, `START_GENERATION.sh` |
-| **Cursor rules** | `.cursor/rules/` (optional; useful for AI-assisted refactoring) |
+| Категория | Пути / шаблоны | Причина |
+|-----------|----------------|---------|
+| **Данные** | `data/` (всё содержимое) | Parquet, JSONL, книги, результаты экспериментов — архивируете отдельно |
+| **Логи и отчёты** | `logs/`, `reports/` | Временные выходы |
+| **Архив доков** | `docs/archive/` | Старые планы/результаты; для рефакторинга не нужны |
+| **Книги / сырые входы** | `*.epub`, `*.parquet`, `*.csv` (кроме фикстур) | Уже в `.gitignore`; убедиться, что не трекаются |
+| **Секреты / env** | `.env`, `known_words.csv` | Уже в `.gitignore` |
+| **Большие кэши** | `data/synset_cards/llm_cache/`, `backups/` | Уже в `.gitignore` |
+| **Batch-выходы** | `data/experiment/batch/` (requests/results JSONL) | Генерируются; можно перезапустить на другой машине |
+| **Gold labels / WSD** | `data/wsd_gold/*.jsonl`, `data/wsd_gold/labels*/`, `data/wsd_gold/batch_*` | Для рефакторинга не нужны; см. ниже |
 
-**Active docs to keep (then translate to English):**
+**В новой копии:** Либо не копировать эти пути при копировании, либо удалить их в копии перед `git init`. Также добавить их в `.gitignore` в копии, чтобы они никогда не коммитились.
 
-- `docs/WORD_FAMILY_PIPELINE.md` — main pipeline/experiment doc  
+**Gold dataset:** Тесты **не** зависят от `data/wsd_gold/` — они используют временные файлы (`tmp_path / "gold.jsonl"`) и данные в памяти. Для рефакторинга нужны только код и описанный формат JSONL; полный gold dataset в репо не обязателен. Если позже понадобится запустить WSD eval на VM (например `evaluate_wsd_on_gold("data/wsd_gold/gold_dev.jsonl", ...)`), скопируйте `gold_dev.jsonl` из бэкапа в `data/wsd_gold/` новой копии после клонирования. Итого: **gold dataset не пушить**; для рефакторинга и прохождения тестов он не требуется.
+
+---
+
+## 2. Что ОСТАВИТЬ в новой копии (пушить в GitHub)
+
+| Категория | Содержимое |
+|-----------|------------|
+| **Исходники** | `src/eng_words/` (включая `_archive`, если нужен для справки) |
+| **Тесты** | `tests/` (и `tests/fixtures/` — оставить мелкие JSON/CSV для тестов) |
+| **Скрипты** | `scripts/` (кроме тяжёлых разовых в `_archive` — по желанию оставить/удалить) |
+| **Активные доки** | `docs/` **без** `docs/archive/` (см. список ниже) |
+| **Конфиг / проект** | `.env.example`, `known_words.csv.example`, `Makefile`, `pyproject.toml`, `uv.lock` |
+| **Корневые доки** | `README.md`, `QUICK_START.md`, `QUICK_START_GSHEETS.md`, `START_GENERATION.sh` |
+| **Cursor rules** | `.cursor/rules/` (опционально; полезно для AI-рефакторинга) |
+
+**Активные доки для сохранения (затем перевести на английский):**
+
+- `docs/WORD_FAMILY_PIPELINE.md` — основной док по пайплайну/экспериментам  
 - `docs/QUALITY_FILTERING_PLAN.md`  
 - `docs/REFACTOR_AND_BACKUP_PLAN.md`  
 - `docs/DEVELOPMENT_HISTORY.md`  
@@ -56,118 +56,118 @@ Steps below (sections 1–4, 7) apply **only to the new copy**, not to the curre
 - `docs/GOOGLE_SHEETS_SETUP.md`  
 - `docs/WSD_GOLD_DATASET_USAGE.md`  
 - `docs/BACKLOG_IDEAS.md`  
-- Pricing (reference): `docs/google_pricing.md`, `docs/claude_pricing.md`, `docs/openai_pricing.txt`  
+- Справка по ценам: `docs/google_pricing.md`, `docs/claude_pricing.md`, `docs/openai_pricing.txt`  
 
-Remove or don’t track: `docs/archive/` (entire tree).
+Удалить или не трекать: `docs/archive/` (целиком).
 
 ---
 
-## 3. .gitignore changes (add/ensure)
+## 3. Изменения в .gitignore (добавить/проверить)
 
-Add or confirm these so nothing below gets committed:
+Добавить или подтвердить, чтобы перечисленное не коммитилось:
 
 ```gitignore
-# Data and generated outputs (do not push)
+# Данные и сгенерированные выходы (не пушить)
 data/
 logs/
 reports/
 
-# Archive documentation (do not push)
+# Архив документации (не пушить)
 docs/archive/
 ```
 
-Keep existing ignores for: `*.parquet`, `*.csv` (except fixtures), `.env`, `*.epub`, `backups/`, `data/synset_cards/llm_cache/`, etc.
+Сохранить существующие игноры: `*.parquet`, `*.csv` (кроме фикстур), `.env`, `*.epub`, `backups/`, `data/synset_cards/llm_cache/` и т.д.
 
 ---
 
-## 4. Translation to English
+## 4. Перевод на английский
 
-### 4.1 Documentation (Markdown)
+### 4.1 Документация (Markdown)
 
-- **README.md** — full translation (currently mixed RU/EN).  
-- **QUICK_START.md**, **QUICK_START_GSHEETS.md** — translate any Russian.  
-- **docs/** (all kept files above) — translate to English:  
-  - `WORD_FAMILY_PIPELINE.md` (most content is RU),  
+- **README.md** — полный перевод (сейчас смесь RU/EN).  
+- **QUICK_START.md**, **QUICK_START_GSHEETS.md** — перевести русские части.  
+- **docs/** (все оставленные файлы выше) — перевести на английский:  
+  - `WORD_FAMILY_PIPELINE.md` (большая часть на RU),  
   - `QUALITY_FILTERING_PLAN.md`,  
   - `REFACTOR_AND_BACKUP_PLAN.md`,  
   - `DEVELOPMENT_HISTORY.md`,  
   - `GENERATION_INSTRUCTIONS.md`,  
   - `BACKLOG_IDEAS.md`,  
-  - and any other kept docs that still have Russian.
+  - и остальные оставленные доки с русским текстом.
 
-Keep technical terms consistent (e.g. “lemma”, “synset”, “pipeline”, “batch API”).
+Сохранять единообразие терминов (lemma, synset, pipeline, batch API и т.д.).
 
-### 4.2 Docstrings and code comments
+### 4.2 Docstrings и комментарии в коде
 
-- **src/eng_words/** — all module/class/function docstrings in English.  
-- Inline comments — English.  
-- **tests/** — docstrings and comments in English.  
-- **scripts/** (non-archived) — docstrings and comments in English.
+- **src/eng_words/** — все docstrings модулей/классов/функций на английском.  
+- Inline-комментарии — на английском.  
+- **tests/** — docstrings и комментарии на английском.  
+- **scripts/** (не в архиве) — docstrings и комментарии на английском.
 
-You can do this in passes: first `src/eng_words/` and `docs/`, then `tests/` and `scripts/`.
+Можно делать по шагам: сначала `src/eng_words/` и `docs/`, затем `tests/` и `scripts/`.
 
 ---
 
-## 5. Order of operations (all steps in the **new copy** only)
+## 5. Порядок действий (все шаги только в **новой копии**)
 
-1. **Copy the project**  
-   - Copy the entire project folder to a new directory (e.g. `../eng_words_github` or `../eng_words_en`).  
-   - Do **not** copy the `.git` folder (so the copy has no history).  
-   - Optionally: exclude `data/`, `logs/`, `reports/`, `docs/archive/` from the copy so they are not present at all.
+1. **Скопировать проект**  
+   - Скопировать всю папку проекта в новый каталог (например `../eng_words_github` или `../eng_words_en`).  
+   - Папку `.git` **не** копировать (у копии не будет истории).  
+   - По желанию: не копировать `data/`, `logs/`, `reports/`, `docs/archive/`, чтобы их в копии не было.
 
-2. **In the new copy: remove excluded paths (if they were copied)**  
-   - Delete: `data/`, `logs/`, `reports/`, `docs/archive/`.  
-   - Keep: `tests/fixtures/` and any small test data under `tests/` if needed.
+2. **В новой копии: удалить исключённые пути (если они попали в копию)**  
+   - Удалить: `data/`, `logs/`, `reports/`, `docs/archive/`.  
+   - Оставить: `tests/fixtures/` и при необходимости мелкие тестовые данные в `tests/`.
 
-3. **In the new copy: update .gitignore**  
-   - Add or confirm: `data/`, `logs/`, `reports/`, `docs/archive/`.  
-   - Keep existing ignores (e.g. `*.parquet`, `.env`, `*.epub`, etc.).
+3. **В новой копии: обновить .gitignore**  
+   - Добавить или подтвердить: `data/`, `logs/`, `reports/`, `docs/archive/`.  
+   - Сохранить существующие игноры (`*.parquet`, `.env`, `*.epub` и т.д.).
 
-4. **In the new copy: translate to English**  
-   - Translate README and root Markdown (QUICK_START, etc.).  
-   - Translate all kept docs under `docs/`.  
-   - Translate docstrings and comments in `src/`, `tests/`, and active `scripts/`.
+4. **В новой копии: перевести на английский**  
+   - Перевести README и корневые Markdown (QUICK_START и т.д.).  
+   - Перевести все оставленные доки в `docs/`.  
+   - Перевести docstrings и комментарии в `src/`, `tests/` и активных `scripts/`.
 
-5. **In the new copy: create fresh repo and push**  
-   - `cd <new-copy>`  
+5. **В новой копии: создать новый репо и запушить**  
+   - `cd <новая-копия>`  
    - `git init`  
    - `git add .`  
    - `git commit -m "Initial commit: English Words pipeline (refactor-ready)"`  
-   - Create a new empty repo on GitHub (no README, no .gitignore).  
+   - Создать новый пустой репозиторий на GitHub (без README, без .gitignore).  
    - `git remote add origin <github-url>`  
    - `git branch -M main`  
    - `git push -u origin main`  
 
-   Result: one commit, no history from the original project.
+   Итог: один коммит, без истории исходного проекта.
 
-6. **Verify**  
-   - In the new copy: run tests (e.g. `uv run pytest` or `make test`).  
-   - After push: clone the new repo elsewhere and confirm docs/code are in English and nothing sensitive or large is present.
+6. **Проверить**  
+   - В новой копии: запустить тесты (например `uv run pytest` или `make test`).  
+   - После пуша: клонировать новый репо в другое место и убедиться, что доки/код на английском и нет чувствительных или больших файлов.
 
 ---
 
-## 6. Copy command (example)
+## 6. Пример команды копирования
 
-From the parent of your current project:
+Из родительской папки текущего проекта:
 
 ```bash
-# Copy project but exclude .git and optionally big folders
+# Копировать проект без .git и при необходимости без больших папок
 rsync -a --exclude='.git' --exclude='data' --exclude='logs' --exclude='reports' --exclude='docs/archive' /path/to/eng_words /path/to/eng_words_github
 ```
 
-Or: copy the whole folder, then in the copy delete `.git`, `data/`, `logs/`, `reports/`, `docs/archive/` manually.  
-Keep `tests/fixtures/` in the copy so tests can run (small JSON/CSV used by tests).
+Или: скопировать папку целиком, затем в копии вручную удалить `.git`, `data/`, `logs/`, `reports/`, `docs/archive/`.  
+В копии оставить `tests/fixtures/`, чтобы тесты могли запускаться (мелкие JSON/CSV для тестов).
 
 ---
 
-## 7. Checklist before push (in the new copy)
+## 7. Чек-лист перед пушем (в новой копии)
 
-- [ ] `.gitignore` includes `data/`, `logs/`, `reports/`, `docs/archive/`.  
-- [ ] No `data/`, `logs/`, `reports/`, or `docs/archive/` in `git status`.  
-- [ ] README and all kept docs are in English.  
-- [ ] Docstrings and comments in `src/`, `tests/`, active `scripts/` are in English.  
-- [ ] `.env` and `known_words.csv` are not tracked; examples (`.example`) are.  
-- [ ] Tests pass.  
-- [ ] Backup/archive of data and archive docs exists if you need it on the other machine.
+- [ ] В `.gitignore` есть `data/`, `logs/`, `reports/`, `docs/archive/`.  
+- [ ] В `git status` нет `data/`, `logs/`, `reports/`, `docs/archive/`.  
+- [ ] README и все оставленные доки на английском.  
+- [ ] Docstrings и комментарии в `src/`, `tests/`, активных `scripts/` на английском.  
+- [ ] `.env` и `known_words.csv` не трекаются; примеры (`.example`) — трекаются.  
+- [ ] Тесты проходят.  
+- [ ] Есть бэкап/архив данных и архивных доков, если они понадобятся на другой машине.
 
-After this, the **new copy** is the only thing pushed to GitHub (single initial commit, no history). Your **current project** stays untouched in Russian with all data and history. You can do the copy and cleanup on this machine or on the VM; the VM can then do the translation and push.
+После этого в GitHub пушится **только новая копия** (один начальный коммит, без истории). **Текущий проект** остаётся без изменений, на русском, со всеми данными и историей. Копирование и очистку можно делать на этой машине или на VM; VM может затем выполнить перевод и пуш.

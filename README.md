@@ -1,160 +1,156 @@
-# English Words Learning Tool
+# English Words — инструмент для изучения слов
 
-A personal tool for extracting words from books, filtering out known ones, and creating Anki flashcards for learning English.
+Персональное приложение для извлечения слов из книг, фильтрации уже известных и создания карточек Anki для изучения английского языка.
 
-## Project description
+## Описание проекта
 
-This tool helps you learn English through reading books:
+Инструмент помогает изучать английский через чтение книг:
 
-1. **Word extraction** from book text files
-2. **Frequency analysis** — finds the most frequent words
-3. **Filtering**:
-   - Excludes words you already know
-   - Removes overly frequent (basic) words
-   - Removes overly rare or archaic words
-4. **Ranking** of candidates for learning
-5. **Anki card generation** (with future LLM integration)
+1. **Извлечение слов** из текстовых файлов книг
+2. **Анализ частотности** — находит наиболее часто встречающиеся слова
+3. **Фильтрация**:
+   - Исключает слова, которые вы уже знаете
+   - Убирает слишком частые (базовые) слова
+   - Убирает слишком редкие или устаревшие слова
+4. **Ранжирование** кандидатов для изучения
+5. **Генерация карточек Anki** (с интеграцией LLM)
 
-## Architecture
+## Архитектура
 
-The project is built as a modular text-processing pipeline:
+Проект построен как модульный пайплайн обработки текста:
 
 ```
-Book text → Tokenization → Lemmatization → Statistics → Filtering → Ranking → Export
+Текст книги → Токенизация → Лемматизация → Статистика → Фильтрация → Ранжирование → Экспорт
 ```
 
-### Key components
+### Ключевые компоненты
 
-- **Tokenization and lemmatization**: Uses spaCy for text processing
-- **Frequency analysis**: Combination of local frequency (in the book) and global frequency (in the language)
-- **Filtering**: Excluding known words via CSV or Google Sheets
-- **Phrasal verbs**: Separate handling of phrasal verbs as a distinct entity type
-- **Export**: CSV generation for Anki import
+- **Токенизация и лемматизация**: spaCy для обработки текста
+- **Частотный анализ**: комбинация локальной частоты (в книге) и глобальной (в языке)
+- **Фильтрация**: исключение известных слов через CSV или Google Sheets
+- **Фразовые глаголы**: отдельная обработка фразовых глаголов как особого типа сущностей
+- **Экспорт**: генерация CSV для импорта в Anki
 
-## High-level plan
+## Верхнеуровневый план
 
-### Phase 1: Basic text processing
-- Tokenization and lemmatization with spaCy
-- Word statistics extraction
-- Saving intermediate results (parquet)
+### Фаза 1: Базовая обработка текста
+- Токенизация и лемматизация с помощью spaCy
+- Извлечение статистики по словам
+- Сохранение промежуточных результатов (parquet)
 
-### Phase 2: Filtering and ranking
-- Integration with global frequency (wordfreq)
-- Filtering by known words (CSV)
-- Candidate ranking
+### Фаза 2: Фильтрация и ранжирование
+- Интеграция с глобальной частотностью (wordfreq)
+- Фильтрация по известным словам (CSV)
+- Ранжирование кандидатов
 
-### Phase 3: Phrasal verbs
-- Phrasal verb detection via dependency parsing
-- Processing and filtering of phrasal verbs
+### Фаза 3: Фразовые глаголы
+- Детекция фразовых глаголов через dependency parsing
+- Обработка и фильтрация фразовых глаголов
 
-### Phase 4: Export and examples
-- Sentence example extraction for each word
-- Export to Anki format (CSV)
+### Фаза 4: Экспорт и примеры
+- Извлечение примеров предложений для каждого слова
+- Экспорт в формат Anki (CSV)
 
-### Phase 5: LLM integration (future)
-- Definition and translation generation via LLM API
-- Improved Anki cards with context
+### Фаза 5: Интеграция с LLM
+- Генерация определений и переводов через LLM API
+- Улучшенные карточки Anki с контекстом
 
-## Development principles
+## Принципы разработки
 
-### 1. Modularity and testability
-- **Everything split into functions** — no monolithic scripts
-- **Each function has a single responsibility**
-- **Functions are easy to test in isolation**
+### 1. Модульность и тестируемость
+- **Всё разбито на функции** — никаких монолитных скриптов
+- **У каждой функции одна ответственность**
+- **Функции легко тестировать изолированно**
 
-### 2. Test coverage
-- **Every function is covered by tests**
-- **Integration between functions is also tested**
-- **Tests are written in parallel with the code**
+### 2. Покрытие тестами
+- **Каждая функция покрыта тестами**
+- **Интеграции между функциями тоже тестируются**
+- **Тесты пишутся параллельно с кодом**
 
-### 3. Incremental development
-- **Development proceeds in small logical blocks**
-- **After each block: testing and debugging**
-- **Only after a block works stably do we move to the next**
-- **After each block**: `git status` → `git add` → meaningful commit (Git-First Workflow)
+### 3. Поэтапная разработка
+- **Разработка ведётся небольшими логическими блоками**
+- **После каждого блока: тестирование и отладка**
+- **Только после стабильной работы блока переходим к следующему**
+- **После каждого блока**: `git status` → `git add` → осмысленный коммит (Git-First Workflow)
 
-### 4. Saving intermediate results
-- **Tokens are saved in parquet** for fast access
-- **Lemma statistics are saved separately**
-- **Allows reusing results without reprocessing**
+### 4. Сохранение промежуточных результатов
+- **Токены сохраняются в parquet** для быстрого доступа
+- **Статистика по леммам сохраняется отдельно**
+- **Позволяет переиспользовать результаты без переобработки**
 
-### 5. Simplicity and clarity
-- **Code should be understandable a year from now**
-- **Processing pipeline is linear and transparent**
-- **Minimal magic, maximum explicitness**
-- **Long texts are processed in chunks** (~250k characters) and normalized (quotes, apostrophes, invisible characters)
-- **Known words are filtered** from candidates via CSV
-- **Frequency filtering and ranking** are built into Stage 1
-- **Phrasal verbs** are written to a separate parquet when needed
-- **Candidates are filtered by frequency** and ranked by score
+### 5. Простота и ясность
+- **Код должен быть понятен через год**
+- **Пайплайн линейный и прозрачный**
+- **Минимум магии, максимум явности**
+- **Длинные тексты обрабатываются чанками** (~250k символов) с нормализацией (кавычки, апострофы, невидимые символы)
+- **Известные слова отфильтровываются** из кандидатов через CSV
+- **Частотная фильтрация и ранжирование** встроены в Stage 1
+- **Фразовые глаголы** пишутся в отдельный parquet при необходимости
+- **Кандидаты фильтруются по частоте** и ранжируются по score
 
-## Project structure
+## Структура проекта
 
 ```
 eng_words/
-├── src/eng_words/          # Application code
+├── src/eng_words/          # Код приложения
 │   ├── __init__.py
-│   ├── text_processing.py  # Tokenization, lemmatization
-│   ├── statistics.py       # Frequency counts, statistics
-│   ├── filtering.py        # Filtering by known words
-│   ├── phrasal_verbs.py    # Phrasal verb handling
+│   ├── text_processing.py  # Токенизация, лемматизация
+│   ├── statistics.py       # Частоты, статистика
+│   ├── filtering.py       # Фильтрация по известным словам
+│   ├── phrasal_verbs.py    # Обработка фразовых глаголов
 │   └── ...
-├── tests/                  # Tests
-│   ├── __init__.py
-│   ├── test_text_processing.py
-│   ├── test_statistics.py
-│   └── ...
-├── data/                   # Data
-│   ├── raw/                # Raw book texts
-│   └── processed/          # Intermediate results (parquet)
-├── anki_exports/           # Exported cards
-├── pyproject.toml          # Project configuration
+├── tests/                  # Тесты
+├── data/                   # Данные
+│   ├── raw/                # Исходные тексты книг
+│   └── processed/          # Промежуточные результаты (parquet)
+├── anki_exports/           # Экспортированные карточки
+├── pyproject.toml         # Конфигурация проекта
 └── README.md
 ```
 
-## Input data
+## Входные данные
 
-- Current primary format for books is **EPUB**
-- Files live in `data/raw/` (e.g. `data/raw/theodore-dreiser_an-american-tragedy.epub`)
-- Support for other formats (PDF, etc.) will be added as needed
+- Основной формат книг — **EPUB**
+- Файлы лежат в `data/raw/` (например `data/raw/theodore-dreiser_an-american-tragedy.epub`)
+- Поддержка других форматов (PDF и т.д.) будет добавляться по мере необходимости
 
-## Installation and usage
+## Установка и использование
 
-### Requirements
+### Требования
 - Python 3.10+
-- uv (for dependency management)
+- uv (для управления зависимостями)
 
-### Installation
+### Установка
 
 ```bash
-# Install base dependencies (required)
+# Базовые зависимости (обязательно)
 uv sync
 
-# Install with optional extras (recommended for full functionality)
-# - dev: testing and development tools
+# С опциональными экстрами (рекомендуется для полного функционала)
+# - dev: тесты и инструменты разработки
 # - wsd: Word Sense Disambiguation (sentence-transformers)
-# - llm: LLM providers for smart card generation
+# - llm: провайдеры LLM для генерации умных карточек
 uv sync --extra dev --extra llm --extra wsd
 ```
 
-**Note:** The spaCy model (`en_core_web_sm`) is automatically installed as a dependency — no manual download needed.
+**Примечание:** Модель spaCy (`en_core_web_sm`) ставится автоматически — отдельно качать не нужно.
 
-### Verify installation
+### Проверка установки
 
 ```bash
-# Test that the pipeline module is accessible
+# Проверка доступа к модулю пайплайна
 uv run python -m eng_words.pipeline --help
 
-# Run a quick test (if dev dependencies installed)
+# Быстрый прогон тестов (если установлен dev)
 uv run pytest tests/ -v -x
 
-# Verify LLM imports (if llm extra installed)
-uv run python -c "from eng_words.llm import get_provider; print('✓ LLM module OK')"
+# Проверка импорта LLM (если установлен llm)
+uv run python -c "from eng_words.llm import get_provider; print('✓ LLM модуль OK')"
 ```
 
-### Usage
+### Использование
 
-#### Full pipeline (text → Anki CSV)
+#### Полный пайплайн (текст → Anki CSV)
 
 ```bash
 uv run python -m eng_words.pipeline \
@@ -169,27 +165,27 @@ uv run python -m eng_words.pipeline \
   --phrasal-model en_core_web_sm
 ```
 
-Useful flags:
-- `--top-n` — how many lemmas/phrases go into the final Anki CSV
-- `--no-phrasals` — disable phrasal verb processing
-- `--phrasal-model` — separate spaCy model for phrasals (default: `--model-name`)
+Полезные флаги:
+- `--top-n` — сколько лемм/фраз попадает в итоговый Anki CSV
+- `--no-phrasals` — отключить обработку фразовых глаголов
+- `--phrasal-model` — отдельная модель spaCy для фразовых (по умолчанию: `--model-name`)
 
-Output files:
+Выходные файлы:
 - `data/processed/american_tragedy_tokens.parquet`
-- `data/processed/american_tragedy_lemma_stats_full.parquet` (all tokens with raw `book_freq` and `global_zipf`)
-- `data/processed/american_tragedy_lemma_stats.parquet` (filtered candidates with thresholds and `score`)
-- `data/processed/american_tragedy_phrasal_verbs.parquet` (if not using `--no-phrasals`)
-- `data/processed/american_tragedy_phrasal_verb_stats.parquet` (aggregated statistics)
-- `data/processed/anki_exports/american_tragedy_anki.csv` — ready CSV for Anki
+- `data/processed/american_tragedy_lemma_stats_full.parquet`
+- `data/processed/american_tragedy_lemma_stats.parquet`
+- `data/processed/american_tragedy_phrasal_verbs.parquet` (если не `--no-phrasals`)
+- `data/processed/american_tragedy_phrasal_verb_stats.parquet`
+- `data/processed/anki_exports/american_tragedy_anki.csv` — готовый CSV для Anki
 
-### Chunk processing and normalization
-- Text is automatically split into chunks (~250k characters) to avoid spaCy limits and save memory
-- Before tokenization, normalization is applied: invisible characters (`\ufeff`, `\u200b`, `\u00ad`) are removed; long dashes and “smart” quotes/apostrophes are replaced
-- The `max_chars` parameter for chunks can be changed in code (`tokenize_text_in_chunks`) if you need different granularity
+### Обработка чанками и нормализация
+- Текст автоматически режется на чанки (~250k символов), чтобы не упираться в лимиты spaCy и экономить память
+- Перед токенизацией выполняется нормализация: удаляются невидимые символы, длинные тире и «умные» кавычки/апострофы заменяются на обычные
+- Параметр `max_chars` для чанков можно менять в коде (`tokenize_text_in_chunks`)
 
-### Export for manual review
+### Экспорт для ручной проверки
 
-To update the CSV for review (e.g. before uploading to Google Sheets):
+Чтобы обновить CSV для ревью (например перед выгрузкой в Google Sheets):
 
 ```bash
 uv run python scripts/export_for_review.py \
@@ -199,54 +195,50 @@ uv run python scripts/export_for_review.py \
   --output data/review_export_all_next.csv
 ```
 
-- `--lemma-stats` — raw frequencies (all tokens)
-- `--score-source` — cleaned parquet with current `score` (by default a neighbouring `*_lemma_stats.parquet` is used)
-- `--status-source` — previous CSV with manual labels; statuses and tags are carried over
-- If a word ends in `-ing`, is not used as a verb in the corpus, and the base form exists, the export sets `status=ignore` and tag `auto_ing_variant` — such forms can be skipped during review
-- If a lemma is marked by spaCy as a stopword, the export adds tag `auto_stopword` for quick filtering (status left empty, can be set manually)
+- `--lemma-stats` — сырые частоты (все токены)
+- `--score-source` — parquet с текущим `score`
+- `--status-source` — предыдущий CSV с ручными метками; статусы и теги переносятся
+- Если слово оканчивается на -ing, не используется как глагол в корпусе и базовая форма есть, экспорт ставит `status=ignore` и тег `auto_ing_variant`
+- Если лемма помечена spaCy как стоп-слово, экспорт добавляет тег `auto_stopword`
 
-The output is the full list of words and phrases (including stopwords) with correct `book_freq`/`global_zipf` and scores only for “clean” candidates.
+На выходе — полный список слов и фраз с актуальными `book_freq`/`global_zipf` и score только для «чистых» кандидатов.
 
-### Known words storage
+### Хранение известных слов
 
-The tool supports two ways to store the list of known words:
+Поддерживаются два способа:
 
-#### CSV files (default)
-- Format: `lemma,status,item_type,tags` (see `known_words.csv.example`)
-- Supported statuses: `known`, `ignore`, `learning`, `maybe` (filter uses the first two)
-- Usage: `--known-words data/known_words.csv`
+#### CSV (по умолчанию)
+- Формат: `lemma,status,item_type,tags` (см. `known_words.csv.example`)
+- Статусы: `known`, `ignore`, `learning`, `maybe` (фильтр использует первые два)
+- Использование: `--known-words data/known_words.csv`
 
-#### Google Sheets (for convenient editing)
-- Automatic sync across devices
-- Easy editing in the browser
-- Usage: `--known-words gsheets://SPREADSHEET_ID/WORKSHEET_NAME`
+#### Google Sheets (для удобного редактирования)
+- Синхронизация между устройствами
+- Редактирование в браузере
+- Использование: `--known-words gsheets://SPREADSHEET_ID/WORKSHEET_NAME`
 
-**Setup:** See [docs/GOOGLE_SHEETS_SETUP.md](docs/GOOGLE_SHEETS_SETUP.md) for complete setup instructions.
+**Настройка:** см. [docs/GOOGLE_SHEETS_SETUP.md](docs/GOOGLE_SHEETS_SETUP.md)
 
-**Quick summary:**
-1. Create a Google Service Account and download JSON credentials
-2. Create a Google Sheet with headers: `lemma,status,item_type,tags`
-3. Share the sheet with the Service Account email (role: Editor)
-4. Set `GOOGLE_APPLICATION_CREDENTIALS` environment variable to point to the credentials file
-5. Use `gsheets://SPREADSHEET_ID/WORKSHEET_NAME` in the pipeline
+Кратко:
+1. Создать Service Account в Google и скачать JSON-ключ
+2. Создать таблицу с заголовками: `lemma,status,item_type,tags`
+3. Дать доступ на редактирование email сервисного аккаунта
+4. Задать переменную окружения `GOOGLE_APPLICATION_CREDENTIALS`
+5. Указать в пайплайне `gsheets://SPREADSHEET_ID/WORKSHEET_NAME`
 
-**Google Sheets format:** The sheet must have headers: `lemma,status,item_type,tags` (same as CSV). If the worksheet does not exist, it will be created.
+### Частотная фильтрация и ранжирование
+- Пороги по книге (`--min-book-freq`), по глобальной частоте (`--min-zipf`, `--max-zipf`) отсекают слишком редкие и слишком частые слова
+- После фильтрации добавляется `score`: нормализованная частота × бонус за редкость (центр около Zipf ≈ 4.0)
+- Выходной parquet отсортирован по `score`
 
-### Frequency filtering and ranking
-- Book threshold (`--min-book-freq`), global min (`--min-zipf`) and max (`--max-zipf`) help drop too rare or too frequent words
-- After filtering, `score` is added: normalized frequency × rarity boost (centered around Zipf ≈ 4.0)
-- Output parquet is sorted by `score` (most useful words first)
-
-### Phrasal verb detection
-- Flag `--detect-phrasals` enables detection of `verb + particle` via spaCy dependency parsing
-- You can specify a separate model (`--phrasal-model`); otherwise `--model-name` is used
-- Results:
-  - `*_phrasal_verbs.parquet` — found occurrences (`book`, `sentence_id`, `phrasal`, `verb`, `particle`, `sentence_text`)
-  - `*_phrasal_verb_stats.parquet` — aggregated stats with known-words filter and ranking
+### Детекция фразовых глаголов
+- Флаг `--detect-phrasals` включает поиск «глагол + частица» через dependency parsing spaCy
+- Можно указать отдельную модель (`--phrasal-model`), иначе используется `--model-name`
+- Результаты: `*_phrasal_verbs.parquet`, `*_phrasal_verb_stats.parquet`
 
 ### Word Sense Disambiguation (WSD)
 
-The tool supports disambiguating word meanings via WSD:
+Поддерживается различение значений слов в контексте:
 
 ```bash
 uv run python -m eng_words.pipeline \
@@ -254,38 +246,26 @@ uv run python -m eng_words.pipeline \
   --book-name my_book \
   --output-dir data/processed \
   --enable-wsd \
-  --min-sense-freq 5 \    # Minimum sense frequency
-  --max-senses 3          # Max senses per word
+  --min-sense-freq 5 \
+  --max-senses 3
 ```
 
-**What WSD does:**
-- Determines the specific sense of a word in context (e.g. "bank" as financial institution vs. river bank)
-- Groups senses into 43 categories (supersenses): `noun.person`, `verb.motion`, `verb.social`, etc.
-- Lets you filter and study words by sense
+**Что делает WSD:**
+- Определяет конкретное значение слова в контексте (например «bank» = банк или берег)
+- Группирует значения в 43 категории (supersenses): `noun.person`, `verb.motion` и т.д.
+- Позволяет фильтровать и учить слова по значению
 
-**Output files:**
-- `{book}_sense_tokens.parquet` — tokens with sense annotations (`synset_id`, `supersense`, `sense_confidence`)
-- `{book}_supersense_stats.parquet` — (lemma, supersense) statistics with frequencies and shares
+**Выходные файлы:**
+- `{book}_sense_tokens.parquet` — токены с разметкой значения (`synset_id`, `supersense`, `sense_confidence`)
+- `{book}_supersense_stats.parquet` — статистика (lemma, supersense) с частотами и долями
 
-**Export for manual review:**
-```bash
-uv run python scripts/export_for_review.py \
-  --supersense-stats data/processed/my_book_supersense_stats.parquet \
-  --sense-tokens data/processed/my_book_sense_tokens.parquet \
-  --output review_export_supersenses.csv
-```
+**Экспорт для ревью:** см. пример в документации по `scripts/export_for_review.py` с `--supersense-stats` и `--sense-tokens`.
 
-**Example result:**
-| lemma | supersense | sense_freq | definition | example | status |
-|-------|------------|------------|------------|---------|--------|
-| run | verb.motion | 17 | move fast by using legs | He ran quickly. | |
-| run | verb.social | 10 | be in charge of | She runs the company. | |
+**Подробнее:** [docs/WSD_GOLD_DATASET_USAGE.md](docs/WSD_GOLD_DATASET_USAGE.md)
 
-**Detailed docs:** See [docs/WSD_GOLD_DATASET_USAGE.md](docs/WSD_GOLD_DATASET_USAGE.md) and related docs.
+### Генерация умных карточек (LLM)
 
-### Smart card generation (LLM-powered)
-
-Automatic generation of Anki cards using an LLM:
+Автоматическое создание карточек Anki с помощью LLM:
 
 ```bash
 uv run python -m eng_words.pipeline \
@@ -298,72 +278,58 @@ uv run python -m eng_words.pipeline \
   --top-n 500
 ```
 
-**What the Smart Card Generator does:**
-- Picks 1–2 best in-context examples from the book per word
-- Detects and excludes examples with the wrong sense (WSD check)
-- Generates a simple definition (B1–B2 level)
-- Produces a translation for the specific sense
-- Generates an extra example sentence
+**Что делает Smart Card Generator:**
+- Выбирает 1–2 лучших примера из книги на слово
+- Отсекает примеры с неподходящим значением (проверка WSD)
+- Генерирует простое определение (уровень B1–B2)
+- Даёт перевод для данного значения
+- Генерирует дополнительное примерное предложение
 
-**LLM providers:**
-- `gemini` (default) — Gemini 3 Flash
+**Провайдеры LLM:**
+- `gemini` (по умолчанию) — Gemini 3 Flash
 - `openai` — GPT-5-mini
 - `anthropic` — Claude Haiku 4.5
 
-**Output files:**
-- `{book}_smart_cards.json` — full card data
-- `anki_exports/{book}_smart_anki.csv` — ready CSV for Anki
+**Выходные файлы:**
+- `{book}_smart_cards.json` — полные данные карточек
+- `anki_exports/{book}_smart_anki.csv` — готовый CSV для Anki
 
-**Example card:**
-```json
-{
-  "lemma": "break",
-  "supersense": "verb.change",
-  "selected_examples": ["The glass will break if you drop it."],
-  "excluded_examples": ["Don't break the rules."],
-  "simple_definition": "to separate into pieces",
-  "translation_ru": "to break, to smash",
-  "generated_example": "Be careful not to break the vase."
-}
-```
+**Требования:**
+- Для разметки значений нужен `--enable-wsd`
+- API-ключ провайдера в `.env` (`GOOGLE_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`)
+- Кэширование: повторные запуски не делают лишних запросов к API для тех же входов
 
-**Requirements:**
-- `--enable-wsd` is required for WSD annotations
-- Provider API key in `.env` (`GOOGLE_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`)
-- Caching: repeated runs do not make new API calls for the same inputs
+## Модель данных
 
-## Data model
+### Хранение известных слов
 
-### Known words storage
+Таблица личного словаря (CSV или Google Sheets):
 
-Table for your personal vocabulary (CSV or Google Sheets):
+| lemma | item_type | status | tags | ... |
+|-------|-----------|--------|------|-----|
+| run | word | known | A2, basic_verbs | ... |
+| give up | phrasal_verb | learning | B1, phrasal | ... |
 
-| lemma | item_type | status | tags | created_at | last_seen_in_book | examples_count | notes |
-|-------|-----------|--------|------|------------|-------------------|----------------|-------|
-| run | word | known | A2, basic_verbs | ... | ... | 5 | |
-| give up | phrasal_verb | learning | B1, phrasal | ... | ... | 3 | |
-
-Where:
 - `status`: `known`, `learning`, `ignore`, `maybe`
 - `item_type`: `word`, `phrasal_verb`, `ngram`
-- `tags`: levels, books, topics
+- `tags`: уровни, книги, темы
 
-### Intermediate files
+### Промежуточные файлы
 
-- `tokens.parquet`: all tokens with metadata
-- `lemma_stats_full.parquet`: all lemmas with raw `book_freq` and `global_zipf`
-- `lemma_stats.parquet`: filtered candidates (filters, known words, `score`)
+- `tokens.parquet` — все токены с метаданными
+- `lemma_stats_full.parquet` — все леммы с сырыми `book_freq` и `global_zipf`
+- `lemma_stats.parquet` — отфильтрованные кандидаты с `score`
 
-## Technologies
+## Технологии
 
-- **spaCy**: NLP processing, lemmatization, dependency parsing
-- **pandas**: Data handling
-- **wordfreq**: Global word frequency
-- **pyarrow**: Parquet files
-- **pytest**: Testing
-- **sentence-transformers**: Embeddings for WSD (optional)
-- **nltk**: WordNet for word senses (optional)
+- **spaCy**: NLP, лемматизация, dependency parsing
+- **pandas**: работа с данными
+- **wordfreq**: глобальная частотность слов
+- **pyarrow**: Parquet
+- **pytest**: тесты
+- **sentence-transformers**: эмбеддинги для WSD (опционально)
+- **nltk**: WordNet для значений слов (опционально)
 
-## License
+## Лицензия
 
-Personal project for learning English.
+Личный проект для изучения английского.

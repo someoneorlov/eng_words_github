@@ -1,22 +1,22 @@
-# Safe cleanup and refactoring plan
+# План безопасной уборки и рефакторинга
 
-> **Status:** ✅ COMPLETED (2026-01-21)  
-> **Goal:** tidy the repository, preserve artifacts, and keep the pipeline working.
+> **Статус:** ✅ ЗАВЕРШЁН (2026-01-21)  
+> **Цель:** навести порядок в репозитории, сохранить артефакты и не сломать пайплайн.
 
 ---
 
-## Refactoring summary
+## Итоги рефакторинга
 
-### What was done
+### Что сделано
 
-| Component | Before | After | Change |
-|-----------|--------|-------|--------|
-| Python files (excluding archive) | 150 | 110 | -40 |
-| Scripts | 51 | 10 | -41 |
-| Documents | 60+ | 12 | -48 |
-| Data | ~200 MB | 156 MB | -44 MB |
+| Компонент | Было | Стало | Изменение |
+|-----------|------|-------|-----------|
+| Python-файлов (без архива) | 150 | 110 | -40 |
+| Скриптов | 51 | 10 | -41 |
+| Документов | 60+ | 12 | -48 |
+| Данных | ~200 MB | 156 MB | -44 MB |
 
-### Commits (8)
+### Коммиты (8)
 
 ```
 190fa5f chore: archive 41 more scripts, cleanup temp data
@@ -31,54 +31,54 @@ e263b21 refactor: archive deprecated modules and scripts
 
 ---
 
-## Final project structure
+## Итоговая структура проекта
 
-### Scripts (10)
+### Скрипты (10)
 
-| Script | Purpose |
-|--------|---------|
-| `run_synset_card_generation.py` | Main card generation pipeline |
-| `compare_cards.py` | Result comparison (regression tests) |
-| `run_full_generation.sh` | Run full generation |
-| `check_test_progress.sh` | Progress monitoring |
-| `monitor_generation.sh` | Generation monitoring |
-| `run_gold_labeling.py` | Labeling for Golden Dataset |
-| `eval_wsd_on_gold.py` | WSD evaluation on Golden Dataset |
-| `freeze_gold_dataset.py` | Freeze Golden Dataset |
-| `verify_gold_checksum.py` | Verify checksum |
-| `benchmark_wsd.py` | WSD benchmark |
+| Скрипт | Назначение |
+|--------|------------|
+| `run_synset_card_generation.py` | Основной пайплайн генерации карточек |
+| `compare_cards.py` | Сравнение результатов (регресс-тесты) |
+| `run_full_generation.sh` | Полный запуск генерации |
+| `check_test_progress.sh` | Мониторинг прогресса |
+| `monitor_generation.sh` | Мониторинг генерации |
+| `run_gold_labeling.py` | Разметка Golden Dataset |
+| `eval_wsd_on_gold.py` | Оценка WSD на Golden Dataset |
+| `freeze_gold_dataset.py` | Заморозка Golden Dataset |
+| `verify_gold_checksum.py` | Проверка контрольной суммы |
+| `benchmark_wsd.py` | Бенчмарк WSD |
 
-### Documentation (12)
+### Документация (12)
 
-| Document | Purpose |
-|----------|---------|
-| `DEVELOPMENT_HISTORY.md` | Development history |
-| `QUALITY_FILTERING_PLAN.md` | Card quality improvement plan |
-| `REFACTOR_AND_BACKUP_PLAN.md` | This plan (completed) |
-| `BACKLOG_IDEAS.md` | Future ideas |
-| `GENERATION_INSTRUCTIONS.md` | Generation instructions |
-| `WSD_GOLD_DATASET_USAGE.md` | Golden Dataset usage |
-| `CREDENTIALS_EXPLANATION.md` | Credentials explanation |
-| `GOOGLE_SHEETS_SETUP.md` | Google Sheets setup |
-| `LLM_API_KEYS_SETUP.md` | API keys setup |
-| `claude_pricing.md` | Claude pricing reference |
-| `google_pricing.md` | Gemini pricing reference |
-| `openai_pricing.txt` | OpenAI pricing reference |
+| Документ | Назначение |
+|----------|------------|
+| `DEVELOPMENT_HISTORY.md` | История разработки |
+| `QUALITY_FILTERING_PLAN.md` | План улучшения качества карточек |
+| `REFACTOR_AND_BACKUP_PLAN.md` | Этот план (завершён) |
+| `BACKLOG_IDEAS.md` | Идеи на будущее |
+| `GENERATION_INSTRUCTIONS.md` | Инструкции по генерации |
+| `WSD_GOLD_DATASET_USAGE.md` | Использование Golden Dataset |
+| `CREDENTIALS_EXPLANATION.md` | Объяснение учётных данных |
+| `GOOGLE_SHEETS_SETUP.md` | Настройка Google Sheets |
+| `LLM_API_KEYS_SETUP.md` | Настройка API-ключей |
+| `claude_pricing.md` | Справка по ценам Claude |
+| `google_pricing.md` | Справка по ценам Gemini |
+| `openai_pricing.txt` | Справка по ценам OpenAI |
 
-### Archives
+### Архивы
 
-- `src/eng_words/_archive/` — deprecated modules (cache.py, card_generator.py, evaluator.py, prompts.py, fallback.py)
-- `scripts/_archive/` — 53 one-off scripts
-- `tests/_archive/` — tests for archived modules
-- `docs/archive/2026-01-21/` — 55 completed documents
+- `src/eng_words/_archive/` — устаревшие модули (cache.py, card_generator.py, evaluator.py, prompts.py, fallback.py)
+- `scripts/_archive/` — 53 разовых скрипта
+- `tests/_archive/` — тесты для архивных модулей
+- `docs/archive/2026-01-21/` — 55 завершённых документов
 
 ---
 
-## Regression tests
+## Регресс-тесты
 
-### How to run
+### Как запускать
 
-**Replay (no LLM calls, with cache):**
+**Replay (без вызовов LLM, с кэшем):**
 ```bash
 rm -f data/synset_cards/synset_smart_cards_*.json
 uv run python scripts/run_synset_card_generation.py 100
@@ -87,19 +87,19 @@ uv run python scripts/compare_cards.py \
   --actual data/synset_cards/
 ```
 
-**Baseline:** `backups/2026-01-19/benchmark_100/` — 54 cards
+**Эталон:** `backups/2026-01-19/benchmark_100/` — 54 карточки
 
-### Last run results
+### Результаты последнего прогона
 
-- ✅ Unit tests: 697 passed
-- ✅ Replay 100: 54 cards identical to baseline
-- ✅ Live smoke 10: 5 cards, 100% with examples
+- ✅ Unit-тесты: 697 passed
+- ✅ Replay 100: 54 карточки совпадают с эталоном
+- ✅ Live smoke 10: 5 карточек, 100% с примерами
 
 ---
 
-## Next steps
+## Дальнейшие шаги
 
-See `QUALITY_FILTERING_PLAN.md` — remaining:
-1. Run on full dataset (7,872 cards)
-2. Analyze results
-3. Final documentation
+См. `QUALITY_FILTERING_PLAN.md` — остаётся:
+1. Прогнать на полном датасете (7 872 карточки)
+2. Проанализировать результаты
+3. Финальная документация
