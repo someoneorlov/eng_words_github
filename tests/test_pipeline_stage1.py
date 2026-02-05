@@ -46,21 +46,36 @@ def test_process_book_stage1_creates_parquet(tmp_path: Path) -> None:
     token_sids = set(tokens_df["sentence_id"].unique())
     sentence_sids = set(sentences_df["sentence_id"].unique())
     assert token_sids.issubset(sentence_sids), "tokens.sentence_id must be subset of sentences.sentence_id"
-    # Written parquet uses columns sentence_id, text (Pipeline B contract)
+    # Written parquet: sentence_id + text (Pipeline B contract); consistent with tokens
     sentences_on_disk = pd.read_parquet(sentences_path)
-    assert list(sentences_on_disk.columns) == ["sentence_id", "text"]
+    assert list(sentences_on_disk.columns) == ["sentence_id", "text"], (
+        "sentences.parquet must contain sentence_id and text"
+    )
+    assert sentences_on_disk["sentence_id"].is_unique
+    disk_sids = set(sentences_on_disk["sentence_id"].unique())
+    assert token_sids.issubset(disk_sids), (
+        "tokens.sentence_id must be subset of sentences.sentence_id"
+    )
 
-    # Stage 1 manifest
+    # Stage 1 manifest (required fields per PIPELINE_B_FIXES_PLAN)
     manifest_path = result["manifest_path"]
     assert manifest_path.exists()
     assert manifest_path.name == "stage1_manifest.json"
     with open(manifest_path, encoding="utf-8") as f:
         manifest = json.load(f)
+    required_manifest_keys = [
+        "schema_version", "created_at", "spacy_model_name", "spacy_version",
+        "token_count", "sentence_count",
+    ]
+    for key in required_manifest_keys:
+        assert key in manifest, f"manifest must contain '{key}'"
     assert manifest.get("schema_version") == "1"
-    assert "created_at" in manifest
-    assert "spacy_model" in manifest
     assert manifest.get("token_count") == len(tokens_df)
     assert manifest.get("sentence_count") == len(sentences_df)
+    # Optional checksums (deterministic runs)
+    if "file_checksums" in manifest:
+        assert "tokens_sha256" in manifest["file_checksums"]
+        assert "sentences_sha256" in manifest["file_checksums"]
 
 
 def test_process_book_stage1_handles_large_txt(tmp_path: Path) -> None:

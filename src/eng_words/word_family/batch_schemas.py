@@ -21,6 +21,7 @@ class BatchPaths:
     requests: Path
     results: Path
     lemma_examples: Path
+    lemma_pos_per_example: Path
     batch_info: Path
     download_log: Path
     retry_cache: Path
@@ -32,6 +33,7 @@ class BatchPaths:
             requests=batch_dir / "requests.jsonl",
             results=batch_dir / "results.jsonl",
             lemma_examples=batch_dir / "lemma_examples.json",
+            lemma_pos_per_example=batch_dir / "lemma_pos_per_example.json",
             batch_info=batch_dir / "batch_info.json",
             download_log=batch_dir / "download_log.json",
             retry_cache=batch_dir / "retry_cache.jsonl",

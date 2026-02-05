@@ -4,6 +4,7 @@ import json
 import pytest
 
 from eng_words.word_family.batch_core import (
+    _format_pos_distribution,
     build_prompt,
     build_retry_prompt,
     choose_retry_candidates,
@@ -26,13 +27,30 @@ class TestBuildPrompt:
         assert "run" in prompt
         assert "1. I run." in prompt
         assert "POS distribution" in prompt
-        assert "NOUN 1" in prompt
-        assert "VERB 2" in prompt
+        # Stable percentage format (golden)
+        assert "NOUN 33%" in prompt
+        assert "VERB 67%" in prompt
 
     def test_pos_distribution_none_unchanged(self):
         prompt = build_prompt("go", ["Go away."])
         assert "go" in prompt
         assert "POS distribution" not in prompt
+
+    def test_format_pos_distribution_stable_golden(self):
+        """Golden test: format is deterministic and stable for matching."""
+        out = _format_pos_distribution({"VERB": 80, "NOUN": 20})
+        assert out == "NOUN 20%, VERB 80%"
+        out2 = _format_pos_distribution({"ADJ": 1, "NOUN": 1, "VERB": 2})
+        assert out2 == "ADJ 25%, NOUN 25%, VERB 50%"
+
+    def test_pos_distribution_prompt_snippet_golden(self):
+        """Golden test: exact POS hint line in prompt for regression."""
+        prompt = build_prompt(
+            "run",
+            ["I run.", "A morning run."],
+            pos_distribution={"VERB": 1, "NOUN": 1},
+        )
+        assert "POS distribution in the examples above: NOUN 50%, VERB 50%." in prompt
 
 
 class TestExtractJsonFromResponseText:
@@ -199,3 +217,45 @@ class TestMergeRetryResults:
         assert len(run_cards) == 1
         assert run_cards[0]["definition_en"] == "single after retry"
         assert len([c for c in out if c["lemma"] == "go"]) == 1
+
+
+class TestParseOneResultHeadword:
+    """Stage 3: invalid headword (not in examples) is stripped by parse_one_result."""
+
+    def test_invalid_headword_stripped(self):
+        lemma_examples = {"look": ["I look up the word."]}
+        raw = {
+            "cards": [
+                {
+                    "headword": "look sideways",
+                    "definition_en": "search",
+                    "definition_ru": "искать",
+                    "part_of_speech": "verb",
+                    "selected_example_indices": [1],
+                }
+            ]
+        }
+        resp = {"candidates": [{"content": {"parts": [{"text": json.dumps(raw)}]}}]}
+        lemma, cards, err = parse_one_result("lemma:look", resp, lemma_examples)
+        assert err is None
+        assert len(cards) == 1
+        assert "headword" not in cards[0]
+
+    def test_valid_headword_kept(self):
+        lemma_examples = {"look": ["I look up the word.", "We look up the address."]}
+        raw = {
+            "cards": [
+                {
+                    "headword": "look up",
+                    "definition_en": "search",
+                    "definition_ru": "искать",
+                    "part_of_speech": "verb",
+                    "selected_example_indices": [1, 2],
+                }
+            ]
+        }
+        resp = {"candidates": [{"content": {"parts": [{"text": json.dumps(raw)}]}}]}
+        lemma, cards, err = parse_one_result("lemma:look", resp, lemma_examples)
+        assert err is None
+        assert len(cards) == 1
+        assert cards[0].get("headword") == "look up"

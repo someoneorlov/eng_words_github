@@ -23,6 +23,7 @@ class TestBatchPaths:
         assert paths.requests == tmp_path / "requests.jsonl"
         assert paths.results == tmp_path / "results.jsonl"
         assert paths.lemma_examples == tmp_path / "lemma_examples.json"
+        assert paths.lemma_pos_per_example == tmp_path / "lemma_pos_per_example.json"
         assert paths.batch_info == tmp_path / "batch_info.json"
         assert paths.download_log == tmp_path / "download_log.json"
         assert paths.retry_cache == tmp_path / "retry_cache.jsonl"

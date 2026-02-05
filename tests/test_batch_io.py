@@ -18,6 +18,7 @@ from eng_words.word_family.batch_io import (
     load_retry_cache,
     parse_results,
     read_lemma_examples,
+    read_lemma_pos_per_example,
     read_sentences,
     read_tokens,
     render_requests,
@@ -125,6 +126,7 @@ class TestRenderRequests:
         render_requests(config)
         assert (batch_dir / "requests.jsonl").exists()
         assert (batch_dir / "lemma_examples.json").exists()
+        assert (batch_dir / "lemma_pos_per_example.json").exists()
 
     def test_lemma_order_stable_and_limit_applied(self, tmp_path: Path):
         tok_path, sent_path = _make_tokens_sentences(tmp_path)
@@ -204,6 +206,20 @@ class TestReadLemmaExamples:
     def test_missing_file_raises(self, tmp_path: Path):
         with pytest.raises(FileNotFoundError):
             read_lemma_examples(tmp_path / "missing.json")
+
+
+class TestReadLemmaPosPerExample:
+    """lemma_pos_per_example.json: optional; used for POS mismatch QC gate."""
+
+    def test_missing_file_returns_empty(self, tmp_path: Path):
+        out = read_lemma_pos_per_example(tmp_path / "missing.json")
+        assert out == {}
+
+    def test_returns_dict_of_lists(self, tmp_path: Path):
+        path = tmp_path / "lemma_pos_per_example.json"
+        path.write_text(json.dumps({"run": ["VERB", "NOUN"], "go": ["VERB"]}, ensure_ascii=False), encoding="utf-8")
+        out = read_lemma_pos_per_example(path)
+        assert out == {"run": ["VERB", "NOUN"], "go": ["VERB"]}
 
 
 class TestParseResults:
@@ -309,6 +325,125 @@ class TestParseResults:
         log = json.loads((batch_dir / "download_log.json").read_text(encoding="utf-8"))
         assert "lemmas_with_zero_cards" in log
         assert "run" in log["lemmas_with_zero_cards"]
+
+    def test_strict_drops_card_lemma_not_in_example(self, tmp_path: Path):
+        """Stage 4: strict mode drops card when lemma not in every example; schema and stats valid."""
+        batch_dir = tmp_path / "batch_b"
+        batch_dir.mkdir()
+        lemma_ex = {"run": ["The weather is nice."]}
+        write_json(batch_dir / "lemma_examples.json", lemma_ex, ensure_ascii=False)
+        raw = {
+            "cards": [
+                {
+                    "meaning_id": 1,
+                    "definition_en": "move fast",
+                    "definition_ru": "бежать",
+                    "part_of_speech": "verb",
+                    "selected_example_indices": [1],
+                    "generated_example": "He runs.",
+                }
+            ],
+            "ignored_indices": [],
+            "ignore_reasons": {},
+        }
+        with open(batch_dir / "results.jsonl", "w", encoding="utf-8") as f:
+            f.write(json.dumps({"key": "lemma:run", "response": {"candidates": [{"content": {"parts": [{"text": json.dumps(raw)}]}}]}}, ensure_ascii=False) + "\n")
+        config = BatchConfig(
+            tokens_path=tmp_path / "t.parquet",
+            sentences_path=tmp_path / "s.parquet",
+            batch_dir=batch_dir,
+            output_cards_path=tmp_path / "cards.json",
+            strict=True,
+        )
+        parse_results(config)
+        data = json.loads((tmp_path / "cards.json").read_text(encoding="utf-8"))
+        assert "cards" in data
+        assert "stats" in data
+        assert len(data["cards"]) == 0
+        assert data["stats"]["cards_generated"] == 0
+        validation_errors = data.get("validation_errors", [])
+        assert any(e.get("error_type") == "lemma_not_in_example" for e in validation_errors)
+
+    def test_strict_drops_card_pos_mismatch(self, tmp_path: Path):
+        """Stage 5: when lemma_pos_per_example exists, card claiming POS not in selected examples is dropped."""
+        batch_dir = tmp_path / "batch_d"
+        batch_dir.mkdir()
+        lemma_ex = {"run": ["He runs.", "A morning run."]}
+        write_json(batch_dir / "lemma_examples.json", {"run": [{"sentence_id": 1, "text": "He runs."}, {"sentence_id": 2, "text": "A morning run."}]}, ensure_ascii=False)
+        write_json(batch_dir / "lemma_pos_per_example.json", {"run": ["NOUN", "NOUN"]}, ensure_ascii=False)
+        raw = {
+            "cards": [
+                {
+                    "meaning_id": 1,
+                    "definition_en": "move fast",
+                    "definition_ru": "бежать",
+                    "part_of_speech": "verb",
+                    "selected_example_indices": [1, 2],
+                    "generated_example": "He runs.",
+                }
+            ],
+            "ignored_indices": [],
+            "ignore_reasons": {},
+        }
+        with open(batch_dir / "results.jsonl", "w", encoding="utf-8") as f:
+            f.write(json.dumps({"key": "lemma:run", "response": {"candidates": [{"content": {"parts": [{"text": json.dumps(raw)}]}}]}}, ensure_ascii=False) + "\n")
+        config = BatchConfig(
+            tokens_path=tmp_path / "t.parquet",
+            sentences_path=tmp_path / "s.parquet",
+            batch_dir=batch_dir,
+            output_cards_path=tmp_path / "cards.json",
+            strict=True,
+        )
+        parse_results(config)
+        data = json.loads((tmp_path / "cards.json").read_text(encoding="utf-8"))
+        assert len(data["cards"]) == 0
+        validation_errors = data.get("validation_errors", [])
+        assert any(e.get("error_type") == "pos_mismatch" for e in validation_errors)
+
+    def test_strict_drops_card_duplicate_sense(self, tmp_path: Path):
+        """Stage 6: two cards for same lemma with very similar definition_en → one dropped."""
+        batch_dir = tmp_path / "batch_dup"
+        batch_dir.mkdir()
+        write_json(
+            batch_dir / "lemma_examples.json",
+            {"run": [{"sentence_id": 1, "text": "He runs."}, {"sentence_id": 2, "text": "A morning run."}]},
+            ensure_ascii=False,
+        )
+        raw = {
+            "cards": [
+                {
+                    "meaning_id": 1,
+                    "definition_en": "to move quickly on foot",
+                    "definition_ru": "бежать",
+                    "part_of_speech": "verb",
+                    "selected_example_indices": [1],
+                },
+                {
+                    "meaning_id": 2,
+                    "definition_en": "to move quickly on foot.",
+                    "definition_ru": "бежать",
+                    "part_of_speech": "verb",
+                    "selected_example_indices": [2],
+                },
+            ],
+            "ignored_indices": [],
+            "ignore_reasons": {},
+        }
+        with open(batch_dir / "results.jsonl", "w", encoding="utf-8") as f:
+            f.write(json.dumps({"key": "lemma:run", "response": {"candidates": [{"content": {"parts": [{"text": json.dumps(raw)}]}}]}}, ensure_ascii=False) + "\n")
+        config = BatchConfig(
+            tokens_path=tmp_path / "t.parquet",
+            sentences_path=tmp_path / "s.parquet",
+            batch_dir=batch_dir,
+            output_cards_path=tmp_path / "cards.json",
+            strict=True,
+        )
+        parse_results(config)
+        data = json.loads((tmp_path / "cards.json").read_text(encoding="utf-8"))
+        assert len(data["cards"]) == 1
+        assert data["cards"][0]["definition_en"] == "to move quickly on foot"
+        validation_errors = data.get("validation_errors", [])
+        assert any(e.get("error_type") == "duplicate_sense" for e in validation_errors)
 
 
 class TestCreateBatch:
@@ -624,7 +759,8 @@ class TestDownloadBatch:
         assert data["cards"][0]["lemma"] == "run"
 
     def test_retry_empty_uses_cache_or_api_and_merges(self, tmp_path: Path):
-        """from_file=True, one card with empty examples; retry via cache or mock API merges new cards."""
+        """from_file=True, one card with empty examples; retry via cache or mock API merges new cards.
+        Uses strict=False so the card with empty examples is kept (for retry merge test); strict=True would drop it."""
         batch_dir = tmp_path / "batch_b"
         batch_dir.mkdir()
         lemma_ex = {"run": ["He runs.", "She runs."]}
@@ -652,6 +788,7 @@ class TestDownloadBatch:
             sentences_path=tmp_path / "s.parquet",
             batch_dir=batch_dir,
             output_cards_path=output_cards,
+            strict=False,
         )
         download_batch(config, from_file=True, retry_empty=False, retry_thinking=False)
         assert len(json.loads(output_cards.read_text(encoding="utf-8"))["cards"]) == 1

@@ -93,13 +93,17 @@ def load_sentences(
     return sentences
 
 
-def sample_sentences(tokens: pd.DataFrame, n: int = SAMPLE_SIZE) -> pd.DataFrame:
-    """Sample n random sentences and return their tokens."""
+def sample_sentences(
+    tokens: pd.DataFrame,
+    n: int = SAMPLE_SIZE,
+    random_state: int = RANDOM_STATE,
+) -> pd.DataFrame:
+    """Sample n random sentences and return their tokens. Use random_state for reproducibility."""
     all_sentence_ids = tokens["sentence_id"].drop_duplicates()
     logger.info(f"Total unique sentences: {len(all_sentence_ids):,}")
 
-    # Random sample
-    sample_sids = all_sentence_ids.sample(n=n, random_state=RANDOM_STATE)
+    # Random sample (fixed seed => same sample every time)
+    sample_sids = all_sentence_ids.sample(n=n, random_state=random_state)
     logger.info(f"Sampled {len(sample_sids):,} sentences")
 
     # Filter tokens
@@ -176,6 +180,12 @@ def parse_args():
         default=DATA_DIR,
         help="Base data directory (default: data)",
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=RANDOM_STATE,
+        help=f"Random seed for sentence sampling (default {RANDOM_STATE}); same seed => same sample",
+    )
     return parser.parse_args()
 
 
@@ -200,8 +210,8 @@ def main():
             f"Missing in sentences: {len(missing)} ids. Re-run Stage 1 to rebuild outputs."
         )
 
-    # 2. Sample sentence_id (deterministic: RANDOM_STATE)
-    tokens_sample = sample_sentences(tokens, args.size)
+    # 2. Sample sentence_id (deterministic when --seed fixed; default 42)
+    tokens_sample = sample_sentences(tokens, n=args.size, random_state=args.seed)
     sample_sids = tokens_sample["sentence_id"].drop_duplicates()
     sentences_sample = filter_sentences_by_ids(sentences, sample_sids)
 

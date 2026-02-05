@@ -569,6 +569,11 @@ def group_examples_by_lemma(
 
         if valid_pairs:
             sentence_ids, examples = zip(*valid_pairs)
+            # POS of the lemma in each sentence (first occurrence per sentence), for POS-QC gate
+            pos_per_example = []
+            for sid in sentence_ids:
+                s_pos = lemma_tokens[lemma_tokens["sentence_id"] == sid]["pos"]
+                pos_per_example.append(s_pos.iloc[0] if len(s_pos) else "UNKNOWN")
 
             lemma_data.append(
                 {
@@ -576,6 +581,7 @@ def group_examples_by_lemma(
                     "examples": list(examples),
                     "sentence_ids": list(sentence_ids),
                     "pos_variants": lemma_tokens["pos"].unique().tolist(),
+                    "pos_per_example": pos_per_example,
                     "example_count": len(examples),
                 }
             )

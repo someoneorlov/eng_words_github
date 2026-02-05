@@ -36,7 +36,14 @@ from eng_words.word_family.batch_schemas import (
 )
 from eng_words.word_family import batch_api
 from eng_words.word_family.clusterer import group_examples_by_lemma
-from eng_words.word_family.batch_qc import cards_lemma_not_in_example, check_qc_threshold
+from eng_words.word_family.batch_qc import (
+    cards_lemma_not_in_example,
+    check_qc_threshold,
+    get_cards_failing_duplicate_sense,
+    get_cards_failing_lemma_in_example,
+    get_cards_failing_pos_mismatch,
+)
+from eng_words.word_family.contract import assert_contract_invariants
 
 
 def read_tokens(tokens_path: Path) -> pd.DataFrame:
@@ -82,6 +89,20 @@ def read_lemma_examples(path: Path) -> dict[str, list[str]]:
             # v1: list of strings
             out[lemma] = [str(t) for t in raw]
     return out
+
+
+def read_lemma_pos_per_example(path: Path) -> dict[str, list[str]]:
+    """Load lemma_pos_per_example.json: lemma -> list of POS (one per example, same order as lemma_examples).
+    If file is missing (e.g. old batch), returns {}. Used for POS mismatch QC gate.
+    """
+    path = Path(path)
+    if not path.exists():
+        return {}
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    if not isinstance(data, dict):
+        return {}
+    return {k: list(v) if isinstance(v, list) else [] for k, v in data.items()}
 
 
 def load_lemma_groups(config: BatchConfig) -> tuple[pd.DataFrame, dict[str, list[str]]]:
@@ -186,19 +207,32 @@ def render_requests(config: BatchConfig) -> None:
     if lemma_groups.empty:
         raise ValueError("No lemmas from group_examples_by_lemma. Check tokens/sentences.")
 
-    # Per-lemma: sort (sentence_id, text) by sentence_id, take first max_examples. Write v2 format.
+    # Per-lemma: sort (sentence_id, text, pos) by sentence_id, take first max_examples. Write v2 format.
     lemma_data_v2: dict[str, list[dict[str, Any]]] = {}
     lemma_data_texts: dict[str, list[str]] = {}
     lemma_pos_distribution: dict[str, dict[str, int]] = {}
+    lemma_pos_per_example: dict[str, list[str]] = {}
     for _, row in lemma_groups.iterrows():
         lemma = row["lemma"]
         sids = list(row["sentence_ids"])
         exs = list(row["examples"])
-        pairs = sorted(zip(sids, exs))
-        if config.max_examples > 0:
-            pairs = pairs[: config.max_examples]
-        lemma_data_v2[lemma] = [{"sentence_id": sid, "text": text} for sid, text in pairs]
-        lemma_data_texts[lemma] = [text for _, text in pairs]
+        pos_per = list(row.get("pos_per_example", []))
+        if len(pos_per) != len(sids):
+            pos_per = []
+        if pos_per:
+            triples = sorted(zip(sids, exs, pos_per))
+            if config.max_examples > 0:
+                triples = triples[: config.max_examples]
+            lemma_data_v2[lemma] = [{"sentence_id": t[0], "text": t[1]} for t in triples]
+            lemma_data_texts[lemma] = [t[1] for t in triples]
+            lemma_pos_per_example[lemma] = [t[2] for t in triples]
+        else:
+            pairs = sorted(zip(sids, exs))
+            if config.max_examples > 0:
+                pairs = pairs[: config.max_examples]
+            lemma_data_v2[lemma] = [{"sentence_id": sid, "text": text} for sid, text in pairs]
+            lemma_data_texts[lemma] = [text for _, text in pairs]
+            lemma_pos_per_example[lemma] = []
         lemma_pos_distribution[lemma] = dict(Counter(row["pos_variants"]))
 
     # Sort lemmas for deterministic order, then apply limit
@@ -207,6 +241,7 @@ def render_requests(config: BatchConfig) -> None:
         all_lemmas = all_lemmas[: config.limit]
     lemma_examples = {k: lemma_data_texts[k] for k in all_lemmas}
     lemma_examples_v2 = {k: lemma_data_v2[k] for k in all_lemmas}
+    lemma_pos_per_example_limited = {k: lemma_pos_per_example.get(k, []) for k in all_lemmas}
 
     requests: list[dict[str, Any]] = []
     for lemma in all_lemmas:
@@ -229,6 +264,7 @@ def render_requests(config: BatchConfig) -> None:
     paths.batch_info.parent.mkdir(parents=True, exist_ok=True)
     write_jsonl(paths.requests, requests)
     write_json(paths.lemma_examples, lemma_examples_v2, ensure_ascii=False)
+    write_json(paths.lemma_pos_per_example, lemma_pos_per_example_limited, ensure_ascii=False)
 
 
 def parse_results(config: BatchConfig, *, skip_validation: bool = False) -> None:
@@ -243,6 +279,7 @@ def parse_results(config: BatchConfig, *, skip_validation: bool = False) -> None
             "Run batch download from API or copy results.jsonl into batch dir."
         )
     lemma_examples = read_lemma_examples(paths.lemma_examples)
+    lemma_pos_per_example = read_lemma_pos_per_example(paths.lemma_pos_per_example)
 
     all_cards: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
@@ -290,6 +327,64 @@ def parse_results(config: BatchConfig, *, skip_validation: bool = False) -> None
                         })
                     c["total_lemma_examples"] = total_ex
                     all_cards.append(c)
+
+    # Precision-first: in strict mode do not write cards with empty examples
+    if config.strict:
+        all_cards = [c for c in all_cards if c.get("examples")]
+
+    # Stage 4: in strict mode drop cards where lemma/headword not in every example; record as error
+    if config.strict:
+        failing = get_cards_failing_lemma_in_example(all_cards)
+        failing_ids = {id(c) for c in failing}
+        for c in failing:
+            error_entries.append(
+                ErrorEntry(
+                    lemma=c.get("lemma", ""),
+                    stage="download",
+                    error_type="lemma_not_in_example",
+                    message="Target (lemma/headword) not in every example; card dropped (precision-first).",
+                )
+            )
+        all_cards = [c for c in all_cards if id(c) not in failing_ids]
+
+    # Stage 5: in strict mode drop cards where claimed POS not in selected examples; record as error
+    if config.strict and lemma_pos_per_example:
+        pos_failing = get_cards_failing_pos_mismatch(all_cards, lemma_pos_per_example)
+        pos_failing_ids = {id(c) for c in pos_failing}
+        for c in pos_failing:
+            error_entries.append(
+                ErrorEntry(
+                    lemma=c.get("lemma", ""),
+                    stage="download",
+                    error_type="pos_mismatch",
+                    message="Card part_of_speech not present in selected examples; card dropped (precision-first).",
+                )
+            )
+        all_cards = [c for c in all_cards if id(c) not in pos_failing_ids]
+
+    # Stage 6: in strict mode drop cards that are duplicate senses (same lemma, very similar definition_en)
+    if config.strict:
+        dup_failing = get_cards_failing_duplicate_sense(all_cards)
+        dup_failing_ids = {id(c) for c in dup_failing}
+        for c in dup_failing:
+            error_entries.append(
+                ErrorEntry(
+                    lemma=c.get("lemma", ""),
+                    stage="download",
+                    error_type="duplicate_sense",
+                    message="Definition too similar to another card for same lemma; card dropped (precision-first).",
+                )
+            )
+        all_cards = [c for c in all_cards if id(c) not in dup_failing_ids]
+
+    # Fail-fast: contract invariants before writing output (PIPELINE_B_FIXES_PLAN 1.2)
+    assert_contract_invariants(
+        all_cards,
+        lemma_examples,
+        strict=config.strict,
+        require_examples_non_empty=config.strict,
+        lemma_examples_path=paths.lemma_examples,
+    )
 
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
     result = {
@@ -578,6 +673,19 @@ def download_batch(
                 retry_log.append({"lemma": lemma, "reason": "still_empty", "source": source, "outcome": "success"})
             else:
                 retry_log.append({"lemma": lemma, "reason": "still_empty", "source": source, "outcome": "validation_failed"})
+
+    # Stage 4: in strict mode drop cards where lemma/headword not in every example (also after retry merge)
+    if config.strict:
+        failing = get_cards_failing_lemma_in_example(all_cards)
+        failing_ids = {id(c) for c in failing}
+        for c in failing:
+            validation_errors.append({
+                "lemma": c.get("lemma", ""),
+                "stage": "download",
+                "error_type": "lemma_not_in_example",
+                "message": "Target (lemma/headword) not in every example; card dropped (precision-first).",
+            })
+        all_cards = [c for c in all_cards if id(c) not in failing_ids]
 
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
     result["cards"] = all_cards

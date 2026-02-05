@@ -186,13 +186,18 @@ def download(
         "--from-file/--no-from-file",
         help="Use existing results.jsonl (no API download). For testing retry on same data.",
     ),
+    run_gate: bool = typer.Option(
+        False,
+        "--run-gate/--no-run-gate",
+        help="After download, run QC gate (validation_errors vs thresholds); exit 1 if FAIL (Stage 7).",
+    ),
 ):
     """Download batch results and write cards_B_batch.json.
 
     To test new retry logic on same data (no API download): use --from-file.
     Requires: data/experiment/batch_b/results.jsonl and lemma_examples.json.
     Example: uv run python scripts/run_pipeline_b_batch.py download --from-file
-    Then optionally: download --from-file --retry-thinking
+    With QC gate: download --run-gate (or run scripts/run_quality_investigation.py --gate separately).
     """
     config = _batch_config()
     try:
@@ -233,6 +238,15 @@ def download(
     print(f"\n✅ Done. {n_cards} cards, {n_errors} parse errors.")
     print(f"Output: {OUTPUT_CARDS_PATH}")
     print(f"Log: {log_path}")
+
+    if run_gate:
+        from eng_words.word_family.qc_gate import evaluate_gate
+        passed, summary, msg = evaluate_gate(result)
+        print(f"\nQC gate: {msg}")
+        if not passed:
+            print("Gate FAIL. Fix validation_errors or relax thresholds. Exiting with code 1.")
+            raise SystemExit(1)
+        print("Gate PASS.")
 
 
 @app.command("list-retry-candidates")

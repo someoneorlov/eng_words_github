@@ -14,8 +14,28 @@ from eng_words.word_family.batch_schemas import (
     EMPTY_SELECTED_EXAMPLE_INDICES,
     RetryPolicy,
 )
+try:
+    from eng_words.word_family.headword import infer_headword
+except ImportError:
+    infer_headword = None
 
 REQUIRED_CARD_KEYS = {"definition_en", "definition_ru", "part_of_speech"}
+
+
+def _format_pos_distribution(pos_distribution: dict[str, int]) -> str:
+    """Stable format for POS hint: 'VERB 67%, NOUN 33%' (sorted by POS, integer %).
+    Used for golden tests and deterministic prompts.
+    """
+    if not pos_distribution:
+        return ""
+    total = sum(pos_distribution.values())
+    if total <= 0:
+        return ""
+    parts = [
+        f"{pos} {round(100 * count / total)}%"
+        for pos, count in sorted(pos_distribution.items())
+    ]
+    return ", ".join(parts)
 
 
 def build_prompt(
@@ -24,13 +44,15 @@ def build_prompt(
     pos_distribution: dict[str, int] | None = None,
 ) -> str:
     """Build Pipeline B cluster prompt for one lemma.
-    If pos_distribution is provided (e.g. {"NOUN": 5, "VERB": 2}), appends a POS hint block.
+    If pos_distribution is provided (e.g. {"NOUN": 5, "VERB": 2}), appends a POS hint block
+    in stable percentage format: "POS distribution in the examples above: NOUN 71%, VERB 29%."
     """
     numbered = "\n".join(f"{i+1}. {ex}" for i, ex in enumerate(examples))
     prompt = CLUSTER_PROMPT_TEMPLATE.format(lemma=lemma, numbered_examples=numbered)
     if pos_distribution:
-        pos_hint = ", ".join(f"{pos} {count}" for pos, count in sorted(pos_distribution.items()))
-        prompt += f"\n\nPOS distribution in the examples above: {pos_hint}."
+        pos_hint = _format_pos_distribution(pos_distribution)
+        if pos_hint:
+            prompt += f"\n\nPOS distribution in the examples above: {pos_hint}."
     n = len(examples)
     if n > 0:
         prompt += (
@@ -112,6 +134,9 @@ def parse_one_result(
         card["examples"] = [examples[j] for j in idxs]
         if not card["examples"] and examples:
             card["examples_fallback"] = True
+        if "headword" in card and infer_headword is not None:
+            if infer_headword(card) is None:
+                del card["headword"]
 
     return lemma, cards, None
 

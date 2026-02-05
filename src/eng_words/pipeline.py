@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -10,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+import spacy
 from dotenv import load_dotenv
 
 from eng_words.anki_export import export_to_anki_csv, prepare_anki_export
@@ -158,16 +160,26 @@ def process_book_stage1(
     ]
     sentences_export.to_parquet(sentences_path, index=False)
 
-    # Stage 1 manifest
+    # Stage 1 manifest (required fields for QC/reproducibility)
     manifest = {
         "schema_version": "1",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "pipeline_version": _get_pipeline_version(),
-        "spacy_model": model_name,
+        "spacy_model_name": model_name,
+        "spacy_model": model_name,  # backward compat
+        "spacy_version": spacy.__version__,
         "token_count": int(len(tokens_df)),
         "sentence_count": int(sentences_df[SENTENCE_ID].nunique()),
         "random_seed": None,
     }
+    # Optional checksums for deterministic runs (same book + params => same hashes)
+    try:
+        manifest["file_checksums"] = {
+            "tokens_sha256": hashlib.sha256(tokens_path.read_bytes()).hexdigest(),
+            "sentences_sha256": hashlib.sha256(sentences_path.read_bytes()).hexdigest(),
+        }
+    except OSError:
+        pass
     manifest_path = output_dir / STAGE1_MANIFEST
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest, f, indent=2, ensure_ascii=False)

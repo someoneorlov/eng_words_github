@@ -4,9 +4,13 @@
 Performs data checks (A2, A4, B1–B3, B4, E1, F1/F2, G1) and writes
 data/experiment/investigation_report.md.
 
+With --gate: evaluates QC gate from validation_errors in cards JSON;
+writes PASS/FAIL to report and exits with 1 if gate not passed (Stage 7).
+
 Usage (from project root):
     uv run python scripts/run_quality_investigation.py
     uv run python scripts/run_quality_investigation.py --cards path/to/cards_B_batch.json
+    uv run python scripts/run_quality_investigation.py --gate --cards path/to/cards_B_batch.json --output report.md
 """
 
 import json
@@ -202,12 +206,53 @@ def run_g1_edge_lemmas(tokens_path: Path, lemmas: list[str]) -> list[dict]:
     return out
 
 
+def _run_gate_and_write_report(cards_path: Path, output_path: Path) -> bool:
+    """Run QC gate on cards JSON; write short report. Returns True if PASS."""
+    from eng_words.word_family.qc_gate import load_result_and_evaluate_gate
+
+    passed, summary, message = load_result_and_evaluate_gate(cards_path)
+    lines = [
+        "# QC Gate Report (Pipeline B)",
+        "",
+        f"**Result:** {'PASS' if passed else 'FAIL'}",
+        "",
+        message,
+        "",
+        "## Summary",
+        "",
+        f"- Cards generated: {summary.get('cards_generated', '—')}",
+        f"- Validation errors (dropped): {summary.get('validation_errors_count', '—')}",
+        f"- Total processed: {summary.get('total_processed', '—')}",
+        "",
+    ]
+    if summary.get("counts_by_type"):
+        lines.append("Counts by error_type:")
+        for k, v in summary["counts_by_type"].items():
+            lines.append(f"- {k}: {v}")
+        lines.append("")
+    if summary.get("rates"):
+        lines.append("Rates (errors / total_processed):")
+        for k, v in summary["rates"].items():
+            lines.append(f"- {k}: {v:.2%}")
+        lines.append("")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    print(message)
+    print(f"Report written to {output_path}")
+    return passed
+
+
 def main():
     import argparse
     p = argparse.ArgumentParser(description="Run quality investigation checks")
     p.add_argument("--cards", type=Path, default=CARDS_PATH, help="Path to cards_B_batch.json")
     p.add_argument("--output", type=Path, default=OUTPUT_REPORT, help="Output report path")
+    p.add_argument("--gate", action="store_true", help="Run QC gate only: PASS/FAIL from validation_errors, exit 1 on FAIL")
     args = p.parse_args()
+
+    if args.gate:
+        passed = _run_gate_and_write_report(args.cards, args.output)
+        return 0 if passed else 1
 
     report = []
 
