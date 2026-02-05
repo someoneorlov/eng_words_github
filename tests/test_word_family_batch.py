@@ -1,8 +1,9 @@
-"""Tests for Pipeline B Batch API (eng_words.word_family.batch and batch_io)."""
+"""Tests for Pipeline B Batch API via eng_words.word_family.batch (wrapper)."""
 
 import json
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from eng_words.word_family import batch
@@ -258,12 +259,14 @@ class TestLoadLemmaGroups:
             batch.load_lemma_groups(config)
 
     def test_missing_sentences_raises(self, tmp_path):
-        import pandas as pd
         from eng_words.word_family.batch_schemas import BatchConfig
-
-        pd.DataFrame({"lemma": [], "sentence_id": [], "pos": [], "is_alpha": [], "is_stop": []}).to_parquet(
-            tmp_path / "tokens.parquet"
-        )
+        pd.DataFrame({
+            "lemma": [],
+            "sentence_id": [],
+            "pos": [],
+            "is_alpha": [],
+            "is_stop": [],
+        }).to_parquet(tmp_path / "tokens.parquet")
         config = BatchConfig(
             tokens_path=tmp_path / "tokens.parquet",
             sentences_path=tmp_path / "sentences.parquet",

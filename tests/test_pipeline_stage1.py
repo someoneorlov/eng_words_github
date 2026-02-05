@@ -1,6 +1,8 @@
+import json
 import sys
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from eng_words.pipeline import process_book, process_book_stage1, run_full_pipeline_cli
@@ -33,6 +35,32 @@ def test_process_book_stage1_creates_parquet(tmp_path: Path) -> None:
     assert stats_path.exists()
     assert len(stats_df) > 0
     assert "global_zipf" in stats_df.columns
+
+    # Stage 1 artifact: sentences.parquet
+    sentences_path = result["sentences_path"]
+    sentences_df = result["sentences_df"]
+    assert sentences_path.exists()
+    assert sentences_path.name == "american_tragedy_excerpt_sentences.parquet"
+    assert "sentence_id" in sentences_df.columns and "sentence" in sentences_df.columns
+    assert sentences_df["sentence_id"].is_unique
+    token_sids = set(tokens_df["sentence_id"].unique())
+    sentence_sids = set(sentences_df["sentence_id"].unique())
+    assert token_sids.issubset(sentence_sids), "tokens.sentence_id must be subset of sentences.sentence_id"
+    # Written parquet uses columns sentence_id, text (Pipeline B contract)
+    sentences_on_disk = pd.read_parquet(sentences_path)
+    assert list(sentences_on_disk.columns) == ["sentence_id", "text"]
+
+    # Stage 1 manifest
+    manifest_path = result["manifest_path"]
+    assert manifest_path.exists()
+    assert manifest_path.name == "stage1_manifest.json"
+    with open(manifest_path, encoding="utf-8") as f:
+        manifest = json.load(f)
+    assert manifest.get("schema_version") == "1"
+    assert "created_at" in manifest
+    assert "spacy_model" in manifest
+    assert manifest.get("token_count") == len(tokens_df)
+    assert manifest.get("sentence_count") == len(sentences_df)
 
 
 def test_process_book_stage1_handles_large_txt(tmp_path: Path) -> None:

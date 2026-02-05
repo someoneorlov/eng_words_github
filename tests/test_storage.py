@@ -10,8 +10,8 @@ from eng_words.constants import (
     ITEM_TYPE,
     ITEM_TYPE_PHRASAL_VERB,
     ITEM_TYPE_WORD,
+    KNOWN_WORDS_COLUMNS,
     LEMMA,
-    REQUIRED_KNOWN_WORDS_COLUMNS,
     STATUS,
     STATUS_IGNORE,
     STATUS_KNOWN,
@@ -50,7 +50,7 @@ def test_csv_backend_load_empty_file(tmp_path: Path) -> None:
     loaded = backend.load()
 
     assert loaded.empty
-    assert list(loaded.columns) == REQUIRED_KNOWN_WORDS_COLUMNS
+    assert list(loaded.columns) == list(KNOWN_WORDS_COLUMNS)
 
 
 def test_csv_backend_load_missing_file(tmp_path: Path) -> None:

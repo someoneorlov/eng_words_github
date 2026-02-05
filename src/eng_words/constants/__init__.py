@@ -69,11 +69,13 @@ from eng_words.constants.files import (
     DIR_ANKI_EXPORTS,
     EXT_CSV,
     EXT_PARQUET,
+    STAGE1_MANIFEST,
     TEMPLATE_ANKI,
     TEMPLATE_LEMMA_STATS,
     TEMPLATE_LEMMA_STATS_FULL,
     TEMPLATE_PHRASAL_VERB_STATS,
     TEMPLATE_PHRASAL_VERBS,
+    TEMPLATE_SENTENCES,
     TEMPLATE_TOKENS,
 )
 from eng_words.constants.function_words import (
@@ -281,7 +283,9 @@ __all__ = [
     "TEMPLATE_LEMMA_STATS",
     "TEMPLATE_LEMMA_STATS_FULL",
     "TEMPLATE_PHRASAL_VERB_STATS",
+    "STAGE1_MANIFEST",
     "TEMPLATE_PHRASAL_VERBS",
+    "TEMPLATE_SENTENCES",
     "TEMPLATE_TOKENS",
     # spaCy config
     "COMPONENT_NER",

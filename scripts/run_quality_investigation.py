@@ -14,9 +14,11 @@ import re
 import sys
 from pathlib import Path
 
-import pandas as pd
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+import pandas as pd
 DATA_DIR = PROJECT_ROOT / "data" / "experiment"
 BATCH_DIR = DATA_DIR / "batch_b"
 CARDS_PATH = DATA_DIR / "cards_B_batch.json"
@@ -38,14 +40,21 @@ LEMMAS_B_SAMPLE = ["horsemanship", "path", "identify"]
 
 
 def _lemma_in_text(lemma: str, text: str) -> bool:
-    """Check if lemma or its obvious form appears in text (case-insensitive word or substring)."""
+    """Check if lemma or its form (including irregular: went, thought, said, etc.) appears in text."""
     if not text or not lemma:
         return False
+    try:
+        from eng_words.validation.example_validator import _get_word_forms, _word_in_text
+        forms = _get_word_forms(lemma)
+        if any(_word_in_text(f, text) for f in forms):
+            return True
+    except ImportError:
+        pass
+    # Fallback: lemma as substring or \blemma\w*\b
     low = text.lower()
     lem = lemma.lower()
     if lem in low:
         return True
-    # Word boundary or common variant (e.g. feet for foot)
     return bool(re.search(rf"\b{re.escape(lem)}\w*\b", low, re.I))
 
 

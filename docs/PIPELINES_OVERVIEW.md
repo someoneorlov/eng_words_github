@@ -32,13 +32,31 @@ uv run python -m eng_words.pipeline --book-path ... --book-name ... --output-dir
 
 **Идея:** Без WSD. Группируем все примеры по лемме, один запрос к LLM на лемму — он кластеризует примеры по смыслу и возвращает несколько карточек (1–3 на лемму).
 
-| Этап | Скрипт/модуль | Что делает |
-|------|----------------|------------|
-| Подготовка выборки | `scripts/prepare_pipeline_b_sample.py` | tokens.parquet + sentences → `tokens_sample.parquet`, `sentences_sample.parquet` |
-| Создание батча | `scripts/run_pipeline_b_batch.py create` | Группировка по лемме, сбор промптов, загрузка в Gemini Batch API |
-| Скачивание + retry | `scripts/run_pipeline_b_batch.py download` | Скачивание ответов, парсинг JSON (definition_en, definition_ru, selected_example_indices), подстановка примеров из нашего списка, retry при пустых примерах |
+**Где живёт логика:** модуль **`eng_words.word_family`** (пакеты `batch`, `batch_io`, `batch_api`, `batch_core`, `batch_qc`, `batch_schemas`). Скрипт **`scripts/run_pipeline_b_batch.py`** — тонкий CLI: парсит аргументы, собирает `BatchConfig`, вызывает функции модуля, печатает вывод.
 
-Свой промпт (`CLUSTER_PROMPT_TEMPLATE` в `eng_words.word_family.clusterer`), свой формат ответа (JSON с индексами примеров). Проверка «лемма в примере» — в `run_pipeline_b_batch.py` (пост-проверка после download).
+| Этап | Команда / модуль | Что делает |
+|------|------------------|------------|
+| Подготовка выборки | `scripts/prepare_pipeline_b_sample.py` | tokens.parquet + sentences → `tokens_sample.parquet`, `sentences_sample.parquet` |
+| Offline: запросы | `run_pipeline_b_batch.py render-requests` | Группировка по лемме, запись `requests.jsonl` и `lemma_examples.json` (без сети) |
+| Создание батча | `run_pipeline_b_batch.py create` | Загрузка запросов в Gemini Batch API, создание job, запись `batch_info.json` |
+| Статус / ожидание | `status`, `wait` | Опрос API до SUCCEEDED/FAILED |
+| Скачивание + retry | `run_pipeline_b_batch.py download` | Скачивание ответов, парсинг, подстановка примеров, retry при пустых/fallback (с кэшем в `retry_cache.jsonl`) |
+| Offline: только парсинг | `run_pipeline_b_batch.py parse-results` | Парсинг существующего `results.jsonl` → карточки (без скачивания) |
+| Кандидаты на retry | `run_pipeline_b_batch.py list-retry-candidates` | Список лемм с пустыми/fallback-примерами по `results.jsonl` (без API) |
+
+Промпт — `CLUSTER_PROMPT_TEMPLATE` в `eng_words.word_family.clusterer`; формат ответа — JSON с индексами примеров. QC «лемма в примере» и пороги — в `batch_qc`; при превышении порога (strict) пайплайн падает с ошибкой.
+
+### Артефакты Pipeline B (по умолчанию в `data/experiment/` и `data/experiment/batch_b/`)
+
+| Файл | Назначение |
+|------|------------|
+| `batch_b/requests.jsonl` | Один JSON-объект на строку: ключ леммы + промпт (для Batch API) |
+| `batch_b/lemma_examples.json` | Лемма → список примеров (v1: строки, v2: `{sentence_id, text}`) |
+| `batch_b/batch_info.json` | Имя job, модель, число лемм, schema_version |
+| `batch_b/results.jsonl` | Ответы Batch API (key + response) |
+| `batch_b/retry_cache.jsonl` | Кэш ответов Standard API для retry (key + response) |
+| `batch_b/download_log.json` | Лог download: ошибки, retry_log, cards_lemma_not_in_example |
+| `cards_B_batch.json` | Итоговые карточки (pipeline, stats, cards, validation_errors) |
 
 ---
 
@@ -47,7 +65,7 @@ uv run python -m eng_words.pipeline --book-path ... --book-name ... --output-dir
 | Вопрос | Ответ |
 |--------|--------|
 | Где парсим книгу? | `eng_words.pipeline` → Stage 1 (`process_book_stage1`) |
-| Где генерируем карточки? | **Pipeline B:** `scripts/run_pipeline_b_batch.py` (Batch API, кластеризация по лемме) |
+| Где генерируем карточки? | **Pipeline B:** логика в `eng_words.word_family` (batch, batch_io, batch_api); CLI — `scripts/run_pipeline_b_batch.py` |
 | Что было с Pipeline A? | Удалён. Описание и история — `docs/HISTORY_PIPELINE_A.md`; код можно найти в истории git. |
 
 ---

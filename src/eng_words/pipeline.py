@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -22,12 +25,15 @@ from eng_words.constants import (
     MIN_ZIPF_DEFAULT,
     PHRASAL,
     SCORE,
+    SENTENCE,
     SENTENCE_ID,
+    STAGE1_MANIFEST,
     TEMPLATE_ANKI,
     TEMPLATE_LEMMA_STATS,
     TEMPLATE_LEMMA_STATS_FULL,
     TEMPLATE_PHRASAL_VERB_STATS,
     TEMPLATE_PHRASAL_VERBS,
+    TEMPLATE_SENTENCES,
     TEMPLATE_TOKENS,
     TOP_N_DEFAULT,
 )
@@ -59,6 +65,24 @@ from eng_words.text_processing import (
     save_tokens_to_parquet,
     tokenize_text_in_chunks,
 )
+
+
+def _get_pipeline_version() -> str | None:
+    """Return git HEAD sha if repo is available, else None."""
+    try:
+        r = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            cwd=Path(__file__).resolve().parent.parent.parent,
+        )
+        if r.returncode == 0 and r.stdout:
+            return r.stdout.strip()
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    return None
+
 
 def process_book_stage1(
     book_path: Path,
@@ -110,6 +134,44 @@ def process_book_stage1(
     tokens_path = output_dir / f"{book_name}{TEMPLATE_TOKENS}"
     save_tokens_to_parquet(tokens_df, tokens_path)
 
+    # Stage 1 artifact: sentences.parquet (sentence_id, text) for Pipeline B
+    sentences_list = reconstruct_sentences_from_tokens(tokens_df)
+    sentences_df = create_sentences_dataframe(sentences_list)
+    # Fail-fast: invariants for tokens/sentences consistency
+    if not sentences_df[SENTENCE_ID].is_unique:
+        raise ValueError(
+            "Invariant violated: sentence_id must be unique in sentences. "
+            "Re-run Stage 1 to rebuild outputs."
+        )
+    token_sids = set(tokens_df[SENTENCE_ID].unique())
+    sentence_sids = set(sentences_df[SENTENCE_ID].unique())
+    if not token_sids.issubset(sentence_sids):
+        missing = token_sids - sentence_sids
+        raise ValueError(
+            f"Invariant violated: tokens.sentence_id must be subset of sentences.sentence_id. "
+            f"Missing sentence_id in sentences: {sorted(missing)[:20]}{'...' if len(missing) > 20 else ''}. "
+            "Re-run Stage 1 to rebuild outputs."
+        )
+    sentences_path = output_dir / f"{book_name}{TEMPLATE_SENTENCES}"
+    sentences_export = sentences_df.rename(columns={SENTENCE: "text"})[
+        [SENTENCE_ID, "text"]
+    ]
+    sentences_export.to_parquet(sentences_path, index=False)
+
+    # Stage 1 manifest
+    manifest = {
+        "schema_version": "1",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "pipeline_version": _get_pipeline_version(),
+        "spacy_model": model_name,
+        "token_count": int(len(tokens_df)),
+        "sentence_count": int(sentences_df[SENTENCE_ID].nunique()),
+        "random_seed": None,
+    }
+    manifest_path = output_dir / STAGE1_MANIFEST
+    with open(manifest_path, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2, ensure_ascii=False)
+
     full_lemma_stats = add_global_frequency(
         calculate_lemma_frequency(
             tokens_df,
@@ -158,6 +220,9 @@ def process_book_stage1(
     return {
         "tokens_df": tokens_df,
         "tokens_path": tokens_path,
+        "sentences_df": sentences_df,
+        "sentences_path": sentences_path,
+        "manifest_path": manifest_path,
         "lemma_stats_df": lemma_stats,
         "lemma_stats_path": stats_path,
         "phrasal_df": phrasal_df,

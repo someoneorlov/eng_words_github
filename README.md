@@ -146,6 +146,9 @@ uv run pytest tests/ -v -x
 
 # Проверка импорта LLM (если установлен llm)
 uv run python -c "from eng_words.llm import get_provider; print('✓ LLM модуль OK')"
+
+# Генерация карточек Pipeline B (требуется GOOGLE_API_KEY)
+uv run python scripts/run_pipeline_b_batch.py --help
 ```
 
 ### Использование
@@ -177,6 +180,23 @@ uv run python -m eng_words.pipeline \
 - `data/processed/american_tragedy_phrasal_verbs.parquet` (если не `--no-phrasals`)
 - `data/processed/american_tragedy_phrasal_verb_stats.parquet`
 - `data/processed/anki_exports/american_tragedy_anki.csv` — готовый CSV для Anki
+
+#### Генерация карточек с LLM (Pipeline B)
+
+Генерация определений и примеров для карточек через Gemini Batch API: один запрос на лемму, кластеризация по смыслу. Логика — в модуле `eng_words.word_family`; CLI — `scripts/run_pipeline_b_batch.py`.
+
+```bash
+# Подготовка выборки (tokens_sample.parquet, sentences_sample.parquet)
+uv run python scripts/prepare_pipeline_b_sample.py --book american_tragedy --size 100
+
+# Создание батча, ожидание, скачивание (нужен GOOGLE_API_KEY)
+uv run python scripts/run_pipeline_b_batch.py create [--limit N]
+uv run python scripts/run_pipeline_b_batch.py status
+uv run python scripts/run_pipeline_b_batch.py wait
+uv run python scripts/run_pipeline_b_batch.py download
+```
+
+Подробнее: **[docs/PIPELINES_OVERVIEW.md](docs/PIPELINES_OVERVIEW.md)** — артефакты, команды (render-requests, parse-results, list-retry-candidates), strict/relaxed и QC.
 
 ### Обработка чанками и нормализация
 - Текст автоматически режется на чанки (~250k символов), чтобы не упираться в лимиты spaCy и экономить память
