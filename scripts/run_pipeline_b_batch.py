@@ -67,6 +67,7 @@ def _batch_config(
     limit: int | None = None,
     max_examples: int = 50,
     model: str = MODEL,
+    strict: bool = True,
 ) -> BatchConfig:
     """Build BatchConfig from module default paths (for use with batch_io)."""
     return BatchConfig(
@@ -77,6 +78,7 @@ def _batch_config(
         limit=limit if limit and limit > 0 else None,
         max_examples=max_examples,
         model=model,
+        strict=strict,
     )
 
 
@@ -191,6 +193,11 @@ def download(
         "--run-gate/--no-run-gate",
         help="After download, run QC gate (validation_errors vs thresholds); exit 1 if FAIL (Stage 7).",
     ),
+    no_strict: bool = typer.Option(
+        False,
+        "--no-strict",
+        help="Write cards even if QC gate fails (e.g. pos_mismatch); gate result still in download_log.",
+    ),
 ):
     """Download batch results and write cards_B_batch.json.
 
@@ -199,7 +206,7 @@ def download(
     Example: uv run python scripts/run_pipeline_b_batch.py download --from-file
     With QC gate: download --run-gate (or run scripts/run_quality_investigation.py --gate separately).
     """
-    config = _batch_config()
+    config = _batch_config(strict=not no_strict)
     try:
         _download_batch(
             config,
@@ -292,7 +299,7 @@ def wait():
         print(f"\n❌ {e}")
         raise SystemExit(1)
     print("\n✅ Complete!")
-    config = _batch_config()
+    config = _batch_config(strict=False)  # write cards even if gate fails (e.g. 1 pos_mismatch)
     _download_batch(config, from_file=False, retry_empty=True, retry_thinking=False, skip_validation=False)
     print(f"Output: {OUTPUT_CARDS_PATH}")
 

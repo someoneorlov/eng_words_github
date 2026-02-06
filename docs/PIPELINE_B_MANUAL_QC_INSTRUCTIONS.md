@@ -98,6 +98,17 @@ uv run python scripts/run_quality_investigation.py \
   --output data/experiment/investigation_report.md
 ```
 
+### C) Итог прогона в одном JSON (gate + регрессия 49 + пути к отчётам + чеклист артефактов)
+
+Скрипт оценивает QC gate и регрессию 49/49 по файлу карточек и записывает результат в JSON (PASS/FAIL, метрики, пути к отчётам, чеклист «что сдать»).
+
+```bash
+# Сначала сгенерировать отчёты (A, B выше), затем:
+uv run python scripts/run_manual_qc_and_collect.py --cards data/experiment/cards_B_batch_2.json --output data/experiment/pipeline_b_run_result.json
+```
+
+В JSON: `gate` (passed, message, summary), `regression_49` (passed, rates, checklist), `reports` (пути к md-отчётам), `deliverables` (code, reports, docs, commands), `overall_verdict` (PASS/FAIL). Exit code 0 при PASS, 1 при FAIL.
+
 ---
 
 ## 3) Как выбрать 30–50 карточек (sampling)

@@ -20,6 +20,7 @@ class QCGateThresholds:
     max_pos_mismatch_rate: float = 0.0
     max_duplicate_sense_rate: float = 0.0
     max_validation_rate: float = 0.0
+    max_headword_invalid_for_mode_rate: float = 0.0
     # Any other error_type not listed: allow 0 by default (fail on unknown)
     max_other_rate: float = 0.0
 
@@ -29,6 +30,7 @@ class QCGateThresholds:
             "max_pos_mismatch_rate": self.max_pos_mismatch_rate,
             "max_duplicate_sense_rate": self.max_duplicate_sense_rate,
             "max_validation_rate": self.max_validation_rate,
+            "max_headword_invalid_for_mode_rate": self.max_headword_invalid_for_mode_rate,
             "max_other_rate": self.max_other_rate,
         }
 
@@ -43,6 +45,7 @@ _ERROR_TYPE_TO_THRESHOLD: dict[str, str] = {
     "pos_mismatch": "max_pos_mismatch_rate",
     "duplicate_sense": "max_duplicate_sense_rate",
     "validation": "max_validation_rate",
+    "headword_invalid_for_mode": "max_headword_invalid_for_mode_rate",
 }
 
 

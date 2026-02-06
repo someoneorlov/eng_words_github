@@ -13,8 +13,10 @@ from eng_words.word_family.batch_io import (
     create_batch,
     download_batch,
     get_batch_status,
+    headword_examples_from_sentences,
     list_retry_candidates,
     load_lemma_groups,
+    load_mwe_candidates_for_deck,
     load_retry_cache,
     parse_results,
     read_lemma_examples,
@@ -181,6 +183,83 @@ class TestRenderRequests:
         assert "sentence_id" in raw["go"][0] and "text" in raw["go"][0]
         assert raw["go"][0]["text"] == "Go away."
 
+    def test_render_requests_phrasal_mode_uses_candidates_and_headword_keys(self, tmp_path: Path):
+        """Stage 5: phrasal mode builds requests from MWE candidates and sentences; keys are headword:."""
+        tok_path, sent_path = _make_tokens_sentences(tmp_path)
+        # Overwrite sentences with text containing "look up" for headword matching
+        sentences = pd.DataFrame({
+            "sentence_id": [1, 2],
+            "text": ["I look up the word.", "We look up the address."],
+        })
+        sentences.to_parquet(sent_path, index=False)
+        candidates_path = tmp_path / "book_mwe_candidates.parquet"
+        mwe_df = pd.DataFrame([{
+            "headword": "look up",
+            "type": "phrasal_verb",
+            "count": 2,
+            "sample_sentence_ids": [1, 2],
+            "source": "stage1_detector",
+        }])
+        mwe_df.to_parquet(candidates_path, index=False)
+        batch_dir = tmp_path / "batch_phrasal"
+        batch_dir.mkdir()
+        config = BatchConfig(
+            tokens_path=tok_path,
+            sentences_path=sent_path,
+            batch_dir=batch_dir,
+            output_cards_path=tmp_path / "cards_phrasal.json",
+            mode="phrasal",
+            top_k=1,
+            max_examples=10,
+            candidates_path=candidates_path,
+        )
+        render_requests(config)
+        with open(batch_dir / "requests.jsonl", encoding="utf-8") as f:
+            lines = [json.loads(l) for l in f if l.strip()]
+        assert len(lines) == 1
+        assert lines[0]["key"] == "headword:look up"
+        le = read_lemma_examples(batch_dir / "lemma_examples.json")
+        assert "look up" in le
+        assert len(le["look up"]) == 2
+        assert "look up" in le["look up"][0]
+
+
+class TestPhrasalDeckHelpers:
+    """Stage 5: helpers for phrasal/MWE deck (candidates + headword examples)."""
+
+    def test_load_mwe_candidates_for_deck_phrasal_filters_type(self, tmp_path: Path):
+        mwe_df = pd.DataFrame([
+            {"headword": "look up", "type": "phrasal_verb", "count": 5},
+            {"headword": "by the way", "type": "fixed_expression", "count": 3},
+        ])
+        path = tmp_path / "mwe.parquet"
+        mwe_df.to_parquet(path, index=False)
+        headwords = load_mwe_candidates_for_deck(path, "mwe", top_k=10)
+        assert "look up" in headwords and "by the way" in headwords  # mwe mode does not filter type
+        headwords_phrasal = load_mwe_candidates_for_deck(path, "phrasal", top_k=10)
+        assert headwords_phrasal == ["look up"]  # phrasal filters to type=phrasal_verb only
+
+    def test_load_mwe_candidates_for_deck_top_k(self, tmp_path: Path):
+        mwe_df = pd.DataFrame([
+            {"headword": "a", "type": "phrasal_verb", "count": 3},
+            {"headword": "b", "type": "phrasal_verb", "count": 2},
+            {"headword": "c", "type": "phrasal_verb", "count": 1},
+        ])
+        path = tmp_path / "mwe.parquet"
+        mwe_df.to_parquet(path, index=False)
+        assert len(load_mwe_candidates_for_deck(path, "phrasal", top_k=2)) == 2
+        assert len(load_mwe_candidates_for_deck(path, "phrasal", top_k=10)) == 3
+
+    def test_headword_examples_from_sentences_matches(self):
+        sentences = pd.DataFrame({
+            "sentence_id": [1, 2, 3],
+            "text": ["I look up the word.", "We look up the address.", "No match here."],
+        })
+        texts, v2 = headword_examples_from_sentences(sentences, ["look up"], max_examples=10)
+        assert texts["look up"] == ["I look up the word.", "We look up the address."]
+        assert len(v2["look up"]) == 2
+        assert v2["look up"][0]["sentence_id"] == 1 and v2["look up"][0]["text"] == "I look up the word."
+
 
 class TestReadLemmaExamples:
     def test_v1_format_returns_texts(self, tmp_path: Path):
@@ -327,7 +406,7 @@ class TestParseResults:
         assert "run" in log["lemmas_with_zero_cards"]
 
     def test_strict_drops_card_lemma_not_in_example(self, tmp_path: Path):
-        """Stage 4: strict mode drops card when lemma not in every example; schema and stats valid."""
+        """Stage 4: strict mode drops card when lemma not in every example; QC-gate then fails (no write)."""
         batch_dir = tmp_path / "batch_b"
         batch_dir.mkdir()
         lemma_ex = {"run": ["The weather is nice."]}
@@ -355,20 +434,14 @@ class TestParseResults:
             output_cards_path=tmp_path / "cards.json",
             strict=True,
         )
-        parse_results(config)
-        data = json.loads((tmp_path / "cards.json").read_text(encoding="utf-8"))
-        assert "cards" in data
-        assert "stats" in data
-        assert len(data["cards"]) == 0
-        assert data["stats"]["cards_generated"] == 0
-        validation_errors = data.get("validation_errors", [])
-        assert any(e.get("error_type") == "lemma_not_in_example" for e in validation_errors)
+        with pytest.raises(ValueError, match="QC gate FAIL"):
+            parse_results(config)
+        assert not (tmp_path / "cards.json").exists()
 
     def test_strict_drops_card_pos_mismatch(self, tmp_path: Path):
-        """Stage 5: when lemma_pos_per_example exists, card claiming POS not in selected examples is dropped."""
+        """Stage 5: card claiming POS not in selected examples is dropped; QC-gate then fails (no write)."""
         batch_dir = tmp_path / "batch_d"
         batch_dir.mkdir()
-        lemma_ex = {"run": ["He runs.", "A morning run."]}
         write_json(batch_dir / "lemma_examples.json", {"run": [{"sentence_id": 1, "text": "He runs."}, {"sentence_id": 2, "text": "A morning run."}]}, ensure_ascii=False)
         write_json(batch_dir / "lemma_pos_per_example.json", {"run": ["NOUN", "NOUN"]}, ensure_ascii=False)
         raw = {
@@ -394,14 +467,12 @@ class TestParseResults:
             output_cards_path=tmp_path / "cards.json",
             strict=True,
         )
-        parse_results(config)
-        data = json.loads((tmp_path / "cards.json").read_text(encoding="utf-8"))
-        assert len(data["cards"]) == 0
-        validation_errors = data.get("validation_errors", [])
-        assert any(e.get("error_type") == "pos_mismatch" for e in validation_errors)
+        with pytest.raises(ValueError, match="QC gate FAIL"):
+            parse_results(config)
+        assert not (tmp_path / "cards.json").exists()
 
     def test_strict_drops_card_duplicate_sense(self, tmp_path: Path):
-        """Stage 6: two cards for same lemma with very similar definition_en → one dropped."""
+        """Stage 6: duplicate sense dropped; QC-gate fails (rate > 0) so no write."""
         batch_dir = tmp_path / "batch_dup"
         batch_dir.mkdir()
         write_json(
@@ -438,12 +509,48 @@ class TestParseResults:
             output_cards_path=tmp_path / "cards.json",
             strict=True,
         )
-        parse_results(config)
-        data = json.loads((tmp_path / "cards.json").read_text(encoding="utf-8"))
-        assert len(data["cards"]) == 1
-        assert data["cards"][0]["definition_en"] == "to move quickly on foot"
-        validation_errors = data.get("validation_errors", [])
-        assert any(e.get("error_type") == "duplicate_sense" for e in validation_errors)
+        with pytest.raises(ValueError, match="QC gate FAIL"):
+            parse_results(config)
+        assert not (tmp_path / "cards.json").exists()
+
+    def test_strict_drops_card_headword_invalid_for_mode(self, tmp_path: Path):
+        """Stage 4b: word mode drops card when headword is multiword; QC-gate then fails (no write)."""
+        batch_dir = tmp_path / "batch_hw"
+        batch_dir.mkdir()
+        write_json(
+            batch_dir / "lemma_examples.json",
+            {"look": [{"sentence_id": 1, "text": "I look up the word."}]},
+            ensure_ascii=False,
+        )
+        write_json(batch_dir / "lemma_pos_per_example.json", {"look": ["VERB"]}, ensure_ascii=False)
+        raw = {
+            "cards": [
+                {
+                    "meaning_id": 1,
+                    "lemma": "look",
+                    "headword": "look up",
+                    "definition_en": "search for",
+                    "definition_ru": "искать",
+                    "part_of_speech": "verb",
+                    "selected_example_indices": [1],
+                }
+            ],
+            "ignored_indices": [],
+            "ignore_reasons": {},
+        }
+        with open(batch_dir / "results.jsonl", "w", encoding="utf-8") as f:
+            f.write(json.dumps({"key": "lemma:look", "response": {"candidates": [{"content": {"parts": [{"text": json.dumps(raw)}]}}]}}, ensure_ascii=False) + "\n")
+        config = BatchConfig(
+            tokens_path=tmp_path / "t.parquet",
+            sentences_path=tmp_path / "s.parquet",
+            batch_dir=batch_dir,
+            output_cards_path=tmp_path / "cards.json",
+            strict=True,
+            mode="word",
+        )
+        with pytest.raises(ValueError, match="QC gate FAIL"):
+            parse_results(config)
+        assert not (tmp_path / "cards.json").exists()
 
 
 class TestCreateBatch:
@@ -817,6 +924,9 @@ class TestDownloadBatch:
         log = json.loads((batch_dir / "download_log.json").read_text(encoding="utf-8"))
         assert "retry_log" in log
         assert any(e.get("outcome") == "success" for e in log["retry_log"])
+        # 6.3: structured retry reasons (lemma, reason, outcome)
+        for e in log["retry_log"]:
+            assert "lemma" in e and "reason" in e and "outcome" in e
 
     def test_download_batch_calls_qc_threshold_when_strict_and_thresholds_set(self, tmp_path: Path):
         """When config has strict=True and max_warning_rate/max_warnings_absolute, check_qc_threshold is used."""
@@ -855,6 +965,73 @@ class TestDownloadBatch:
         log = json.loads((batch_dir / "download_log.json").read_text(encoding="utf-8"))
         assert "cards_lemma_not_in_example_count" in log
         assert "retry_log" in log
+
+    def test_strict_download_batch_qc_gate_fail_raises_no_write(self, tmp_path: Path):
+        """6.1: When strict and validation_errors present, download_batch raises before writing cards."""
+        batch_dir = tmp_path / "batch_gate"
+        batch_dir.mkdir()
+        write_json(
+            batch_dir / "lemma_examples.json",
+            {"look": [{"sentence_id": 1, "text": "I look up the word."}]},
+            ensure_ascii=False,
+        )
+        write_json(batch_dir / "lemma_pos_per_example.json", {"look": ["VERB"]}, ensure_ascii=False)
+        raw = {
+            "cards": [
+                {
+                    "meaning_id": 1,
+                    "lemma": "look",
+                    "headword": "look up",
+                    "definition_en": "search for",
+                    "definition_ru": "искать",
+                    "part_of_speech": "verb",
+                    "selected_example_indices": [1],
+                }
+            ],
+            "ignored_indices": [],
+            "ignore_reasons": {},
+        }
+        with open(batch_dir / "results.jsonl", "w", encoding="utf-8") as f:
+            f.write(json.dumps({"key": "lemma:look", "response": {"candidates": [{"content": {"parts": [{"text": json.dumps(raw)}]}}]}}, ensure_ascii=False) + "\n")
+        (batch_dir / "batch_info.json").write_text(
+            '{"batch_name": "batches/x", "model": "m", "lemmas_count": 1, "created_at": ""}', encoding="utf-8"
+        )
+        output_cards = tmp_path / "cards.json"
+        config = BatchConfig(
+            tokens_path=tmp_path / "t.parquet",
+            sentences_path=tmp_path / "s.parquet",
+            batch_dir=batch_dir,
+            output_cards_path=output_cards,
+            strict=True,
+            mode="word",
+        )
+        with pytest.raises(ValueError, match="QC gate FAIL"):
+            download_batch(config, from_file=True, retry_empty=False, retry_thinking=False)
+        assert not output_cards.exists()
+
+    def test_retry_includes_lemmas_from_validation_errors_with_structured_reason(self):
+        """6.2/6.3: get_retry_candidates_and_reasons includes lemmas from pos_mismatch/lemma_not_in_example/validation."""
+        from eng_words.word_family.batch_io import get_retry_candidates_and_reasons
+
+        all_cards: list[dict] = []
+        validation_errors = [
+            {"lemma": "run", "stage": "download", "error_type": "pos_mismatch", "message": "dropped"},
+        ]
+        lemmas_to_retry, lemma_reason = get_retry_candidates_and_reasons(all_cards, validation_errors)
+        assert "run" in lemmas_to_retry
+        assert lemma_reason.get("run") == "pos_mismatch"
+
+        validation_errors.append({"lemma": "go", "stage": "download", "error_type": "lemma_not_in_example", "message": "dropped"})
+        lemmas_to_retry2, lemma_reason2 = get_retry_candidates_and_reasons(all_cards, validation_errors)
+        assert "run" in lemmas_to_retry2 and "go" in lemmas_to_retry2
+        assert lemma_reason2["run"] == "pos_mismatch" and lemma_reason2["go"] == "lemma_not_in_example"
+
+        # duplicate_sense / headword_invalid_for_mode are not retry reasons
+        all_cards3 = [{"lemma": "x", "examples": []}]
+        validation_errors3 = [{"lemma": "x", "error_type": "duplicate_sense", "message": "drop"}]
+        lemmas3, reasons3 = get_retry_candidates_and_reasons(all_cards3, validation_errors3)
+        assert "x" in lemmas3  # from empty examples
+        assert reasons3["x"] == "empty_or_fallback"
 
 
 class TestRetryCache:

@@ -24,6 +24,7 @@ from eng_words.word_family.batch_core import (
     filter_valid_cards,
     merge_retry_results,
     parse_one_result,
+    RETRY_REASON_ERROR_TYPES,
 )
 from eng_words.word_family.batch_schemas import (
     BatchConfig,
@@ -40,10 +41,79 @@ from eng_words.word_family.batch_qc import (
     cards_lemma_not_in_example,
     check_qc_threshold,
     get_cards_failing_duplicate_sense,
+    get_cards_failing_headword_invalid_for_mode,
     get_cards_failing_lemma_in_example,
     get_cards_failing_pos_mismatch,
 )
 from eng_words.word_family.contract import assert_contract_invariants
+from eng_words.word_family.qc_gate import DEFAULT_QC_GATE_THRESHOLDS, evaluate_gate
+
+# MWE/phrasal deck (PIPELINE_B_FIXES_PLAN 5)
+from eng_words.constants import (
+    MWE_COUNT,
+    MWE_HEADWORD,
+    MWE_SAMPLE_SENTENCE_IDS,
+    MWE_TYPE,
+    MWE_TYPE_PHRASAL_VERB,
+)
+from eng_words.text_norm import match_target_in_text
+
+
+def _default_candidates_path(sentences_path: Path) -> Path:
+    """Derive MWE candidates path from sentences path: .../book_sentences.parquet -> .../book_mwe_candidates.parquet."""
+    p = Path(sentences_path)
+    name = p.stem  # e.g. book_sentences
+    if name.endswith("_sentences"):
+        base = name[: -len("_sentences")]
+        return p.parent / f"{base}_mwe_candidates.parquet"
+    return p.parent / "mwe_candidates.parquet"
+
+
+def load_mwe_candidates_for_deck(
+    path: Path,
+    mode: str,
+    top_k: int,
+) -> list[str]:
+    """Load MWE candidates parquet, filter by mode, take top_k by count; return list of headwords."""
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"MWE candidates not found: {path}. Run Stage 1 with extract_mwe_candidates.")
+    df = pd.read_parquet(path)
+    if df.empty or MWE_HEADWORD not in df.columns:
+        return []
+    if mode == "phrasal" and MWE_TYPE in df.columns:
+        df = df[df[MWE_TYPE] == MWE_TYPE_PHRASAL_VERB]
+    if MWE_COUNT in df.columns:
+        df = df.sort_values(MWE_COUNT, ascending=False)
+    headwords = df[MWE_HEADWORD].astype(str).str.strip().tolist()
+    if top_k > 0:
+        headwords = headwords[:top_k]
+    return headwords
+
+
+def headword_examples_from_sentences(
+    sentences_df: pd.DataFrame,
+    headwords: list[str],
+    max_examples: int,
+) -> tuple[dict[str, list[str]], dict[str, list[dict[str, Any]]]]:
+    """Build headword -> examples from sentences (match_target_in_text). Returns (texts, v2 with sentence_id)."""
+    empty_v2: dict[str, list[dict[str, Any]]] = {hw: [] for hw in headwords}
+    if "text" not in sentences_df.columns or "sentence_id" not in sentences_df.columns:
+        return {hw: [] for hw in headwords}, empty_v2
+    texts_out: dict[str, list[str]] = {}
+    v2_out: dict[str, list[dict[str, Any]]] = {}
+    for hw in headwords:
+        rows = []
+        for _, row in sentences_df.iterrows():
+            text = row.get("text") or ""
+            if match_target_in_text(hw, text):
+                rows.append((int(row["sentence_id"]), text))
+        rows.sort(key=lambda x: x[0])
+        if max_examples > 0:
+            rows = rows[:max_examples]
+        texts_out[hw] = [t for _, t in rows]
+        v2_out[hw] = [{"sentence_id": sid, "text": t} for sid, t in rows]
+    return texts_out, v2_out
 
 
 def read_tokens(tokens_path: Path) -> pd.DataFrame:
@@ -194,62 +264,84 @@ def write_jsonl(path: Path, items: list[dict[str, Any]]) -> None:
 
 
 def render_requests(config: BatchConfig) -> None:
-    """Build requests.jsonl and lemma_examples.json from tokens/sentences (no network).
+    """Build requests.jsonl and lemma_examples.json from tokens/sentences (word) or candidates+sentences (phrasal/mwe).
 
-    Determinism: lemmas sorted alphabetically before applying limit; examples within
-    each lemma ordered by sentence_id ascending, then trimmed to max_examples.
+    Determinism: word = lemmas sorted; phrasal/mwe = top_k headwords, examples by sentence_id order.
     """
     paths = BatchPaths.from_dir(config.batch_dir)
-    tokens = read_tokens(config.tokens_path)
-    sentences = read_sentences(config.sentences_path)
-    lemma_groups = group_examples_by_lemma(tokens, sentences)
 
-    if lemma_groups.empty:
-        raise ValueError("No lemmas from group_examples_by_lemma. Check tokens/sentences.")
+    if config.mode in ("phrasal", "mwe"):
+        # Phrasal/MWE deck: headwords from candidates, examples from sentences (PIPELINE_B_FIXES_PLAN 5)
+        candidates_path = config.candidates_path or _default_candidates_path(config.sentences_path)
+        top_k = config.top_k if config.top_k is not None else 200
+        headwords = load_mwe_candidates_for_deck(candidates_path, config.mode, top_k)
+        if not headwords:
+            raise ValueError(
+                f"No MWE candidates for mode={config.mode}. "
+                f"Check {candidates_path} exists and has phrasal_verb rows for phrasal mode."
+            )
+        sentences = read_sentences(config.sentences_path)
+        lemma_data_texts, lemma_data_v2 = headword_examples_from_sentences(
+            sentences, headwords, config.max_examples
+        )
+        all_lemmas = headwords
+        lemma_examples = lemma_data_texts
+        lemma_examples_v2 = lemma_data_v2
+        lemma_pos_per_example_limited = {hw: [] for hw in headwords}
+        lemma_pos_distribution = {}
+    else:
+        # Word deck: lemma grouping from tokens + sentences
+        tokens = read_tokens(config.tokens_path)
+        sentences = read_sentences(config.sentences_path)
+        lemma_groups = group_examples_by_lemma(tokens, sentences)
 
-    # Per-lemma: sort (sentence_id, text, pos) by sentence_id, take first max_examples. Write v2 format.
-    lemma_data_v2: dict[str, list[dict[str, Any]]] = {}
-    lemma_data_texts: dict[str, list[str]] = {}
-    lemma_pos_distribution: dict[str, dict[str, int]] = {}
-    lemma_pos_per_example: dict[str, list[str]] = {}
-    for _, row in lemma_groups.iterrows():
-        lemma = row["lemma"]
-        sids = list(row["sentence_ids"])
-        exs = list(row["examples"])
-        pos_per = list(row.get("pos_per_example", []))
-        if len(pos_per) != len(sids):
-            pos_per = []
-        if pos_per:
-            triples = sorted(zip(sids, exs, pos_per))
-            if config.max_examples > 0:
-                triples = triples[: config.max_examples]
-            lemma_data_v2[lemma] = [{"sentence_id": t[0], "text": t[1]} for t in triples]
-            lemma_data_texts[lemma] = [t[1] for t in triples]
-            lemma_pos_per_example[lemma] = [t[2] for t in triples]
-        else:
-            pairs = sorted(zip(sids, exs))
-            if config.max_examples > 0:
-                pairs = pairs[: config.max_examples]
-            lemma_data_v2[lemma] = [{"sentence_id": sid, "text": text} for sid, text in pairs]
-            lemma_data_texts[lemma] = [text for _, text in pairs]
-            lemma_pos_per_example[lemma] = []
-        lemma_pos_distribution[lemma] = dict(Counter(row["pos_variants"]))
+        if lemma_groups.empty:
+            raise ValueError("No lemmas from group_examples_by_lemma. Check tokens/sentences.")
 
-    # Sort lemmas for deterministic order, then apply limit
-    all_lemmas = sorted(lemma_data_v2.keys())
-    if config.limit is not None and config.limit > 0:
-        all_lemmas = all_lemmas[: config.limit]
-    lemma_examples = {k: lemma_data_texts[k] for k in all_lemmas}
-    lemma_examples_v2 = {k: lemma_data_v2[k] for k in all_lemmas}
-    lemma_pos_per_example_limited = {k: lemma_pos_per_example.get(k, []) for k in all_lemmas}
+        # Per-lemma: sort (sentence_id, text, pos) by sentence_id, take first max_examples. Write v2 format.
+        lemma_data_v2: dict[str, list[dict[str, Any]]] = {}
+        lemma_data_texts: dict[str, list[str]] = {}
+        lemma_pos_distribution = {}
+        lemma_pos_per_example: dict[str, list[str]] = {}
+        for _, row in lemma_groups.iterrows():
+            lemma = row["lemma"]
+            sids = list(row["sentence_ids"])
+            exs = list(row["examples"])
+            pos_per = list(row.get("pos_per_example", []))
+            if len(pos_per) != len(sids):
+                pos_per = []
+            if pos_per:
+                triples = sorted(zip(sids, exs, pos_per))
+                if config.max_examples > 0:
+                    triples = triples[: config.max_examples]
+                lemma_data_v2[lemma] = [{"sentence_id": t[0], "text": t[1]} for t in triples]
+                lemma_data_texts[lemma] = [t[1] for t in triples]
+                lemma_pos_per_example[lemma] = [t[2] for t in triples]
+            else:
+                pairs = sorted(zip(sids, exs))
+                if config.max_examples > 0:
+                    pairs = pairs[: config.max_examples]
+                lemma_data_v2[lemma] = [{"sentence_id": sid, "text": text} for sid, text in pairs]
+                lemma_data_texts[lemma] = [text for _, text in pairs]
+                lemma_pos_per_example[lemma] = []
+            lemma_pos_distribution[lemma] = dict(Counter(row["pos_variants"]))
 
+        # Sort lemmas for deterministic order, then apply limit
+        all_lemmas = sorted(lemma_data_v2.keys())
+        if config.limit is not None and config.limit > 0:
+            all_lemmas = all_lemmas[: config.limit]
+        lemma_examples = {k: lemma_data_texts[k] for k in all_lemmas}
+        lemma_examples_v2 = {k: lemma_data_v2[k] for k in all_lemmas}
+        lemma_pos_per_example_limited = {k: lemma_pos_per_example.get(k, []) for k in all_lemmas}
+
+    key_prefix = "headword:" if config.mode in ("phrasal", "mwe") else "lemma:"
     requests: list[dict[str, Any]] = []
     for lemma in all_lemmas:
         examples = lemma_examples[lemma]
-        pos_dist = lemma_pos_distribution.get(lemma)
+        pos_dist = lemma_pos_distribution.get(lemma) if isinstance(lemma_pos_distribution, dict) else None
         prompt = build_prompt(lemma, examples, pos_distribution=pos_dist)
         requests.append({
-            "key": f"lemma:{lemma}",
+            "key": f"{key_prefix}{lemma}",
             "request": {
                 "model": f"models/{config.model}",
                 "contents": [{"parts": [{"text": prompt}]}],
@@ -347,6 +439,21 @@ def parse_results(config: BatchConfig, *, skip_validation: bool = False) -> None
             )
         all_cards = [c for c in all_cards if id(c) not in failing_ids]
 
+    # Stage 4b: in strict mode drop cards where headword is invalid for mode (e.g. multiword in word mode)
+    if config.strict:
+        hw_failing = get_cards_failing_headword_invalid_for_mode(all_cards, mode=config.mode)
+        hw_failing_ids = {id(c) for c in hw_failing}
+        for c in hw_failing:
+            error_entries.append(
+                ErrorEntry(
+                    lemma=c.get("lemma", ""),
+                    stage="download",
+                    error_type="headword_invalid_for_mode",
+                    message="Headword must be single-word in word mode; card dropped (precision-first).",
+                )
+            )
+        all_cards = [c for c in all_cards if id(c) not in hw_failing_ids]
+
     # Stage 5: in strict mode drop cards where claimed POS not in selected examples; record as error
     if config.strict and lemma_pos_per_example:
         pos_failing = get_cards_failing_pos_mismatch(all_cards, lemma_pos_per_example)
@@ -405,6 +512,12 @@ def parse_results(config: BatchConfig, *, skip_validation: bool = False) -> None
         "lemmas_with_zero_cards": lemmas_with_zero_cards,
     }
 
+    # QC-gate before write (PIPELINE_B_FIXES_PLAN 6.1): strict → fail if any rate exceeds threshold
+    if config.strict:
+        passed, _summary, message = evaluate_gate(result, DEFAULT_QC_GATE_THRESHOLDS)
+        if not passed:
+            raise ValueError(f"QC gate FAIL — refusing to write output: {message}")
+
     config.output_cards_path.parent.mkdir(parents=True, exist_ok=True)
     write_json(config.output_cards_path, result, ensure_ascii=False)
 
@@ -453,6 +566,26 @@ def list_retry_candidates(results_path: Path, lemma_examples_path: Path) -> tupl
                     lemmas_fallback.add(lemma)
                     break
     return lemmas_empty, lemmas_fallback
+
+
+def get_retry_candidates_and_reasons(
+    all_cards: list[dict],
+    validation_errors: list[dict],
+) -> tuple[set[str], dict[str, str]]:
+    """Return (lemmas_to_retry, lemma_reason) for 6.2/6.3. Reasons: empty_or_fallback | pos_mismatch | lemma_not_in_example | validation."""
+    cards_with_empty = [c for c in all_cards if not c.get("examples")]
+    cards_with_fallback = [c for c in all_cards if c.get("examples_fallback")]
+    lemmas_to_retry = {c["lemma"] for c in cards_with_empty} | {c["lemma"] for c in cards_with_fallback}
+    for e in validation_errors:
+        if isinstance(e, dict) and e.get("error_type") in RETRY_REASON_ERROR_TYPES:
+            lemmas_to_retry.add(e.get("lemma", ""))
+    lemma_reason: dict[str, str] = {lem: "empty_or_fallback" for lem in lemmas_to_retry}
+    for e in validation_errors:
+        if isinstance(e, dict) and e.get("error_type") in RETRY_REASON_ERROR_TYPES:
+            lem = e.get("lemma", "")
+            if lem in lemmas_to_retry:
+                lemma_reason[lem] = e.get("error_type", "validation")
+    return lemmas_to_retry, lemma_reason
 
 
 def run_standard_api(config: BatchConfig) -> None:
@@ -601,7 +734,7 @@ def download_batch(
     if not (retry_empty or retry_thinking):
         return
 
-    # Retry: read current cards, run retry loop (with cache), write again
+    # Retry: read current cards, run retry loop (with cache), write again (6.2: once per lemma, super-strict prompt)
     result = json.loads(config.output_cards_path.read_text(encoding="utf-8"))
     all_cards = list(result["cards"])
     lemma_examples = read_lemma_examples(paths.lemma_examples)
@@ -610,9 +743,7 @@ def download_batch(
     retry_cache = load_retry_cache(paths.retry_cache)
     retry_log: list[dict[str, Any]] = []
 
-    cards_with_empty = [c for c in all_cards if not c.get("examples")]
-    cards_with_fallback = [c for c in all_cards if c.get("examples_fallback")]
-    lemmas_to_retry = {c["lemma"] for c in cards_with_empty} | {c["lemma"] for c in cards_with_fallback}
+    lemmas_to_retry, lemma_reason = get_retry_candidates_and_reasons(all_cards, validation_errors)
 
     def _get_retry_response(lemma: str, mode: str, use_thinking: bool) -> tuple[dict | None, str]:
         examples = lemma_examples.get(lemma, [])
@@ -633,13 +764,14 @@ def download_batch(
 
     if retry_empty and lemmas_to_retry:
         for lemma in sorted(lemmas_to_retry):
+            reason = lemma_reason.get(lemma, "empty_or_fallback")
             resp, source = _get_retry_response(lemma, "standard", use_thinking=False)
             if not resp:
-                retry_log.append({"lemma": lemma, "reason": "empty_or_fallback", "source": source, "outcome": "failed"})
+                retry_log.append({"lemma": lemma, "reason": reason, "source": source, "outcome": "failed"})
                 continue
             _, new_cards, err = parse_one_result(f"lemma:{lemma}", resp, lemma_examples)
             if err or not new_cards:
-                retry_log.append({"lemma": lemma, "reason": "empty_or_fallback", "source": source, "outcome": "failed"})
+                retry_log.append({"lemma": lemma, "reason": reason, "source": source, "outcome": "failed"})
                 continue
             total_ex = len(lemma_examples.get(lemma, []))
             valid_new, new_errs = filter_valid_cards(new_cards, lemma, skip_validation=skip_validation, stage="retry")
@@ -648,9 +780,9 @@ def download_batch(
                 c["total_lemma_examples"] = total_ex
             if valid_new and all(c.get("examples") and not c.get("examples_fallback") for c in valid_new):
                 all_cards = merge_retry_results(all_cards, lemma, valid_new)
-                retry_log.append({"lemma": lemma, "reason": "empty_or_fallback", "source": source, "outcome": "success"})
+                retry_log.append({"lemma": lemma, "reason": reason, "source": source, "outcome": "success"})
             else:
-                retry_log.append({"lemma": lemma, "reason": "empty_or_fallback", "source": source, "outcome": "validation_failed"})
+                retry_log.append({"lemma": lemma, "reason": reason, "source": source, "outcome": "validation_failed"})
 
     if retry_thinking:
         lemmas_still_empty = {c["lemma"] for c in all_cards if not c.get("examples")}
@@ -687,6 +819,19 @@ def download_batch(
             })
         all_cards = [c for c in all_cards if id(c) not in failing_ids]
 
+    # Stage 4b: in strict mode drop cards where headword invalid for mode (e.g. multiword in word mode)
+    if config.strict:
+        hw_failing = get_cards_failing_headword_invalid_for_mode(all_cards, mode=config.mode)
+        hw_failing_ids = {id(c) for c in hw_failing}
+        for c in hw_failing:
+            validation_errors.append({
+                "lemma": c.get("lemma", ""),
+                "stage": "download",
+                "error_type": "headword_invalid_for_mode",
+                "message": "Headword must be single-word in word mode; card dropped (precision-first).",
+            })
+        all_cards = [c for c in all_cards if id(c) not in hw_failing_ids]
+
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%S")
     result["cards"] = all_cards
     result["timestamp"] = timestamp
@@ -706,6 +851,13 @@ def download_batch(
         )
 
     result["stats"]["cards_lemma_not_in_example_count"] = len(cards_lemma_not_in_example_list)
+
+    # QC-gate before write (PIPELINE_B_FIXES_PLAN 6.1): strict → fail if any rate exceeds threshold
+    if config.strict:
+        passed, _summary, message = evaluate_gate(result, DEFAULT_QC_GATE_THRESHOLDS)
+        if not passed:
+            raise ValueError(f"QC gate FAIL — refusing to write output: {message}")
+
     write_json(config.output_cards_path, result, ensure_ascii=False)
     log = {
         "timestamp": timestamp,

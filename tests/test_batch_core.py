@@ -4,6 +4,7 @@ import json
 import pytest
 
 from eng_words.word_family.batch_core import (
+    RETRY_REASON_ERROR_TYPES,
     _format_pos_distribution,
     build_prompt,
     build_retry_prompt,
@@ -51,6 +52,25 @@ class TestBuildPrompt:
             pos_distribution={"VERB": 1, "NOUN": 1},
         )
         assert "POS distribution in the examples above: NOUN 50%, VERB 50%." in prompt
+
+
+class TestBuildRetryPrompt:
+    """6.2: super-strict retry prompt (JSON only, 1-based indices, headword verbatim)."""
+
+    def test_contains_super_strict_instructions(self):
+        prompt = build_retry_prompt("run", ["He runs.", "She runs."])
+        assert "CRITICAL" in prompt
+        assert "Return ONLY valid JSON" in prompt
+        assert "1-based" in prompt
+        assert "1 to 2" in prompt
+        assert "verbatim" in prompt
+
+    def test_retry_reason_error_types_defined(self):
+        assert "pos_mismatch" in RETRY_REASON_ERROR_TYPES
+        assert "lemma_not_in_example" in RETRY_REASON_ERROR_TYPES
+        assert "validation" in RETRY_REASON_ERROR_TYPES
+        assert "duplicate_sense" not in RETRY_REASON_ERROR_TYPES
+        assert "headword_invalid_for_mode" not in RETRY_REASON_ERROR_TYPES
 
 
 class TestExtractJsonFromResponseText:
@@ -259,3 +279,23 @@ class TestParseOneResultHeadword:
         assert err is None
         assert len(cards) == 1
         assert cards[0].get("headword") == "look up"
+
+    def test_headword_key_sets_lemma_and_headword(self):
+        """Stage 5: key headword:look up yields lemma=look up and card headword set for QC."""
+        lemma_examples = {"look up": ["I look up the word.", "We look up the address."]}
+        raw = {
+            "cards": [{
+                "definition_en": "search for",
+                "definition_ru": "искать",
+                "part_of_speech": "verb",
+                "selected_example_indices": [1, 2],
+            }]
+        }
+        resp = {"candidates": [{"content": {"parts": [{"text": json.dumps(raw)}]}}]}
+        lemma, cards, err = parse_one_result("headword:look up", resp, lemma_examples)
+        assert err is None
+        assert lemma == "look up"
+        assert len(cards) == 1
+        assert cards[0]["lemma"] == "look up"
+        assert cards[0]["headword"] == "look up"
+        assert cards[0]["examples"] == ["I look up the word.", "We look up the address."]

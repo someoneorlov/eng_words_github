@@ -62,14 +62,19 @@ def build_prompt(
     return prompt
 
 
+# Error types that trigger one retry with super-strict prompt (PIPELINE_B_FIXES_PLAN 6.2)
+RETRY_REASON_ERROR_TYPES = frozenset({"pos_mismatch", "lemma_not_in_example", "validation"})
+
+
 def build_retry_prompt(lemma: str, examples: list[str]) -> str:
-    """Same as build_prompt plus a concatenated line asking to fix indices (for retry)."""
+    """Super-strict retry prompt: JSON only, 1-based indices, headword/lemma verbatim in examples (6.2)."""
     prompt = build_prompt(lemma, examples)
     n = len(examples)
     if n > 0:
         prompt += (
-            f"\n\nCRITICAL: Your previous response had invalid selected_example_indices. "
-            f"Use only 1-based indices from 1 to {n} (you have exactly {n} examples above)."
+            "\n\nCRITICAL (retry): Return ONLY valid JSON, no markdown or commentary. "
+            f"selected_example_indices must be 1-based integers from 1 to {n} (you have exactly {n} examples). "
+            "The headword/lemma must appear verbatim in every selected example sentence."
         )
     return prompt
 
@@ -97,10 +102,15 @@ def parse_one_result(
     response: dict,
     lemma_examples: dict[str, list[str]],
 ) -> tuple[str, list[dict], str | None]:
-    """Parse one batch result. Returns (lemma, cards, error). error is None on success."""
-    if not key.startswith("lemma:"):
+    """Parse one batch result. Returns (lemma, cards, error). error is None on success.
+    Key may be 'lemma:xyz' (word) or 'headword:look up' (phrasal/mwe); unit key used for lookup.
+    """
+    if key.startswith("headword:"):
+        lemma = key[9:].strip()
+    elif key.startswith("lemma:"):
+        lemma = key[6:]
+    else:
         return "", [], "bad_key"
-    lemma = key[6:]
 
     if "candidates" not in response or not response["candidates"]:
         return lemma, [], "no_candidates"
@@ -123,6 +133,8 @@ def parse_one_result(
         if not isinstance(card, dict):
             continue
         card["lemma"] = lemma
+        if key.startswith("headword:"):
+            card["headword"] = lemma  # Phrasal/MWE: unit is headword, ensure QC uses headword_in_examples
         card["source"] = "pipeline_b_batch"
         raw = [i for i in card.get("selected_example_indices", []) if isinstance(i, int)]
         if not raw:

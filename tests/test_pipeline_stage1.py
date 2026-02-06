@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from eng_words.constants import STAGE1_MANIFEST_REQUIRED_KEYS
 from eng_words.pipeline import process_book, process_book_stage1, run_full_pipeline_cli
 from tests.test_integration import _create_excerpt_from_epub
 
@@ -63,19 +64,69 @@ def test_process_book_stage1_creates_parquet(tmp_path: Path) -> None:
     assert manifest_path.name == "stage1_manifest.json"
     with open(manifest_path, encoding="utf-8") as f:
         manifest = json.load(f)
-    required_manifest_keys = [
-        "schema_version", "created_at", "spacy_model_name", "spacy_version",
-        "token_count", "sentence_count",
-    ]
-    for key in required_manifest_keys:
+    for key in STAGE1_MANIFEST_REQUIRED_KEYS:
         assert key in manifest, f"manifest must contain '{key}'"
     assert manifest.get("schema_version") == "1"
     assert manifest.get("token_count") == len(tokens_df)
     assert manifest.get("sentence_count") == len(sentences_df)
+    assert manifest.get("book_name") == "american_tragedy_excerpt"
+    assert manifest.get("book_id") == "american_tragedy_excerpt"
     # Optional checksums (deterministic runs)
     if "file_checksums" in manifest:
         assert "tokens_sha256" in manifest["file_checksums"]
         assert "sentences_sha256" in manifest["file_checksums"]
+
+
+def test_manifest_has_required_fields(tmp_path: Path) -> None:
+    """Manifest must contain all STAGE1_MANIFEST_REQUIRED_KEYS (PIPELINE_B_FIXES_PLAN)."""
+    excerpt_path = _create_excerpt_from_epub(tmp_path)
+    output_dir = tmp_path / "manifest_test"
+    try:
+        result = process_book_stage1(
+            excerpt_path,
+            book_name="manifest_book",
+            output_dir=output_dir,
+        )
+    except OSError as exc:
+        if "Can't find model" in str(exc):
+            pytest.skip("spaCy model en_core_web_sm is not installed")
+        raise
+    with open(result["manifest_path"], encoding="utf-8") as f:
+        manifest = json.load(f)
+    for key in STAGE1_MANIFEST_REQUIRED_KEYS:
+        assert key in manifest, f"manifest must contain required key '{key}'"
+
+
+def test_stage1_determinism(tmp_path: Path) -> None:
+    """Re-running Stage 1 on same input yields identical deterministic artifacts."""
+    excerpt_path = _create_excerpt_from_epub(tmp_path)
+    out1 = tmp_path / "out1"
+    out2 = tmp_path / "out2"
+    try:
+        r1 = process_book_stage1(
+            excerpt_path,
+            book_name="det_book",
+            output_dir=out1,
+        )
+        r2 = process_book_stage1(
+            excerpt_path,
+            book_name="det_book",
+            output_dir=out2,
+        )
+    except OSError as exc:
+        if "Can't find model" in str(exc):
+            pytest.skip("spaCy model en_core_web_sm is not installed")
+        raise
+    with open(r1["manifest_path"], encoding="utf-8") as f:
+        m1 = json.load(f)
+    with open(r2["manifest_path"], encoding="utf-8") as f:
+        m2 = json.load(f)
+    assert m1["token_count"] == m2["token_count"]
+    assert m1["sentence_count"] == m2["sentence_count"]
+    if "file_checksums" in m1 and "file_checksums" in m2:
+        assert m1["file_checksums"] == m2["file_checksums"], (
+            "Same input must produce same tokens/sentences checksums"
+        )
 
 
 def test_process_book_stage1_handles_large_txt(tmp_path: Path) -> None:
@@ -135,6 +186,38 @@ def test_process_book_stage1_detects_phrasals(tmp_path: Path) -> None:
     assert "turn on" in set(phrasal_df["phrasal"])
     assert phrasal_stats_path and phrasal_stats_path.exists()
     assert "phrasal" in phrasal_stats_df.columns
+    # Stage 4: unified MWE candidates artifact when extract_mwe_candidates=True (default)
+    mwe_path = result.get("mwe_candidates_path")
+    assert mwe_path is not None and mwe_path.exists()
+    mwe_df = pd.read_parquet(mwe_path)
+    for col in ("headword", "type", "count", "sample_sentence_ids", "source"):
+        assert col in mwe_df.columns, f"mwe_candidates must have column '{col}'"
+    # With default min_freq=2, short text may have 0 rows; if rows exist, expect phrasals from text
+    if len(mwe_df) > 0:
+        headwords = set(mwe_df["headword"])
+        assert headwords and mwe_df["source"].iloc[0] == "stage1_detector"
+
+
+def test_stage1_extract_mwe_candidates_false_skips_mwe_file(tmp_path: Path) -> None:
+    """When extract_mwe_candidates=False, mwe_candidates.parquet is not written."""
+    text = "She gave up. He turned the lights on."
+    book_path = tmp_path / "nomwe.txt"
+    book_path.write_text(text)
+    output_dir = tmp_path / "nomwe_out"
+    try:
+        result = process_book_stage1(
+            book_path,
+            book_name="nomwe",
+            output_dir=output_dir,
+            detect_phrasals=True,
+            extract_mwe_candidates=False,
+        )
+    except OSError as exc:
+        if "Can't find model" in str(exc):
+            pytest.skip("spaCy model en_core_web_sm is not installed")
+        raise
+    assert result.get("mwe_candidates_path") is None
+    assert (output_dir / "nomwe_mwe_candidates.parquet").exists() is False
 
 
 def test_process_book_full_pipeline(tmp_path: Path) -> None:

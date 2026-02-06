@@ -29,6 +29,7 @@ class ErrorType(str, Enum):
     QC_DUPLICATE_SENSE = "duplicate_sense"
     QC_BAD_EXAMPLE = "bad_example"
     QC_HEADWORD_NOT_IN_EXAMPLES = "headword_not_in_examples"
+    QC_HEADWORD_INVALID_FOR_MODE = "headword_invalid_for_mode"
 
 
 class Severity(str, Enum):

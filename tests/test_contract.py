@@ -87,6 +87,22 @@ def test_contract_index_out_of_range_raises() -> None:
     assert "out of range" in str(exc_info.value).lower()
 
 
+def test_contract_examples_not_list_raises() -> None:
+    card = {
+        "lemma": "test",
+        "definition_en": "x",
+        "definition_ru": "y",
+        "part_of_speech": "noun",
+        "examples": "not a list",
+        "selected_example_indices": [1],
+    }
+    lemma_examples = {"test": ["a"]}
+    with pytest.raises(ContractInvariantError) as exc_info:
+        assert_contract_invariants([card], lemma_examples)
+    assert exc_info.value.error_type == ErrorType.CONTRACT_SCHEMA
+    assert "must be a list" in str(exc_info.value)
+
+
 def test_contract_empty_examples_strict_raises() -> None:
     card = {
         "lemma": "test",

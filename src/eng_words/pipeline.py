@@ -33,12 +33,14 @@ from eng_words.constants import (
     TEMPLATE_ANKI,
     TEMPLATE_LEMMA_STATS,
     TEMPLATE_LEMMA_STATS_FULL,
+    TEMPLATE_MWE_CANDIDATES,
     TEMPLATE_PHRASAL_VERB_STATS,
     TEMPLATE_PHRASAL_VERBS,
     TEMPLATE_SENTENCES,
     TEMPLATE_TOKENS,
     TOP_N_DEFAULT,
 )
+from eng_words.mwe_candidates import build_mwe_candidates_from_phrasal
 from eng_words.examples import get_examples_for_lemmas, get_examples_for_phrasal_verbs
 from eng_words.filtering import (
     filter_by_frequency,
@@ -98,6 +100,7 @@ def process_book_stage1(
     max_zipf: float = MAX_ZIPF_DEFAULT,
     detect_phrasals: bool = False,
     phrasal_model_name: str | None = None,
+    extract_mwe_candidates: bool = True,
     text: str | None = None,
 ) -> dict[str, pd.DataFrame | Path | None]:
     """Run Stage 1 pipeline and return dataframes + parquet paths.
@@ -113,6 +116,7 @@ def process_book_stage1(
         max_zipf: Maximum global Zipf frequency
         detect_phrasals: Whether to detect phrasal verbs
         phrasal_model_name: spaCy model for phrasal detection
+        extract_mwe_candidates: If True and detect_phrasals, write unified _mwe_candidates.parquet
         text: Pre-loaded text (optional, for testing)
 
     Returns:
@@ -160,7 +164,7 @@ def process_book_stage1(
     ]
     sentences_export.to_parquet(sentences_path, index=False)
 
-    # Stage 1 manifest (required fields for QC/reproducibility)
+    # Stage 1 manifest (required fields for QC/reproducibility; book_name/book_id for batch)
     manifest = {
         "schema_version": "1",
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -171,6 +175,8 @@ def process_book_stage1(
         "token_count": int(len(tokens_df)),
         "sentence_count": int(sentences_df[SENTENCE_ID].nunique()),
         "random_seed": None,
+        "book_name": book_name,
+        "book_id": book_name,  # alias for grouping/batch
     }
     # Optional checksums for deterministic runs (same book + params => same hashes)
     try:
@@ -213,6 +219,8 @@ def process_book_stage1(
     phrasal_path = None
     phrasal_stats_df = None
     phrasal_stats_path = None
+    mwe_candidates_path = None
+    mwe_candidates_df = None
     if detect_phrasals:
         parser_nlp = initialize_phrasal_model(phrasal_model_name or model_name)
         phrasal_df = detect_phrasal_verbs(tokens_df, parser_nlp)
@@ -229,6 +237,11 @@ def process_book_stage1(
         phrasal_stats_path = output_dir / f"{book_name}{TEMPLATE_PHRASAL_VERB_STATS}"
         phrasal_stats_df.to_parquet(phrasal_stats_path, index=False)
 
+        if extract_mwe_candidates:
+            mwe_candidates_df = build_mwe_candidates_from_phrasal(phrasal_df, phrasal_stats_df)
+            mwe_candidates_path = output_dir / f"{book_name}{TEMPLATE_MWE_CANDIDATES}"
+            mwe_candidates_df.to_parquet(mwe_candidates_path, index=False)
+
     return {
         "tokens_df": tokens_df,
         "tokens_path": tokens_path,
@@ -241,6 +254,8 @@ def process_book_stage1(
         "phrasal_path": phrasal_path,
         "phrasal_stats_df": phrasal_stats_df,
         "phrasal_stats_path": phrasal_stats_path,
+        "mwe_candidates_df": mwe_candidates_df,
+        "mwe_candidates_path": mwe_candidates_path,
     }
 
 
@@ -257,6 +272,7 @@ def process_book(
     max_zipf: float = MAX_ZIPF_DEFAULT,
     top_n: int = TOP_N_DEFAULT,
     detect_phrasals: bool = True,
+    extract_mwe_candidates: bool = True,
 ) -> dict[str, Path | None]:
     """Full pipeline: runs tokenization, stats, examples, and Anki export.
 
@@ -272,6 +288,7 @@ def process_book(
         max_zipf: Maximum global Zipf frequency
         top_n: Number of top items for examples/Anki
         detect_phrasals: Whether to detect phrasal verbs
+        extract_mwe_candidates: When phrasals detected, write _mwe_candidates.parquet
 
     Returns:
         Dictionary with paths to all output files
@@ -288,6 +305,7 @@ def process_book(
         max_zipf=max_zipf,
         detect_phrasals=detect_phrasals,
         phrasal_model_name=phrasal_model_name,
+        extract_mwe_candidates=extract_mwe_candidates,
         text=text,
     )
 
@@ -402,6 +420,11 @@ def run_full_pipeline_cli() -> None:
         action="store_true",
         help="Disable phrasal verb detection and stats",
     )
+    parser.add_argument(
+        "--no-extract-mwe-candidates",
+        action="store_true",
+        help="Do not write _mwe_candidates.parquet when phrasals are detected (default: write it)",
+    )
 
     args = parser.parse_args()
 
@@ -424,6 +447,7 @@ def run_full_pipeline_cli() -> None:
         max_zipf=args.max_zipf,
         top_n=args.top_n,
         detect_phrasals=not args.no_phrasals,
+        extract_mwe_candidates=not args.no_extract_mwe_candidates,
     )
 
     print("Pipeline completed. Outputs:")

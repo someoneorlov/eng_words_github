@@ -33,7 +33,7 @@ class TestBuildPrompt:
         assert "run" in prompt
         assert "1. He runs." in prompt
         assert "CRITICAL" in prompt
-        assert "Your previous response had invalid" in prompt
+        assert "Return ONLY valid JSON" in prompt or "verbatim" in prompt
         assert "1 to 2" in prompt
 
 

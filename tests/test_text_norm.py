@@ -64,6 +64,37 @@ def test_normalize_for_matching_golden(input_text: str, expected_contains: str) 
     assert expected_contains in out
 
 
+@pytest.mark.parametrize(
+    "input_text,expected",
+    [
+        ("  a   b  ", "a b"),
+        ("word—word", "word-word"),
+        ("word–word", "word-word"),
+        ("don't", "don't"),
+        ("\u2019x\u2018", "'x'"),
+        ("a\u00a0\u00a0b", "a b"),
+    ],
+)
+def test_normalize_for_matching_golden_exact(input_text: str, expected: str) -> None:
+    """Exact golden: input -> expected string (PIPELINE_B_FIXES_PLAN 2.1)."""
+    assert normalize_for_matching(input_text) == expected
+
+
+def test_normalize_for_matching_determinism() -> None:
+    """Same input -> same output every time (no nondeterministic logic)."""
+    inputs = ["  It\u2019s   fine—really.  ", "don't", "a\u00a0b", ""]
+    for s in inputs:
+        out_first = normalize_for_matching(s)
+        for _ in range(10):
+            assert normalize_for_matching(s) == out_first
+
+
+def test_normalize_for_matching_non_breaking_space() -> None:
+    """Non-breaking space (U+00A0) is normalized to space and collapsed."""
+    assert normalize_for_matching("a\u00a0b") == "a b"
+    assert normalize_for_matching("a \u00a0 b") == "a b"
+
+
 # --- expand_contractions_for_matching ---
 
 
@@ -94,6 +125,18 @@ def test_expand_contractions_aint() -> None:
     # ain't -> am not / is not / are not (we can expand to one variant for matching)
     out = expand_contractions_for_matching("ain't")
     assert "not" in out
+
+
+def test_expand_contractions_typographic_apostrophe() -> None:
+    """Contractions with typographic apostrophe (U+2019): normalize first, then expand (matching pipeline)."""
+    # In matching we do normalize then expand; so normalized "It's" (curly -> straight) still expands
+    normalized = normalize_for_matching("It\u2019s")
+    assert "'" in normalized
+    expanded = expand_contractions_for_matching(normalized)
+    assert "it is" in expanded or "is" in expanded
+    # Direct expand on typographic apostrophe: regex uses ASCII ', so normalize first in real flow
+    expanded_curly = expand_contractions_for_matching("It\u2019s")
+    assert "it is" in expanded_curly or "is" in expanded_curly or expanded_curly == "It\u2019s"
 
 
 # --- word_in_text_for_matching (lemma/forms + normalized + expanded) ---

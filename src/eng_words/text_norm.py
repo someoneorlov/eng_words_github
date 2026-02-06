@@ -22,7 +22,8 @@ def normalize_for_matching(text: str) -> str:
     s = s.replace("\u2019", "'").replace("\u2018", "'").replace("\u2032", "'")
     # Unify en/em dash -> hyphen
     s = s.replace("\u2014", "-").replace("\u2013", "-")
-    # Collapse whitespace and strip
+    # Normalize whitespace (including non-breaking U+00A0)
+    s = s.replace("\u00a0", " ")
     s = " ".join(s.split())
     return s
 

@@ -20,6 +20,7 @@ class TestQCGateThresholds:
         assert t.max_pos_mismatch_rate == 0.0
         assert t.max_duplicate_sense_rate == 0.0
         assert t.max_validation_rate == 0.0
+        assert t.max_headword_invalid_for_mode_rate == 0.0
 
     def test_to_dict(self):
         t = QCGateThresholds(max_lemma_not_in_example_rate=0.01)
@@ -80,6 +81,19 @@ class TestEvaluateGate:
         passed, summary, msg = evaluate_gate(result)
         assert passed is True
         assert summary["total_processed"] == 0
+
+    def test_fail_when_headword_invalid_for_mode_above_zero(self):
+        result = {
+            "cards": [{"lemma": "go", "headword": "go"}],
+            "stats": {},
+            "validation_errors": [
+                {"lemma": "take off", "error_type": "headword_invalid_for_mode", "message": "drop"},
+            ],
+        }
+        passed, summary, msg = evaluate_gate(result)
+        assert passed is False
+        assert "headword_invalid_for_mode" in msg
+        assert summary["rates"]["headword_invalid_for_mode"] == 0.5  # 1/(1+1)
 
 
 class TestLoadResultAndEvaluateGate:

@@ -189,14 +189,21 @@ uv run python -m eng_words.pipeline \
 # Подготовка выборки (tokens_sample.parquet, sentences_sample.parquet)
 uv run python scripts/prepare_pipeline_b_sample.py --book american_tragedy --size 100
 
-# Создание батча, ожидание, скачивание (нужен GOOGLE_API_KEY)
+# Word deck: создание батча → ожидание → скачивание (нужен GOOGLE_API_KEY)
 uv run python scripts/run_pipeline_b_batch.py create [--limit N]
 uv run python scripts/run_pipeline_b_batch.py status
 uv run python scripts/run_pipeline_b_batch.py wait
-uv run python scripts/run_pipeline_b_batch.py download
+uv run python scripts/run_pipeline_b_batch.py download [--run-gate]
+
+# QC gate по готовому файлу (exit 1 при FAIL)
+uv run python scripts/run_quality_investigation.py --gate --cards data/experiment/cards_B_batch.json
+
+# Регрессия 49/49 (PASS/FAIL по критериям Stage 7)
+uv run python scripts/run_regression_49.py --cards data/experiment/cards_B_batch_2.json --output data/experiment/regression_49_report.md
 ```
 
-Подробнее: **[docs/PIPELINES_OVERVIEW.md](docs/PIPELINES_OVERVIEW.md)** — артефакты, команды (render-requests, parse-results, list-retry-candidates), strict/relaxed и QC.
+Подробнее: **[docs/PIPELINES_OVERVIEW.md](docs/PIPELINES_OVERVIEW.md)** — артефакты, команды (render-requests, parse-results, list-retry-candidates), strict/relaxed и QC.  
+**Контракты, режимы (word/phrasal/mwe) и команды запуска:** **[docs/PIPELINE_B_CONTRACTS_AND_RUN.md](docs/PIPELINE_B_CONTRACTS_AND_RUN.md)**.
 
 ### Обработка чанками и нормализация
 - Текст автоматически режется на чанки (~250k символов), чтобы не упираться в лимиты spaCy и экономить память

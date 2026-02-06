@@ -58,6 +58,14 @@ DEFAULT_HOMONYM_EXCLUDE: dict[str, set[str]] = {
 }
 
 
+def _lemma_forms(lemma: str, homonym_exclude: dict[str, set[str]] | None) -> set[str]:
+    """Lemma word forms for matching; fallback to {lemma} if validator unavailable (no silent QC skip)."""
+    exclude = homonym_exclude or DEFAULT_HOMONYM_EXCLUDE
+    if _get_word_forms is not None:
+        return _get_word_forms(lemma) - exclude.get(lemma.lower(), set())
+    return {lemma}  # in-project fallback: at least check lemma string (PIPELINE_B_FIXES_PLAN 2.3)
+
+
 def cards_lemma_not_in_example(
     all_cards: list[dict],
     homonym_exclude: dict[str, set[str]] | None = None,
@@ -65,8 +73,14 @@ def cards_lemma_not_in_example(
     """Cards where at least one example does not contain the lemma (or valid form), or headword when set.
     When card has headword (Stage 3): checks headword in every example; else checks lemma/forms.
     Returns list of {lemma, definition_en, example_index, example_preview} for review.
+    Strict: requires word_in_text_for_matching (in-project); does not silently return [].
     """
-    if _get_word_forms is None or word_in_text_for_matching is None:
+    if word_in_text_for_matching is None and all_cards:
+        raise RuntimeError(
+            "QC lemma-in-example requires eng_words.text_norm.word_in_text_for_matching. "
+            "Fix import or install dependencies; do not silently skip QC (PIPELINE_B_FIXES_PLAN 2.3)."
+        )
+    if not all_cards:
         return []
     exclude = homonym_exclude or DEFAULT_HOMONYM_EXCLUDE
     out: list[dict[str, Any]] = []
@@ -84,7 +98,7 @@ def cards_lemma_not_in_example(
                     "example_preview": (examples[0][:100] + "...") if len(examples[0]) > 100 else examples[0],
                 })
             continue
-        forms = _get_word_forms(lemma) - exclude.get(lemma.lower(), set())
+        forms = _lemma_forms(lemma, exclude)
         for i, ex in enumerate(examples):
             if not any(word_in_text_for_matching(f, ex) for f in forms):
                 out.append({
@@ -118,11 +132,40 @@ def get_cards_failing_lemma_in_example(
             if not headword_in_examples(c):
                 failing.append(c)
             continue
-        forms = _get_word_forms(lemma) - exclude.get(lemma.lower(), set())
+        forms = _lemma_forms(lemma, exclude)
         for ex in examples:
             if not any(word_in_text_for_matching(f, ex) for f in forms):
                 failing.append(c)
                 break
+    return failing
+
+
+def get_cards_failing_headword_invalid_for_mode(
+    all_cards: list[dict],
+    mode: str = "word",
+) -> list[dict]:
+    """Cards that have headword present but invalid for mode (PIPELINE_B_FIXES_PLAN Stage 3).
+
+    Word mode: headword must be single-word (no spaces). Multiword headword → fail.
+    Phrasal/MWE mode: multiword allowed; only headword_not_in_examples is checked elsewhere.
+    Returns card dicts to drop in strict mode.
+    """
+    if mode != "word":
+        return []
+    try:
+        from eng_words.word_family.headword import is_single_word
+    except ImportError:
+        return []
+    failing: list[dict] = []
+    for c in all_cards:
+        h = c.get("headword")
+        if not h or not isinstance(h, str):
+            continue
+        h = h.strip()
+        if not h:
+            continue
+        if not is_single_word(h):
+            failing.append(c)
     return failing
 
 

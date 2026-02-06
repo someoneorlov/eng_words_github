@@ -81,6 +81,12 @@ class BatchConfig:
     strict: bool = True
     max_warning_rate: float | None = None
     max_warnings_absolute: int | None = None
+    # Deck mode (PIPELINE_B_FIXES_PLAN Stage 3/5): "word" | "phrasal" | "mwe"
+    mode: str = "word"
+    # For phrasal/mwe: cap on number of units (headwords) to send to LLM (PIPELINE_B_FIXES_PLAN 5)
+    top_k: int | None = None
+    # Path to MWE candidates parquet; when None and mode in (phrasal, mwe), derived from sentences_path
+    candidates_path: Path | None = None
 
 
 # --- BatchInfo (batch_info.json) ---

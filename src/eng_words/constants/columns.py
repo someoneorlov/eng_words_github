@@ -26,6 +26,18 @@ VERB = "verb"
 PARTICLE = "particle"
 SENTENCE_TEXT = "sentence_text"
 
+# MWE candidates (PIPELINE_B_FIXES_PLAN Stage 4: unified headword + type + count + sample_sentence_ids)
+MWE_HEADWORD = "headword"
+MWE_TYPE = "type"
+MWE_COUNT = "count"
+MWE_SAMPLE_SENTENCE_IDS = "sample_sentence_ids"
+MWE_SOURCE = "source"
+MWE_TYPE_PHRASAL_VERB = "phrasal_verb"
+MWE_TYPE_FIXED_EXPRESSION = "fixed_expression"
+MWE_TYPE_ADVERBIAL_PHRASE = "adverbial_phrase"
+MWE_TYPE_OTHER = "other"
+MWE_SOURCE_STAGE1_DETECTOR = "stage1_detector"
+
 # Known words columns
 STATUS = "status"
 ITEM_TYPE = "item_type"

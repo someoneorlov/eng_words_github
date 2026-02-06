@@ -16,12 +16,25 @@ from eng_words.word_family.batch_qc import (
 
 class TestCardsLemmaNotInExample:
     def test_returns_empty_when_validator_unavailable(self):
-        # If validator is optional and not installed, might return []
-        # When validator is available, real checks run
+        # When validator is available, real checks run; run has lemma in example
         cards = [{"lemma": "run", "examples": ["I run daily."], "definition_en": "move fast"}]
         out = cards_lemma_not_in_example(cards)
-        # Either [] (validator missing) or [] (lemma in example)
         assert isinstance(out, list)
+        assert len(out) == 0
+
+    def test_raises_when_matching_unavailable_and_cards_present(self, monkeypatch):
+        """Strict (PIPELINE_B_FIXES_PLAN 2.3): do not silently skip QC when text_norm missing."""
+        import eng_words.word_family.batch_qc as m
+        monkeypatch.setattr(m, "word_in_text_for_matching", None)
+        cards = [{"lemma": "run", "examples": ["I run."], "definition_en": "move"}]
+        with pytest.raises(RuntimeError, match="word_in_text_for_matching"):
+            cards_lemma_not_in_example(cards)
+
+    def test_empty_cards_returns_empty_without_raise(self, monkeypatch):
+        """Empty card list returns [] even when matching would be unavailable (nothing to check)."""
+        import eng_words.word_family.batch_qc as m
+        monkeypatch.setattr(m, "word_in_text_for_matching", None)
+        assert cards_lemma_not_in_example([]) == []
 
     def test_lemma_in_example_passes(self):
         cards = [{"lemma": "run", "examples": ["I run every day."], "definition_en": "move"}]
