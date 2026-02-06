@@ -1,0 +1,22 @@
+{
+  "sample_size": 50,
+  "total_tokens": 1025,
+  "content_tokens": 269,
+  "unique_lemmas_all": 397,
+  "unique_lemmas_content": 230,
+  "lemma_distribution": {
+    "min_examples": 1,
+    "max_examples": 5,
+    "median_examples": 1.0,
+    "mean_examples": 1.1478260869565218,
+    "lemmas_gt_100": 0,
+    "lemmas_gt_50": 0,
+    "lemmas_gt_10": 0
+  },
+  "pos_distribution": {
+    "NOUN": 123,
+    "VERB": 88,
+    "ADJ": 41,
+    "ADV": 17
+  }
+}

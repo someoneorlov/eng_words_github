@@ -1,0 +1,153 @@
+{
+  "add": [
+    "VERB"
+  ],
+  "adventure": [
+    "NOUN"
+  ],
+  "advice": [
+    "NOUN"
+  ],
+  "ahead": [
+    "ADV"
+  ],
+  "air": [
+    "NOUN"
+  ],
+  "allow": [
+    "VERB"
+  ],
+  "amusement": [
+    "NOUN"
+  ],
+  "announce": [
+    "VERB"
+  ],
+  "appear": [
+    "VERB"
+  ],
+  "arise": [
+    "VERB"
+  ],
+  "attempt": [
+    "NOUN"
+  ],
+  "attitude": [
+    "NOUN"
+  ],
+  "bad": [
+    "ADJ"
+  ],
+  "beautiful": [
+    "ADJ"
+  ],
+  "begin": [
+    "VERB"
+  ],
+  "big": [
+    "ADJ"
+  ],
+  "boat": [
+    "NOUN"
+  ],
+  "boldly": [
+    "ADV"
+  ],
+  "bridal": [
+    "ADJ"
+  ],
+  "bring": [
+    "VERB"
+  ],
+  "brood": [
+    "NOUN"
+  ],
+  "buy": [
+    "VERB"
+  ],
+  "case": [
+    "NOUN"
+  ],
+  "cell": [
+    "NOUN"
+  ],
+  "characterize": [
+    "VERB"
+  ],
+  "charm": [
+    "NOUN"
+  ],
+  "church": [
+    "NOUN"
+  ],
+  "clearness": [
+    "NOUN"
+  ],
+  "clothe": [
+    "NOUN",
+    "NOUN"
+  ],
+  "colleague": [
+    "NOUN"
+  ],
+  "come": [
+    "VERB"
+  ],
+  "compelling": [
+    "ADJ"
+  ],
+  "connection": [
+    "NOUN"
+  ],
+  "contact": [
+    "NOUN"
+  ],
+  "corner": [
+    "NOUN"
+  ],
+  "correspondent": [
+    "NOUN"
+  ],
+  "courage": [
+    "NOUN"
+  ],
+  "course": [
+    "NOUN"
+  ],
+  "court": [
+    "NOUN"
+  ],
+  "coward": [
+    "NOUN"
+  ],
+  "curiosity": [
+    "NOUN"
+  ],
+  "cynically": [
+    "ADV"
+  ],
+  "dare": [
+    "VERB"
+  ],
+  "dark": [
+    "ADJ"
+  ],
+  "death": [
+    "NOUN"
+  ],
+  "delay": [
+    "VERB"
+  ],
+  "delight": [
+    "NOUN"
+  ],
+  "different": [
+    "ADJ"
+  ],
+  "directly": [
+    "ADV"
+  ],
+  "door": [
+    "NOUN"
+  ]
+}

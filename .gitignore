@@ -38,18 +38,18 @@ ENV/
 *.ipynb
 
 # Project specific (do not push data, logs, archive)
-data/
+# data/
 logs/
 reports/
 docs/archive/
 
-data/processed/
-*.parquet
-*.csv
+# data/processed/
+# *.parquet
+# *.csv
 !tests/fixtures/*.csv
-anki_exports/
-known_words.csv
-*.epub
+# anki_exports/
+# known_words.csv
+# *.epub
 
 # OS
 .DS_Store
@@ -74,12 +74,12 @@ logs/*.log
 backups/
 
 # LLM cache (large, keep locally)
-data/synset_cards/llm_cache/
-
+# data/synset_cards/llm_cache/
+!data/**/**/*.json
 # Temporary test data
-data/card_gen_test/
-data/quality_analysis/
-data/synset_aggregation_test/
+# data/card_gen_test/
+# data/quality_analysis/
+# data/synset_aggregation_test/
 
 # Reports (temporary)
 reports/

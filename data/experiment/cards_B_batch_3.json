@@ -1,0 +1,823 @@
+{
+  "pipeline": "B",
+  "source": "batch_api",
+  "timestamp": "2026-02-05T20:32:35",
+  "config": {
+    "lemmas_count": 50
+  },
+  "stats": {
+    "lemmas_processed": 50,
+    "cards_generated": 50,
+    "errors": 0,
+    "lemmas_with_zero_cards": 0,
+    "validation_errors_count": 0,
+    "cards_lemma_not_in_example_count": 0
+  },
+  "cards": [
+    {
+      "meaning_id": 1,
+      "definition_en": "To say something further; to continue speaking or writing.",
+      "definition_ru": "добавить, дополнить (сказанное)",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "He explained the rules and then added that no one was allowed to leave early.",
+      "lemma": "add",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "It’s bad enough as it is this way,\" she added with a kind of wry twist to her mouth, the while Clyde thought of himself and Hortense."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "An unusual, exciting, or daring experience",
+      "definition_ru": "Приключение, авантюра",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "Traveling alone through the mountains was a great adventure for him.",
+      "lemma": "adventure",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "But in regard to himself, he proceeded to unfold a tale of only modest adventure, which was very different from the one Clyde had narrated, a tale which had less of nerves and worry and more of a sturdy courage and faith in his own luck and possibilities."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "guidance or recommendations offered with regard to prudent future action",
+      "definition_ru": "совет, рекомендация",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "I need some advice on which car to buy.",
+      "lemma": "advice",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And yet, because of the advice of Belknap and Jephson, he must sit up and smile, or at least look pleasant and meet the gaze of everyone boldly and directly."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "Further forward in space or time; in front of someone or something",
+      "definition_ru": "впереди, вперед",
+      "part_of_speech": "adverb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The car in front of us slowed down, but we could see the road ahead was clear.",
+      "lemma": "ahead",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "But once out in the street out of view of the church and the homing amusement seekers, he and Rita found themselves together, Zella and Dillard having walked on ahead."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "the mixture of invisible gases that surrounds the Earth and that people, animals, and plants breathe",
+      "definition_ru": "воздух, атмосфера",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "I opened the window to let some fresh air into the room.",
+      "lemma": "air",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "The air was laden with spices - the mingled fragrance of many grasses and flowers."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "To give permission for someone to do something or to let something happen.",
+      "definition_ru": "позволять, разрешать",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "My parents allowed me to stay out late on Friday night.",
+      "lemma": "allow",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "- In the meantime, or from June fifth to July sixth, he allowed her to brood in that little, lonely farmhouse on the outskirts of Biltz in Mimico County, with the neighbors coming in to watch and help her make some clothes, which even then she did not dare announce as her bridal trousseau."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "The state of being entertained or the provision of entertainment and enjoyment",
+      "definition_ru": "Развлечение, забава, увеселение",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The city offers many forms of amusement, such as theaters and parks.",
+      "lemma": "amusement",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "But once out in the street out of view of the church and the homing amusement seekers, he and Rita found themselves together, Zella and Dillard having walked on ahead."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "To make something known publicly or officially",
+      "definition_ru": "Объявлять, заявлять, сообщать официально",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The company will announce its new product next week.",
+      "lemma": "announce",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "- In the meantime, or from June fifth to July sixth, he allowed her to brood in that little, lonely farmhouse on the outskirts of Biltz in Mimico County, with the neighbors coming in to watch and help her make some clothes, which even then she did not dare announce as her bridal trousseau."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "To be present in a formal place, such as a court of law, or to perform in public",
+      "definition_ru": "Предстать перед судом, явиться, появиться на публике",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The defendant is scheduled to appear in court next Tuesday morning.",
+      "lemma": "appear",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "Then news of home, the reason for her presence, her duty as a correspondent to interview him - later to appear with him in court at the hour of his sentence - a situation over which Clyde winced."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "An act of trying to do something, especially something difficult or unsuccessful",
+      "definition_ru": "Попытка, старание",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "He made a final attempt to finish the marathon despite the heavy rain.",
+      "lemma": "attempt",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And now, also without so many of the former phases or attempts at subterfuge, which had previously characterized her curiosity in regard to him, she was at times openly seeking him out and making opportunities for social contact."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "a settled way of thinking or feeling about someone or something, typically one that is reflected in a person's behavior",
+      "definition_ru": "отношение, позиция, мироощущение",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "He has a very positive attitude towards his work.",
+      "lemma": "attitude",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "She could not permit any thoughts in regard to his recent or present attitude to delay her."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "Unpleasant, unfortunate, or of poor quality",
+      "definition_ru": "плохой, неприятный",
+      "part_of_speech": "adjective",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The weather was so bad that we had to cancel our picnic.",
+      "lemma": "bad",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "It’s bad enough as it is this way,\" she added with a kind of wry twist to her mouth, the while Clyde thought of himself and Hortense."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "pleasing the senses or mind aesthetically; very pretty or attractive",
+      "definition_ru": "красивый, прекрасный",
+      "part_of_speech": "adj",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The sunset over the ocean was absolutely beautiful.",
+      "lemma": "beautiful",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "That beautiful Wykeagy Avenue!"
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "To start doing something or to start to happen",
+      "definition_ru": "начинать, приступать",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "She began to read the book after dinner.",
+      "lemma": "begin",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And Clyde, leaning against his cell door, began to wonder."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "Large in size, degree, or amount",
+      "definition_ru": "Большой, крупный",
+      "part_of_speech": "adjective",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "They live in a big house with a beautiful garden.",
+      "lemma": "big",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And Mr. Finchley’s going to buy a big electric launch for Stuart and they’re going to live up there next summer, maybe all the time, from May until October."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "a small vessel for traveling on water",
+      "definition_ru": "лодка, судно",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "We spent the afternoon fishing from a small wooden boat.",
+      "lemma": "boat",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "I almost fell out of the boat."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "In a confident and courageous way; without showing fear",
+      "definition_ru": "смело, отважно, дерзко",
+      "part_of_speech": "adv",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "She boldly stepped onto the stage and began her speech in front of the large crowd.",
+      "lemma": "boldly",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And yet, because of the advice of Belknap and Jephson, he must sit up and smile, or at least look pleasant and meet the gaze of everyone boldly and directly."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "Relating to a bride or a wedding ceremony",
+      "definition_ru": "свадебный, подвенечный, относящийся к невесте",
+      "part_of_speech": "adjective",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "She spent months choosing the perfect bridal gown for her big day.",
+      "lemma": "bridal",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "- In the meantime, or from June fifth to July sixth, he allowed her to brood in that little, lonely farmhouse on the outskirts of Biltz in Mimico County, with the neighbors coming in to watch and help her make some clothes, which even then she did not dare announce as her bridal trousseau."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "To mention a subject or start talking about something",
+      "definition_ru": "упоминать, поднимать (тему, вопрос)",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "I didn't want to bring up the problem during dinner.",
+      "lemma": "bring",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "She was so happy that I hated to bring up anything just then, and so we just kept on rowing until about two, when we stopped for lunch.\""
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "to think deeply about something that makes you unhappy, worried, or angry",
+      "definition_ru": "тягостно раздумывать, размышлять о чем-то неприятном",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "Instead of brooding over his mistakes, he decided to learn from them and move on.",
+      "lemma": "brood",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "- In the meantime, or from June fifth to July sixth, he allowed her to brood in that little, lonely farmhouse on the outskirts of Biltz in Mimico County, with the neighbors coming in to watch and help her make some clothes, which even then she did not dare announce as her bridal trousseau."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "to obtain something by paying money for it",
+      "definition_ru": "покупать, приобретать",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "I need to buy some milk and bread from the grocery store.",
+      "lemma": "buy",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And Mr. Finchley’s going to buy a big electric launch for Stuart and they’re going to live up there next summer, maybe all the time, from May until October."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A particular situation or instance of something happening; a person's specific circumstances",
+      "definition_ru": "случай, ситуация, конкретные обстоятельства",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The rules are usually very strict, but in your case, we can make an exception.",
+      "lemma": "case",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "She was having preliminary pains - purely imaginary ones in her case."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A small room in a prison or police station where a prisoner is kept.",
+      "definition_ru": "Тюремная камера",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The prisoner spent twenty hours a day in his small cell.",
+      "lemma": "cell",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And Clyde, leaning against his cell door, began to wonder."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "to be a typical feature or quality of someone or something",
+      "definition_ru": "характеризовать, быть характерной чертой",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The city is characterized by its beautiful architecture and narrow streets.",
+      "lemma": "characterize",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And now, also without so many of the former phases or attempts at subterfuge, which had previously characterized her curiosity in regard to him, she was at times openly seeking him out and making opportunities for social contact."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A quality that makes someone or something very attractive or pleasant.",
+      "definition_ru": "Обаяние, шарм, очарование",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The small village has a lot of old-fashioned charm.",
+      "lemma": "charm",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "The charm of her, the enormous, compelling, weakening delight."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A building used for public Christian worship, or the religious services held there.",
+      "definition_ru": "Церковь (здание или богослужение)",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The old church on the hill has beautiful stained-glass windows.",
+      "lemma": "church",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "But once out in the street out of view of the church and the homing amusement seekers, he and Rita found themselves together, Zella and Dillard having walked on ahead."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "The quality of being easy to see, hear, or understand",
+      "definition_ru": "ясность, отчетливость",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The speaker explained the complex topic with great clearness, making it easy for everyone to follow.",
+      "lemma": "clearness",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "\"In other words,\" and here Jephson emphasized this with great clearness, \"you were a moral and mental coward, as Mr. Belknap, my colleague, said.\""
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "Items worn to cover the body, such as shirts, trousers, or dresses.",
+      "definition_ru": "одежда",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1,
+        2
+      ],
+      "generated_example": "He changed his clothes after getting caught in the rain.",
+      "lemma": "clothe",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "- In the meantime, or from June fifth to July sixth, he allowed her to brood in that little, lonely farmhouse on the outskirts of Biltz in Mimico County, with the neighbors coming in to watch and help her make some clothes, which even then she did not dare announce as her bridal trousseau.",
+        "\"Well enough, for instance, to save yourself by swimming over five hundred feet with your shoes and clothes on."
+      ],
+      "total_lemma_examples": 2
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A person that you work with, especially in a profession or a business",
+      "definition_ru": "коллега, сослуживец",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "She discussed the new project with her colleagues during the morning meeting.",
+      "lemma": "colleague",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "\"In other words,\" and here Jephson emphasized this with great clearness, \"you were a moral and mental coward, as Mr. Belknap, my colleague, said.\""
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "To move towards, arrive at, or visit a place",
+      "definition_ru": "Приходить, приезжать, заходить",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "My friends are coming over to my house tonight for dinner.",
+      "lemma": "come",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "- In the meantime, or from June fifth to July sixth, he allowed her to brood in that little, lonely farmhouse on the outskirts of Biltz in Mimico County, with the neighbors coming in to watch and help her make some clothes, which even then she did not dare announce as her bridal trousseau."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "evoking interest, attention, or admiration in a powerful and irresistible way; or very convincing",
+      "definition_ru": "захватывающий, непреодолимый, убедительный",
+      "part_of_speech": "adj",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The lawyer presented a compelling argument that convinced the jury of the defendant's innocence.",
+      "lemma": "compelling",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "The charm of her, the enormous, compelling, weakening delight."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A relationship in which a person, thing, or idea is linked or associated with something else",
+      "definition_ru": "связь, отношение",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The police are looking for any connection between the two crimes.",
+      "lemma": "connection",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "Then his terrible troubles in connection with all this would be over."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "The state of communicating or meeting with someone; social interaction",
+      "definition_ru": "Контакт, общение, связь",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "He tried to maintain regular contact with his former colleagues after leaving the company.",
+      "lemma": "contact",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And now, also without so many of the former phases or attempts at subterfuge, which had previously characterized her curiosity in regard to him, she was at times openly seeking him out and making opportunities for social contact."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "The place where two streets, roads, or walls meet.",
+      "definition_ru": "Угол (улицы, комнаты)",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "I'll meet you at the corner of the street.",
+      "lemma": "corner",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "\"And you should have just seen my little feet twinkle up Sargent and around the corner into Bailey Place,\" was the way she narcissistically painted her flight."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A person who reports news from a particular place or on a particular subject for a newspaper, magazine, or television station.",
+      "definition_ru": "Корреспондент, специальный репортер",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "She worked as a foreign correspondent in the Middle East for several years.",
+      "lemma": "correspondent",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "Then news of home, the reason for her presence, her duty as a correspondent to interview him - later to appear with him in court at the hour of his sentence - a situation over which Clyde winced."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "The ability to control fear and face danger, pain, or difficulty",
+      "definition_ru": "Мужество, смелость, отвага",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "It takes a lot of courage to admit when you are wrong.",
+      "lemma": "courage",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "But in regard to himself, he proceeded to unfold a tale of only modest adventure, which was very different from the one Clyde had narrated, a tale which had less of nerves and worry and more of a sturdy courage and faith in his own luck and possibilities."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "Used to say that something is expected or obvious, especially as part of the phrase 'of course'.",
+      "definition_ru": "конечно, разумеется",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "I will be there to help you, of course.",
+      "lemma": "course",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "It would have to be toward evening, of course."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A place where legal trials take place and where crimes are judged by a judge or jury",
+      "definition_ru": "Суд (место, где проходят судебные разбирательства)",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The witness was asked to appear in court to testify about the accident.",
+      "lemma": "court",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "Then news of home, the reason for her presence, her duty as a correspondent to interview him - later to appear with him in court at the hour of his sentence - a situation over which Clyde winced."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "a person who lacks the courage to do or endure dangerous, difficult, or unpleasant things",
+      "definition_ru": "трус",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "Don't be such a coward; just tell her the truth about what happened.",
+      "lemma": "coward",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "\"In other words,\" and here Jephson emphasized this with great clearness, \"you were a moral and mental coward, as Mr. Belknap, my colleague, said.\""
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A strong desire to know or learn something",
+      "definition_ru": "любопытство, любознательность",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "His curiosity about the old house led him to explore the attic.",
+      "lemma": "curiosity",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And now, also without so many of the former phases or attempts at subterfuge, which had previously characterized her curiosity in regard to him, she was at times openly seeking him out and making opportunities for social contact."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "in a way that shows you believe people are only interested in themselves and are not sincere or honest",
+      "definition_ru": "цинично",
+      "part_of_speech": "adverb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "He smiled cynically when he heard the politician's promises about honesty.",
+      "lemma": "cynically",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "\"There you go, Mrs. Griffiths,\" interjected Gilbert shrewdly and cynically to his mother."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "to have enough courage or confidence to do something",
+      "definition_ru": "осмеливаться, отваживаться",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "I didn't dare to tell him the truth because I was afraid of his reaction.",
+      "lemma": "dare",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "- In the meantime, or from June fifth to July sixth, he allowed her to brood in that little, lonely farmhouse on the outskirts of Biltz in Mimico County, with the neighbors coming in to watch and help her make some clothes, which even then she did not dare announce as her bridal trousseau."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "with little or no light; (figurative) gloomy, pessimistic, or sad",
+      "definition_ru": "темный; мрачный, пессимистичный",
+      "part_of_speech": "adj",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The future looked dark after he lost his job, but things eventually got better.",
+      "lemma": "dark",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "I know when young people first face a situation like this they always look on the darkest side of it, but it doesn’t always work out that way."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "The end of the life of a person or animal",
+      "definition_ru": "смерть",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The sudden death of the famous actor shocked the whole world.",
+      "lemma": "death",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And with Clyde where he was, more and more executions - although as he found - and to his invariable horror, no one ever became used to such things there; farmhand Mowrer for the slaying of his former employer; officer Riordan for the slaying of his wife - and a fine upstanding officer too but a minute before his death; and afterwards, within the month, the going of the Chinaman, who seemed, for some reason, to endure a long time (and without a word in parting to anyone - although it was well known that he spoke a few words of English)."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "to make someone or something late or slow; to postpone an action or event until a later time",
+      "definition_ru": "задерживать, откладывать, медлить",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The heavy traffic delayed us for over an hour, so we missed the start of the movie.",
+      "lemma": "delay",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "She could not permit any thoughts in regard to his recent or present attitude to delay her."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A feeling of great pleasure, satisfaction, or happiness.",
+      "definition_ru": "Восторг, наслаждение, сильное удовольствие",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The children's faces were full of delight when they saw the birthday cake.",
+      "lemma": "delight",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "The charm of her, the enormous, compelling, weakening delight."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "not the same as another or each other; unlike in nature, form, or quality",
+      "definition_ru": "другой, отличный, непохожий",
+      "part_of_speech": "adjective",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "The two brothers have very different personalities, even though they look alike.",
+      "lemma": "different",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "But in regard to himself, he proceeded to unfold a tale of only modest adventure, which was very different from the one Clyde had narrated, a tale which had less of nerves and worry and more of a sturdy courage and faith in his own luck and possibilities."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "In a clear, honest, or straight way; without anything else coming between",
+      "definition_ru": "Прямо, непосредственно, открыто",
+      "part_of_speech": "adverb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "She looked him directly in the eyes and told the truth.",
+      "lemma": "directly",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And yet, because of the advice of Belknap and Jephson, he must sit up and smile, or at least look pleasant and meet the gaze of everyone boldly and directly."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "A hinged, sliding, or revolving barrier at the entrance to a building, room, or vehicle.",
+      "definition_ru": "дверь",
+      "part_of_speech": "noun",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "He knocked on the door and waited for someone to answer.",
+      "lemma": "door",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And Clyde, leaning against his cell door, began to wonder."
+      ],
+      "total_lemma_examples": 1
+    },
+    {
+      "meaning_id": 1,
+      "definition_en": "To get up from a sitting, kneeling, or lying position; to stand up.",
+      "definition_ru": "вставать, подниматься",
+      "part_of_speech": "verb",
+      "selected_example_indices": [
+        1
+      ],
+      "generated_example": "He arose from his chair to greet the guests.",
+      "lemma": "arise",
+      "source": "pipeline_b_batch",
+      "examples": [
+        "And forthwith he arose and went to mail the letter to Sondra."
+      ],
+      "total_lemma_examples": 1
+    }
+  ],
+  "errors": [],
+  "validation_errors": [],
+  "lemmas_with_zero_cards": []
+}

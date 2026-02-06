@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "created_at": "2026-02-06T03:15:41.820193+00:00",
+  "pipeline_version": "38eab96a44bfbfa5d6f8fb638d3cd022130e6ed6",
+  "spacy_model_name": "en_core_web_sm",
+  "spacy_model": "en_core_web_sm",
+  "spacy_version": "3.8.11",
+  "token_count": 428643,
+  "sentence_count": 18924,
+  "random_seed": null,
+  "book_name": "theodore-dreiser_an-american-tragedy",
+  "book_id": "theodore-dreiser_an-american-tragedy",
+  "file_checksums": {
+    "tokens_sha256": "7631e00762f126b605e717e0ceb33de0982dd2af3405d5bb09c6142bcabbb31d",
+    "sentences_sha256": "8bf31830491976dfbbb334282c2607949fc5c607015ce4a25edf193ffb563e6a"
+  }
+}

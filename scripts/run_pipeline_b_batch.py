@@ -99,7 +99,12 @@ def create(
 ):
     """Create batch requests for Pipeline B (one request per lemma). With --no-batch: run Standard API and write cards (no batch job)."""
     get_client()  # fail fast if no API key
-    config = _batch_config(limit=limit if limit > 0 else None, max_examples=max_examples, model=model)
+    config = _batch_config(
+        limit=limit if limit > 0 else None,
+        max_examples=max_examples,
+        model=model,
+        strict=not no_batch,  # no-batch: write cards even if QC gate fails (e.g. 1 pos_mismatch)
+    )
     if no_batch:
         print("Running via Standard API (no batch job)...")
         _run_standard_api(config)
